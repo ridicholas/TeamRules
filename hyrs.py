@@ -25,12 +25,13 @@ class hyrs(object):
         self.N = float(len(Y))
         self.Yb = Yb
 
-    def set_parameters(self, alpha=1, beta=0.1, coverage_reg=0, contradiction_reg=0):
+    def set_parameters(self, alpha=1, beta=0.1, coverage_reg=0, contradiction_reg=0, force_complete_coverage=False):
         # input al and bl are lists
         self.alpha = alpha
         self.beta = beta
         self.coverage_reg = coverage_reg
         self.contradiction_reg = contradiction_reg
+        self.force_complete_coverage = force_complete_coverage
 
     def generate_rulespace(self, supp, maxlen, N, need_negcode=False, njobs=5, method='fpgrowth', criteria='IG',
                            add_rules=[]):
@@ -259,7 +260,7 @@ class hyrs(object):
         p = np.sum(self.pRMatrix[:, prs], axis=1)
         n = np.sum(self.nRMatrix[:, nrs], axis=1)
         ex = -1
-        if sum(covered) == self.N:  # covering all examples.
+        if sum(covered) == self.N and not(self.force_complete_coverage):  # covering all examples.
             if print_message:
                 print('===== already covering all examples ===== ')
             # print('0')
@@ -278,6 +279,9 @@ class hyrs(object):
             # print('1')
             move = ['cut']
             sign = [int(random() < 0.5)]
+            if self.force_complete_coverage:
+                move.append('add')
+                sign.append(int(random() < 0.5))
             # elif (len(incorr) == 0 and (sum(covered)>0)) or len(incorr)/sum(covered) >= len(incorrb)/sum(~covered):
         #     if print_message:
         #         print(' ===== 2 ===== ')
@@ -311,6 +315,10 @@ class hyrs(object):
                         # print('7')
                         move = ['cut']
                         sign = [rs_indicator]
+                        if self.force_complete_coverage:
+                            move.append('add')
+                            sign.append('rs_indicator')
+                        
                     else:
                         # print('8')
                         move = ['cut', 'add']
