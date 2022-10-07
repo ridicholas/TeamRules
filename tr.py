@@ -23,15 +23,21 @@ def intersection(lst1, lst2):
     return lst3
 
 class tr(object):
-    def __init__(self, binary_data,Y,Yb, Paccept):
+    def __init__(self, binary_data,Y,Yb, Paccept=None, Paccept_asym=None):
         self.df = binary_data  
         self.Y = pd.Series(Y)
         self.N = float(len(Y))
         self.Yb = pd.Series(Yb)
-        self.Paccept = pd.Series(Paccept)
+        if Paccept_asym!=None:
+            self.Paccept_
+        else:
+            self.Paccept = pd.Series(Paccept)
 
     
-    def set_parameters(self, alpha = 0, beta = 0, coverage_reg = 0, contradiction_reg = 0, fA=0.5, rejectType = 'all', force_complete_coverage=False):
+    def set_parameters(self, alpha = 0, beta = 0, coverage_reg = 0, contradiction_reg = 0, fA=0.5, rejectType = 'all', force_complete_coverage=False, asym_loss = [1,1], asym_accept=0):
+        """
+        asym_loss = [loss from False Negatives (ground truth positive), loss from False Positives (ground truth negative)]
+        """
         # input al and bl are lists
         self.alpha = alpha
         self.beta = beta
@@ -40,6 +46,8 @@ class tr(object):
         self.fA = fA
         self.rejectType = rejectType
         self.force_complete_coverage = force_complete_coverage
+        self.asym_loss = asym_loss
+        self.asym_accept = asym_accept
 
     def generate_rulespace(self,supp,maxlen,N, need_negcode = False,njobs = 5, method = 'fpgrowth',criteria = 'IG',add_rules = []):
         if method == 'fpgrowth':
@@ -66,19 +74,27 @@ class tr(object):
                 for n in range(n_estimators):
                     prules.extend(extract_rules(clf.estimators_[n],self.df.columns))
             prules = [list(x) for x in set(tuple(np.sort(x)) for x in prules)] 
-            nrules = []
-            for length in range(max(min(2,maxlen), 1),maxlen+1,1):
-                n_estimators = 250*length# min(5000,int(min(comb(df.shape[1], length, exact=True),10000/maxlen)))
-                clf = RandomForestClassifier(n_estimators = n_estimators,max_depth = length)
-                clf.fit(self.df,1-self.Y)
-                for n in range(n_estimators):
-                    nrules.extend(extract_rules(clf.estimators_[n],self.df.columns))
-            nrules = [list(x) for x in set(tuple(np.sort(x)) for x in nrules)]   
+            
+            if self.force_complete_coverage:
+                nrules = [[self.df.columns[0]], [self.df.columns[0] + 'neg']]
+            else:
+                nrules = []
+                for length in range(max(min(2,maxlen), 1),maxlen+1,1):
+                    n_estimators = 250*length# min(5000,int(min(comb(df.shape[1], length, exact=True),10000/maxlen)))
+                    clf = RandomForestClassifier(n_estimators = n_estimators,max_depth = length)
+                    clf.fit(self.df,1-self.Y)
+                    for n in range(n_estimators):
+                        nrules.extend(extract_rules(clf.estimators_[n],self.df.columns))
+                nrules = [list(x) for x in set(tuple(np.sort(x)) for x in nrules)]
+              
             df = 1-self.df 
             df.columns = [name.strip() + 'neg' for name in self.df.columns]
             df = pd.concat([self.df,df],axis = 1)
         self.prules, self.pRMatrix, self.psupp, self.pprecision, self.perror = self.screen_rules(prules,df,self.Y,N,supp)
-        self.nrules, self.nRMatrix, self.nsupp, self.nprecision, self.nerror = self.screen_rules(nrules,df,1-self.Y,N,supp)
+        if self.force_complete_coverage:
+            self.nrules, self.nRMatrix, self.nsupp, self.nprecision, self.nerror = self.screen_rules(nrules,df,1-self.Y,N,0)
+        else:
+            self.nrules, self.nRMatrix, self.nsupp, self.nprecision, self.nerror = self.screen_rules(nrules,df,1-self.Y,N,supp)
 
         # print '\tTook %0.3fs to generate %d rules' % (self.screen_time, len(self.rules))
 
@@ -106,8 +122,10 @@ class tr(object):
         FP = np.array(np.sum(Z,axis = 0))[0] - TP
         p1 = TP.astype(float)/(TP+FP)
         
-
-        supp_select = np.array([i for i in supp_select if p1[i]>np.mean(y)])
+        if self.force_complete_coverage:
+            supp_select = np.array([i for i in supp_select])
+        else:
+            supp_select = np.array([i for i in supp_select if p1[i]>np.mean(y)])
         select = np.argsort(p1[supp_select])[::-1][:N].tolist()
         ind = list(supp_select[select])
         rules = [rules[i] for i in ind]
@@ -125,7 +143,10 @@ class tr(object):
         nprules = len(self.prules)
         pnrules = len(self.nrules)
         prs_curr = sample(list(range(nprules)),3)
-        nrs_curr = sample(list(range(pnrules)),3)
+        if self.force_complete_coverage:
+            nrs_curr = list(range(pnrules))
+        else:
+            nrs_curr = sample(list(range(pnrules)),3)
         obj_curr = 1000000000
         obj_min = obj_curr
         self.maps.append([-1,obj_curr,prs_curr,nrs_curr,[]])
@@ -141,7 +162,8 @@ class tr(object):
         rulePreds_curr[pcovered_curr] = 1
         #print(Yhat_curr,TP,FP,TN,FN)
         nfeatures = len(np.unique([con.split('_')[0] for i in prs_curr for con in self.prules[i]])) + len(np.unique([con.split('_')[0] for i in nrs_curr for con in self.nrules[i]]))
-        err_curr = np.abs(self.Y - Yhat_soft_curr).sum()
+        asymCosts = self.Y.replace({0: self.asym_loss[1], 1: self.asym_loss[0]})
+        err_curr = (np.abs(self.Y - Yhat_soft_curr) * asymCosts).sum()
         contras_curr = np.sum(self.Yb != rulePreds_curr)
         obj_curr = (err_curr)/self.N + (self.coverage_reg * (covered_curr.sum()/self.N)) + (self.contradiction_reg*(contras_curr/self.N))+ self.alpha*(int_flag *(len(prs_curr) + len(nrs_curr))+(1-int_flag)*nfeatures)+ self.beta * sum(~covered_curr)/self.N
         self.actions = []
@@ -158,7 +180,7 @@ class tr(object):
             self.covered1 = covered_new[:]
             self.Yhat_curr = Yhat_curr
             Yhat_new,TP,FP,TN,FN, numRejects_new, Yhat_soft_new = self.compute_obj(pcovered_new,ncovered_new, fA)
-            err_new = np.abs(self.Y - Yhat_soft_new).sum()
+            err_new = (np.abs(self.Y - Yhat_soft_new) * asymCosts).sum()
 
 
             self.Yhat_new = Yhat_new
@@ -229,8 +251,8 @@ class tr(object):
         correctRejects += sum((self.Yb[ncovered & rejection] == 1) & (self.Y[ncovered & rejection] == 1))
         correctRejects += sum((self.Yb[pcovered & rejection] != 1) & (self.Y[pcovered & rejection] != 1))
 
-        Yhat[ncovered] = (Yhat[ncovered] * (1 - self.Paccept[ncovered])) + ((self.Paccept[ncovered]) * 0)  # covers cases where model predicts negative
-        Yhat[pcovered] = (self.Yb.copy()[pcovered] * (1 - self.Paccept[pcovered])) + ((self.Paccept[pcovered]) * 1)  # covers cases where model predicts positive
+        Yhat[ncovered] = (Yhat[ncovered] * (1 - max(0,(1-self.asym_accept)*self.Paccept[ncovered]))) + ((max(0,(1-self.asym_accept)*self.Paccept[ncovered])) * 0)  # covers cases where model predicts negative
+        Yhat[pcovered] = (self.Yb.copy()[pcovered] * (1 - min(1,(1+self.asym_accept)*self.Paccept[pcovered]))) + ((min(1,(1+self.asym_accept)*self.Paccept[pcovered])) * 1)  # covers cases where model predicts positive
         Yhat_soft = Yhat.copy()
         Yhat = Yhat.astype(float)
         Yhat[ncovered] = Yhat[ncovered].round()
@@ -253,7 +275,9 @@ class tr(object):
         rulePreds = self.Yb.copy()
         rulePreds[ncovered] = 0
         rulePreds[pcovered] = 1
-        err = np.abs(self.Y - Yhat) * self.Paccept
+        asymCosts = self.Y.replace({0: self.asym_loss[1], 1: self.asym_loss[0]})
+        asymADB = self.Y.replace({0: 1, 1: -1})
+        err = np.abs(self.Y - Yhat) * min(1,(max(0,(1+asymADB*self.asym_accept)*self.Paccept))) * asymCosts
         contras = np.where((rulePreds != self.Yb) & covered)[0]
         err[contras] += self.contradiction_reg
 
@@ -290,17 +314,22 @@ class tr(object):
 
             if (ex in incorr) or (ex in contras):  # incorrectly classified by interpretable model
                 rs_indicator = (pcovered[ex]).astype(int)  # covered by prules
-                if random() < 0.5 or (ex not in incorr):
-                    # print('7')
-                    move = ['cut']
-                    sign = [rs_indicator]
-                    if self.force_complete_coverage:
-                        move.append('add')
-                        sign.append('rs_indicator')
+                if self.force_complete_coverage:
+                    if rs_indicator:
+                        move = ['cut']
+                        sign = [rs_indicator]
+                    else:
+                        move = ['add']
+                        sign = [1]
                 else:
-                    # print('8')
-                    move = ['cut', 'add']
-                    sign = [rs_indicator, rs_indicator]
+                    if random() < 0.5 or (ex not in incorr):
+                        # print('7')
+                        move = ['cut']
+                        sign = [rs_indicator]
+                    else:
+                        # print('8')
+                        move = ['cut', 'add']
+                        sign = [rs_indicator, rs_indicator]
             else:  # incorrectly classified by the human/not covered
                 # print('9')
                 move = ['add']

@@ -32,6 +32,7 @@ coverage_reg = 0
 rejection_reg = 0
 fA=0.5
 
+
 #make teams
 team1 = HAI_team(startDict)
 team1.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio, alpha, beta, iters,coverage_reg, rejection_reg, fA)
@@ -233,9 +234,9 @@ for run in range(0, 20):
         team1.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                   alpha,
                                   beta, iters, coverage_reg, contradiction_reg, fA)
-        team1.setup_hyrs()
-        team1.train_hyrs()
-        team1.filter_hyrs_results(mental=False, error=False)
+        #team1.setup_hyrs()
+        #team1.train_hyrs()
+        #team1.filter_hyrs_results(mental=False, error=False)
 
         print('training team1 tr model...')
         team1.setup_tr()

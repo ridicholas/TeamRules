@@ -25,13 +25,17 @@ class hyrs(object):
         self.N = float(len(Y))
         self.Yb = Yb
 
-    def set_parameters(self, alpha=1, beta=0.1, coverage_reg=0, contradiction_reg=0, force_complete_coverage=False):
+    def set_parameters(self, alpha=1, beta=0.1, coverage_reg=0, contradiction_reg=0, force_complete_coverage=False, asym_loss = [1,1]):
+        """
+        asym_loss = [loss from False Negatives (ground truth positive), loss from False Positives (ground truth negative)]
+        """
         # input al and bl are lists
         self.alpha = alpha
         self.beta = beta
         self.coverage_reg = coverage_reg
         self.contradiction_reg = contradiction_reg
         self.force_complete_coverage = force_complete_coverage
+        self.asym_loss = asym_loss
 
     def generate_rulespace(self, supp, maxlen, N, need_negcode=False, njobs=5, method='fpgrowth', criteria='IG',
                            add_rules=[]):
@@ -59,20 +63,27 @@ class hyrs(object):
                 for n in range(n_estimators):
                     prules.extend(extract_rules(clf.estimators_[n], self.df.columns))
             prules = [list(x) for x in set(tuple(np.sort(x)) for x in prules)]
-            nrules = []
-            for length in range(max(min(2,maxlen), 1), maxlen + 1, 1):
-                n_estimators = 250 * length  # min(5000,int(min(comb(df.shape[1], length, exact=True),10000/maxlen)))
-                clf = RandomForestClassifier(n_estimators=n_estimators, max_depth=length)
-                clf.fit(self.df, 1 - self.Y)
-                for n in range(n_estimators):
-                    nrules.extend(extract_rules(clf.estimators_[n], self.df.columns))
-            nrules = [list(x) for x in set(tuple(np.sort(x)) for x in nrules)]
+            if self.force_complete_coverage:
+                nrules = [[self.df.columns[0]], [self.df.columns[0] + 'neg']]
+            else:
+                nrules = []
+                for length in range(max(min(2,maxlen), 1), maxlen + 1, 1):
+                    n_estimators = 250 * length  # min(5000,int(min(comb(df.shape[1], length, exact=True),10000/maxlen)))
+                    clf = RandomForestClassifier(n_estimators=n_estimators, max_depth=length)
+                    clf.fit(self.df, 1 - self.Y)
+                    for n in range(n_estimators):
+                        nrules.extend(extract_rules(clf.estimators_[n], self.df.columns))
+                nrules = [list(x) for x in set(tuple(np.sort(x)) for x in nrules)]
             df = 1 - self.df
             df.columns = [name.strip() + 'neg' for name in self.df.columns]
             df = pd.concat([self.df, df], axis=1)
         self.prules, self.pRMatrix, self.psupp, self.pprecision, self.perror = self.screen_rules(prules, df, self.Y, N,
                                                                                                  supp)
-        self.nrules, self.nRMatrix, self.nsupp, self.nprecision, self.nerror = self.screen_rules(nrules, df, 1 - self.Y,
+        if self.force_complete_coverage:
+            self.nrules, self.nRMatrix, self.nsupp, self.nprecision, self.nerror = self.screen_rules(nrules, df, 1 - self.Y,
+                                                                                                 N, 0)
+        else:
+            self.nrules, self.nRMatrix, self.nsupp, self.nprecision, self.nerror = self.screen_rules(nrules, df, 1 - self.Y,
                                                                                                  N, supp)
 
         # print '\tTook %0.3fs to generate %d rules' % (self.screen_time, len(self.rules))
@@ -108,8 +119,10 @@ class hyrs(object):
         
         p1 = TP.astype(float) / (TP + FP)
      
-
-        supp_select = np.array([i for i in supp_select if p1[i] > np.mean(y)])
+        if self.force_complete_coverage:
+            supp_select = np.array([i for i in supp_select])
+        else:
+            supp_select = np.array([i for i in supp_select if p1[i] > np.mean(y)])
         select = np.argsort(p1[supp_select])[::-1][:N].tolist()
         ind = list(supp_select[select])
         rules = [rules[i] for i in ind]
@@ -125,7 +138,10 @@ class hyrs(object):
         nprules = len(self.prules)
         pnrules = len(self.nrules)
         prs_curr = sample(list(range(nprules)), 3)
-        nrs_curr = sample(list(range(pnrules)), 3)
+        if self.force_complete_coverage:
+            nrs_curr = list(range(pnrules))
+        else:
+            nrs_curr = sample(list(range(pnrules)), 3)
         obj_curr = 1000000000
         obj_min = obj_curr
         self.maps.append([-1, obj_curr, prs_curr, nrs_curr, []])
@@ -140,7 +156,7 @@ class hyrs(object):
         #print(Yhat_curr, TP, FP, TN, FN)
         nfeatures = len(np.unique([con.split('_')[0] for i in prs_curr for con in self.prules[i]])) + len(
             np.unique([con.split('_')[0] for i in nrs_curr for con in self.nrules[i]]))
-        obj_curr = (FN + FP) / self.N + (self.coverage_reg * (covered_curr.sum() / self.N)) + (
+        obj_curr = (FN*self.asym_loss[0] + FP*self.asym_loss[1]) / self.N + (self.coverage_reg * (covered_curr.sum() / self.N)) + (
                 self.contradiction_reg * (contras_curr / self.N)) + self.alpha * (
                            int_flag * (len(prs_curr) + len(nrs_curr)) + (1 - int_flag) * nfeatures) + self.beta * sum(
             ~covered_curr) / self.N
@@ -172,7 +188,7 @@ class hyrs(object):
             contras_new = np.sum(self.Yhat_new != self.Yb)
             nfeatures = len(np.unique([con.split('_')[0] for i in prs_new for con in self.prules[i]])) + len(
                 np.unique([con.split('_')[0] for i in nrs_new for con in self.nrules[i]]))
-            obj_new = (FP + FN) / self.N + (self.coverage_reg * (covered_new.sum() / self.N)) + (
+            obj_new = (FN*self.asym_loss[0] + FP*self.asym_loss[1]) / self.N + (self.coverage_reg * (covered_new.sum() / self.N)) + (
                     self.contradiction_reg * (contras_new / self.N)) + self.alpha * (
                               int_flag * (len(prs_new) + len(nrs_new)) + (1 - int_flag) * nfeatures) + self.beta * sum(
                 ~covered_new) / self.N
@@ -195,7 +211,7 @@ class hyrs(object):
                 covered_min = covered_new
                 print(
                     '\n**  max at iter = {} ** \n {}(obj) = {}(error) + {}(coverage) + {}(rejection) + {}(nrules) + {}(exp)\n accuracy = {}, explainability = {}, nfeatures = {}\n perror = {}, nerror = {}, oerror = {}, berror = {}\n '.format(
-                        iter, round(obj_new, 3), (FP + FN) / self.N,
+                        iter, round(obj_new, 3), (FN*self.asym_loss[0] + FP*self.asym_loss[1]) / self.N,
                         (self.coverage_reg * (covered_new.sum() / self.N)),
                         (self.contradiction_reg * (contras_new / self.N)), self.alpha * (len(prs_new) + len(nrs_new)),
                                                  self.beta * sum(~covered_new) / self.N, (TP + TN + 0.0) / self.N,
@@ -272,37 +288,15 @@ class hyrs(object):
                 sign = [1]
             else:
                 sign = [int(random() < 0.5)]
-        elif len(incorr) == 0 and (len(incorrb) == 0 or len(overlapped) == self.N) or sum(overlapped) > sum(covered):
+        elif (len(incorr) == 0 and (len(incorrb) == 0 or len(overlapped) == self.N) or sum(overlapped) > sum(covered)) and not(self.force_complete_coverage):
             if print_message:
                 print(' ===== 1 ===== ')
             self.actions.append(1)
             # print('1')
             move = ['cut']
             sign = [int(random() < 0.5)]
-            if self.force_complete_coverage:
-                move.append('add')
-                sign.append(int(random() < 0.5))
-            # elif (len(incorr) == 0 and (sum(covered)>0)) or len(incorr)/sum(covered) >= len(incorrb)/sum(~covered):
-        #     if print_message:
-        #         print(' ===== 2 ===== ')
-        #     self.actions.append(2)
-        #     ex = sample(list(np.where(~covered)[0]) + list(np.where(overlapped)[0]),1)[0]
-        #     if overlapped[ex] or len(prs) + len(nrs) >= (vt + self.beta)/self.alpha:
-        #         # print('2')
-        #         move = ['cut']
-        #         sign = [int(random()<0.5)]
-        #     else:
-        #         # print('3')
-        #         move = ['expand']
-        #         sign = [int(random()<0.5)]
+            
         else:
-            # if sum(overlapped)/sum(pcovered)>.5 or sum(overlapped)/sum(ncovered)>.5:
-            #     if print_message:
-            #         print(' ===== 3 ===== ')
-            #     # print('4')
-            #     move = ['cut']
-            #     sign = [int(len(prs)>len(nrs))]
-            # else:
             t = random()
             if True:  # try to decrease objective
                 self.actions.append(3)
@@ -310,8 +304,16 @@ class hyrs(object):
                     print(' ===== decrease error ===== ')
                 ex = sample(list(incorr) + list(incorrb), 1)[0]
                 if ex in incorr:  # incorrectly classified by the interpretable model
+                    
                     rs_indicator = (pcovered[ex]).astype(int)  # covered by prules
-                    if random() < 0.5:
+                    if self.force_complete_coverage:
+                        if rs_indicator:
+                            move = ['cut']
+                            sign = [rs_indicator]
+                        else:
+                            move = ['add']
+                            sign = [1]
+                    elif random() < 0.5:
                         # print('7')
                         move = ['cut']
                         sign = [rs_indicator]
@@ -328,24 +330,7 @@ class hyrs(object):
                     move = ['add']
                     sign = [int(self.Y[ex] == 1)]
 
-            '''elif t < 2./3:  # decrease coverage
-                self.actions.append(4)
-                if print_message:
-                    print(' ===== decrease size ===== ')
-                move = ['cut']
-                sign = [round(random())]
-            else:  # increase coverage
-                self.actions.append(5)
-                if print_message:
-                    print(' ===== increase coverage ===== ')
-                move = ['expand']
-                sign = [round(random())]
-                # if random()<0.5:
-                #     move.append('add')
-                #     sign.append(1-rs_indicator)
-                # else:
-                #     move.extend(['cut','add'])
-                #     sign.extend([1-rs_indicator,1-rs_indicator])'''
+            
         for j in range(len(move)):
             if sign[j] == 1:
                 prs = self.action(move[j], sign[j], ex, prs, Yhat, pcovered)

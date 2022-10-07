@@ -267,6 +267,7 @@ for run in range(0, 20):
         team1.train_hyrs()
         team1.filter_hyrs_results(mental=False, error=False)
 
+
         print('training team1 tr model...')
         team1.setup_tr()
         team1.train_tr()
@@ -379,6 +380,86 @@ for run in range(0, 20):
             team1.brs_results.to_pickle('{}/team1_brs_run{}.pkl'.format(folder, run))
             team2.brs_results.to_pickle('{}/team2_brs_run{}.pkl'.format(folder, run))
             team3.brs_results.to_pickle('{}/team3_brs_run{}.pkl'.format(folder, run))
+    
+        #forced coverage versions
+        # train hyrs baseline
+        team1.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
+                                  alpha,
+                                  beta, iters, coverage_reg, contradiction_reg, fA, force_complete_coverage=True)
+        team1.setup_hyrs()
+        team1.train_hyrs()
+        team1.filter_hyrs_results(mental=False, error=False)
+
+
+        print('training team1 tr model...')
+        team1.setup_tr()
+        team1.train_tr()
+        team1.filter_tr_results(mental=False, error=False)
+
+        team2.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
+                                  alpha,
+                                  beta, iters, coverage_reg, contradiction_reg, fA, force_complete_coverage=True)
+        team2.setup_hyrs()
+        team2.train_hyrs()
+        team2.filter_hyrs_results(mental=False, error=False)
+
+
+        print('training team2 tr model...')
+        team2.setup_tr()
+        team2.train_tr()
+        team2.filter_tr_results(mental=False, error=False)
+
+        team3.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
+                                  alpha,
+                                  beta, iters, coverage_reg, contradiction_reg, fA, force_complete_coverage=True)
+        team3.setup_hyrs()
+        team3.train_hyrs()
+        team3.filter_hyrs_results(mental=False, error=False)
+
+
+        print('training team3 tr model...')
+        team3.setup_tr()
+        team3.train_tr()
+        team3.filter_tr_results(mental=False, error=False)
+
+        # team1
+
+        team1.full_hyrs_results.to_pickle('{}/fc_cost_{}_team1_hyrs_filtered_run{}.pkl'.format(folder, reg, run))
+        team1.full_tr_results.to_pickle('{}/fc_cost_{}_team1_tr_filtered_run{}.pkl'.format(folder, reg, run))
+
+        with open('{}/fc_cost_{}_team1_tr_results_run{}.pkl'.format(folder, reg, run), 'wb') as outp:
+            pickle.dump(team1.tr_results, outp, pickle.HIGHEST_PROTOCOL)
+        outp.close()
+
+        with open('{}/fc_cost_{}_team1_hyrs_results_run{}.pkl'.format(folder, reg, run), 'wb') as outp:
+            pickle.dump(team1.hyrs_results, outp, pickle.HIGHEST_PROTOCOL)
+        outp.close()
+
+        # team2
+        team2.full_hyrs_results.to_pickle('{}/fc_cost_{}_team2_hyrs_filtered_run{}.pkl'.format(folder, reg, run))
+        team2.full_tr_results.to_pickle('{}/fc_cost_{}_team2_tr_filtered_run{}.pkl'.format(folder, reg, run))
+
+        with open('{}/fc_cost_{}_team2_tr_results_run{}.pkl'.format(folder, reg, run), 'wb') as outp:
+            pickle.dump(team2.tr_results, outp, pickle.HIGHEST_PROTOCOL)
+        outp.close()
+
+        with open('{}/fc_cost_{}_team2_hyrs_results_run{}.pkl'.format(folder, reg, run), 'wb') as outp:
+            pickle.dump(team2.hyrs_results, outp, pickle.HIGHEST_PROTOCOL)
+        outp.close()
+
+        # team3
+
+        team3.full_hyrs_results.to_pickle('{}/fc_cost_{}_team3_hyrs_filtered_run{}.pkl'.format(folder, reg, run))
+        team3.full_tr_results.to_pickle('{}/fc_cost_{}_team3_tr_filtered_run{}.pkl'.format(folder, reg, run))
+
+        with open('{}/fc_cost_{}_team3_tr_results_run{}.pkl'.format(folder, reg, run), 'wb') as outp:
+            pickle.dump(team3.tr_results, outp, pickle.HIGHEST_PROTOCOL)
+        outp.close()
+
+        with open('{}/fc_cost_{}_team3_hyrs_results_run{}.pkl'.format(folder, reg, run), 'wb') as outp:
+            pickle.dump(team3.hyrs_results, outp, pickle.HIGHEST_PROTOCOL)
+        outp.close()
+
 
 print('finally done.')
 

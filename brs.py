@@ -15,7 +15,7 @@ from util_BOA import *
 
 
 class brs(object):
-    def __init__(self, binary_data, Y):
+    def __init__(self, binary_data, Y, asym_loss = [1,1]):
         self.df = binary_data
         self.Y = Y
         self.attributeLevelNum = defaultdict(int)
@@ -25,6 +25,7 @@ class brs(object):
             self.attributeLevelNum[attribute] += 1
             self.attributeNames.append(attribute)
         self.attributeNames = list(set(self.attributeNames))
+        self.asym_loss = asym_loss
 
     def getPatternSpace(self):
         print('Computing sizes for pattern space ...')
