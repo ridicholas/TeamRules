@@ -27,7 +27,7 @@ budget = 1
 sample_ratio = 1
 alpha = 0
 beta = 0
-iters = 500
+iters = Niteration
 coverage_reg = 0
 contradiction_reg = 0
 fA = 0.5
@@ -184,7 +184,7 @@ team3_rule_lists = pd.DataFrame(index=range(0, 20), columns=['TR_prules', 'TR_nr
 
 print('Starting Experiments....... \n')
 # Repeat Experiments
-for run in range(0, 20):
+for run in range(0, 15):
 
     team_info = pd.DataFrame(index=[1, 2, 3])
     coverage_regs = [0, 0.01, 0.05, 0.1, 0.2,

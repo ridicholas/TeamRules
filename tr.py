@@ -251,8 +251,8 @@ class tr(object):
         correctRejects += sum((self.Yb[ncovered & rejection] == 1) & (self.Y[ncovered & rejection] == 1))
         correctRejects += sum((self.Yb[pcovered & rejection] != 1) & (self.Y[pcovered & rejection] != 1))
 
-        Yhat[ncovered] = (Yhat[ncovered] * (1 - max(0,(1-self.asym_accept)*self.Paccept[ncovered]))) + ((max(0,(1-self.asym_accept)*self.Paccept[ncovered])) * 0)  # covers cases where model predicts negative
-        Yhat[pcovered] = (self.Yb.copy()[pcovered] * (1 - min(1,(1+self.asym_accept)*self.Paccept[pcovered]))) + ((min(1,(1+self.asym_accept)*self.Paccept[pcovered])) * 1)  # covers cases where model predicts positive
+        Yhat[ncovered] = (Yhat[ncovered] * (1 - np.maximum(np.zeros(sum(ncovered)),(1-self.asym_accept)*self.Paccept[ncovered]))) + ((np.maximum(np.zeros(sum(ncovered)),(1-self.asym_accept)*self.Paccept[ncovered])) * 0)  # covers cases where model predicts negative
+        Yhat[pcovered] = (self.Yb.copy()[pcovered] * (1 - np.minimum(np.ones(sum(pcovered)),(1+self.asym_accept)*self.Paccept[pcovered]))) + ((np.minimum(np.ones(sum(pcovered)),(1+self.asym_accept)*self.Paccept[pcovered])) * 1)  # covers cases where model predicts positive
         Yhat_soft = Yhat.copy()
         Yhat = Yhat.astype(float)
         Yhat[ncovered] = Yhat[ncovered].round()
@@ -277,7 +277,7 @@ class tr(object):
         rulePreds[pcovered] = 1
         asymCosts = self.Y.replace({0: self.asym_loss[1], 1: self.asym_loss[0]})
         asymADB = self.Y.replace({0: 1, 1: -1})
-        err = np.abs(self.Y - Yhat) * min(1,(max(0,(1+asymADB*self.asym_accept)*self.Paccept))) * asymCosts
+        err = np.abs(self.Y - Yhat) * np.minimum(np.ones(len(self.Paccept)),(np.maximum(np.zeros(len(self.Paccept)),(1+asymADB*self.asym_accept)*self.Paccept))) * asymCosts
         contras = np.where((rulePreds != self.Yb) & covered)[0]
         err[contras] += self.contradiction_reg
 
