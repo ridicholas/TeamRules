@@ -198,7 +198,7 @@ for run in range(0, 20):
     team_info.loc[1, 'aversion model test acc'] = metrics.accuracy_score(team1.data_model_dict['paccept_test'] > 0.5,
                                                                          team1.data_model_dict['test_accept'])
 
-    team2.train_mental_aversion_model('xgboost')
+    team2.train_mental_aversion_model('perfect')
     team2.train_mental_error_boundary_model()
     team_info.loc[2, 'human true accepts'] = (team2.data_model_dict['test_conf'] < team1_2_start_threshold).sum()
     team_info.loc[2, 'human true rejects'] = (team2.data_model_dict['test_conf'] >= team1_2_start_threshold).sum()

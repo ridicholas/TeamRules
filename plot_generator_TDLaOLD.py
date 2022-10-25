@@ -9,8 +9,13 @@ import math
 
 numRuns = 20 #adjust this depending on how many runs of results were produced
 
+
+data = pd.read_pickle("/Users/nicholaswolczynski/downloads/data.pkl")
+
+data.to_csv('/Users/nicholaswolczynski/downloads/data.csv')
+
 #read in results
-path = 'fico_contradiction_results/'
+path = 'fico_contradiction_results'
 data = path.split('_')[0]
 costs = [0, 0.01, 0.05, 0.1, 0.2,
                      0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1]

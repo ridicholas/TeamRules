@@ -164,6 +164,8 @@ class tr(object):
         nfeatures = len(np.unique([con.split('_')[0] for i in prs_curr for con in self.prules[i]])) + len(np.unique([con.split('_')[0] for i in nrs_curr for con in self.nrules[i]]))
         asymCosts = self.Y.replace({0: self.asym_loss[1], 1: self.asym_loss[0]})
         err_curr = (np.abs(self.Y - Yhat_soft_curr) * asymCosts).sum()
+        #err_curr = (np.abs(self.Y - Yhat_soft_curr)).sum()
+
         contras_curr = np.sum(self.Yb != rulePreds_curr)
         obj_curr = (err_curr)/self.N + (self.coverage_reg * (covered_curr.sum()/self.N)) + (self.contradiction_reg*(contras_curr/self.N))+ self.alpha*(int_flag *(len(prs_curr) + len(nrs_curr))+(1-int_flag)*nfeatures)+ self.beta * sum(~covered_curr)/self.N
         self.actions = []
@@ -251,8 +253,17 @@ class tr(object):
         correctRejects += sum((self.Yb[ncovered & rejection] == 1) & (self.Y[ncovered & rejection] == 1))
         correctRejects += sum((self.Yb[pcovered & rejection] != 1) & (self.Y[pcovered & rejection] != 1))
 
+        if ((Yhat[ncovered] * (1 - np.maximum(np.zeros(sum(ncovered)),(1-self.asym_accept)*self.Paccept[ncovered]))) + ((np.maximum(np.zeros(sum(ncovered)),(1-self.asym_accept)*self.Paccept[ncovered])) * 0) != (Yhat[ncovered] * (1 - self.Paccept[ncovered])) + ((self.Paccept[ncovered]) * 0)).sum() > 0:
+            print('stop')
+        
+        if ((self.Yb.copy()[pcovered] * (1 - np.minimum(np.ones(sum(pcovered)),(1+self.asym_accept)*self.Paccept[pcovered]))) + ((np.minimum(np.ones(sum(pcovered)),(1+self.asym_accept)*self.Paccept[pcovered])) * 1) != (self.Yb.copy()[pcovered] * (1 - self.Paccept[pcovered])) + ((self.Paccept[pcovered]) * 1)).sum():
+            print('stop')
+
+
         Yhat[ncovered] = (Yhat[ncovered] * (1 - np.maximum(np.zeros(sum(ncovered)),(1-self.asym_accept)*self.Paccept[ncovered]))) + ((np.maximum(np.zeros(sum(ncovered)),(1-self.asym_accept)*self.Paccept[ncovered])) * 0)  # covers cases where model predicts negative
         Yhat[pcovered] = (self.Yb.copy()[pcovered] * (1 - np.minimum(np.ones(sum(pcovered)),(1+self.asym_accept)*self.Paccept[pcovered]))) + ((np.minimum(np.ones(sum(pcovered)),(1+self.asym_accept)*self.Paccept[pcovered])) * 1)  # covers cases where model predicts positive
+        
+        
         Yhat_soft = Yhat.copy()
         Yhat = Yhat.astype(float)
         Yhat[ncovered] = Yhat[ncovered].round()
