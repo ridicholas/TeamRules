@@ -155,7 +155,7 @@ team3_rule_lists = pd.DataFrame(index=range(0, 20), columns=['TR_prules', 'TR_nr
 
 print('Starting Experiments....... \n')
 # Repeat Experiments
-for run in range(0, 10):
+for run in range(0, 15):
 
     team_info = pd.DataFrame(index=[1, 2, 3])
     coverage_regs = [0, 0.01, 0.05, 0.1, 0.2,
