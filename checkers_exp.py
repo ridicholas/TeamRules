@@ -404,7 +404,7 @@ for run in range(0, 10):
 
         team2.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                   alpha,
-                                  beta, iters, coverage_reg, contradiction_reg, fA, force_complete_coverage=False)
+                                  beta, iters, coverage_reg, contradiction_reg, fA, force_complete_coverage=True)
         team2.setup_hyrs()
         team2.train_hyrs()
         team2.filter_hyrs_results(mental=False, error=False)
