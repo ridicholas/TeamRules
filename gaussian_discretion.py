@@ -218,7 +218,7 @@ for disc_error in disc_errors:
 
         startData.to_pickle('{}/discError_{}_dataset_run{}.pkl'.format(folder, disc_error, run))
 
-        for i in range(1, 5):
+        for i in range(1, 4):
             team_info.loc[i, 'Human Test Acc'] = metrics.accuracy_score(teams[i - 1].data_model_dict['Ytest'],
                                                                         teams[i - 1].data_model_dict['Ybtest'])
 
