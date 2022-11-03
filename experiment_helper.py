@@ -24,6 +24,9 @@ from scipy.stats import norm
 
 xgb.set_config(verbosity=0)
 
+
+
+
 def make_gaussians(numExamples=5000, numFeats=20):
     startDict = {}
     Xtrain = {}
@@ -261,6 +264,47 @@ def make_Adult_data():
     startDict['Ytest'] = startDict['Ytest'].iloc[3000:]
 
     return startDict
+
+def make_med_data():
+    startDict = {}
+    # train
+    startDict['Xtrain'] = pd.read_csv('adult_train1.csv')
+    startDict['Ytrain'] = startDict['Xtrain']['Y']
+
+    startDict['Xtrain'] = pd.concat([startDict['Xtrain'],
+                                     pd.get_dummies(startDict['Xtrain'].age, prefix='age')], axis=1)
+    startDict['Xtrain'] = pd.concat([startDict['Xtrain'],
+                                     pd.get_dummies(startDict['Xtrain'].educationnum, prefix='educationnum')], axis=1)
+    startDict['Xtrain'] = pd.concat([startDict['Xtrain'],
+                                     pd.get_dummies(startDict['Xtrain'].hoursperweek, prefix='hoursperweek')], axis=1)
+    startDict['Xtrain'] = startDict['Xtrain'].drop(
+        columns=['age', 'fnlwgt', 'educationnum', 'capitalgain', 'capitalloss',
+                 'hoursperweek', 'Y', 'workclass_?'])
+    # test
+    startDict['Xtest'] = pd.read_csv('adult_test1.csv')
+    # startDict['Xtest'] = startDict['Xtest'].sample(frac=1)
+    startDict['Ytest'] = startDict['Xtest']['Y']
+
+    startDict['Xtest'] = pd.concat([startDict['Xtest'], pd.get_dummies(startDict['Xtest'].age, prefix='age')], axis=1)
+    startDict['Xtest'] = pd.concat(
+        [startDict['Xtest'], pd.get_dummies(startDict['Xtest'].educationnum, prefix='educationnum')], axis=1)
+    startDict['Xtest'] = pd.concat(
+        [startDict['Xtest'], pd.get_dummies(startDict['Xtest'].hoursperweek, prefix='hoursperweek')], axis=1)
+
+    startDict['Xtest'] = startDict['Xtest'].drop(columns=['age', 'fnlwgt', 'educationnum', 'capitalgain', 'capitalloss',
+                                                          'hoursperweek', 'Y', 'workclass_?'])
+
+    # test data did not have some values that training data had, just add these columns with all 0
+    for item in np.setdiff1d(startDict['Xtrain'].columns, startDict['Xtest'].columns):
+        startDict['Xtest'][item] = np.zeros(startDict['Xtest'].shape[0])
+
+    startDict['Xtest'] = startDict['Xtest'][startDict['Xtrain'].columns]
+
+    # split into val and test sets
+    startDict['Xval'] = startDict['Xtest'].iloc[0:3000, :]
+    startDict['Xtest'] = startDict['Xtest'].iloc[3000:, :]
+    startDict['Yval'] = startDict['Ytest'].iloc[0:3000]
+    startDict['Ytest'] = startDict['Ytest'].iloc[3000:]
 
 
 class HAI_team():

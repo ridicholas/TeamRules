@@ -7,10 +7,10 @@ from scipy.stats import ttest_ind
 from statistics import mean, stdev
 import math
 
-numRuns = 10 #adjust this depending on how many runs of results were produced
+numRuns = 15 #adjust this depending on how many runs of results were produced
 
 #read in results
-path = 'checkers_contradiction_results/'
+path = 'fico_contradiction_results/'
 data = path.split('_')[0]
 costs = [0, 0.01, 0.05, 0.1, 0.2,
                      0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1]
