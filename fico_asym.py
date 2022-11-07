@@ -75,13 +75,13 @@ train_conf2 = team2.data_model_dict['train_conf']
 val_conf2 = team2.data_model_dict['val_conf']
 test_conf2 = team2.data_model_dict['test_conf']
 
-train_conf2[np.where((team2.data_model_dict['Xtrain']['ExternalRiskEstimate65.0'] == 0) | (team2.data_model_dict['Xtrain']['NumSatisfactoryTrades24.0'] == 0))] = 0.6
-train_conf2[np.where((team2.data_model_dict['Xtrain']['ExternalRiskEstimate65.0'] == 1) & (team2.data_model_dict['Xtrain']['NumSatisfactoryTrades24.0'] == 1))] = 0.4
-val_conf2[np.where((team2.data_model_dict['Xval']['ExternalRiskEstimate65.0'] == 0) | (team2.data_model_dict['Xval']['NumSatisfactoryTrades24.0'] == 0))] = 0.6
-val_conf2[np.where((team2.data_model_dict['Xval']['ExternalRiskEstimate65.0'] == 1) & (team2.data_model_dict['Xval']['NumSatisfactoryTrades24.0'] == 1))] = 0.4
+train_conf2[np.where((team2.data_model_dict['Xtrain']['ExternalRiskEstimate65.0'] == 0) | (team2.data_model_dict['Xtrain']['NumSatisfactoryTrades24.0'] == 0))] = np.random.uniform(0.5,1,len(train_conf2[np.where((team2.data_model_dict['Xtrain']['ExternalRiskEstimate65.0'] == 0) | (team2.data_model_dict['Xtrain']['NumSatisfactoryTrades24.0'] == 0))]))
+train_conf2[np.where((team2.data_model_dict['Xtrain']['ExternalRiskEstimate65.0'] == 1) & (team2.data_model_dict['Xtrain']['NumSatisfactoryTrades24.0'] == 1))] = np.random.uniform(0.0,0.5,len(train_conf2[np.where((team2.data_model_dict['Xtrain']['ExternalRiskEstimate65.0'] == 1) & (team2.data_model_dict['Xtrain']['NumSatisfactoryTrades24.0'] == 1))]))
+val_conf2[np.where((team2.data_model_dict['Xval']['ExternalRiskEstimate65.0'] == 0) | (team2.data_model_dict['Xval']['NumSatisfactoryTrades24.0'] == 0))] = np.random.uniform(0.5,1, len(val_conf2[np.where((team2.data_model_dict['Xval']['ExternalRiskEstimate65.0'] == 0) | (team2.data_model_dict['Xval']['NumSatisfactoryTrades24.0'] == 0))]))
+val_conf2[np.where((team2.data_model_dict['Xval']['ExternalRiskEstimate65.0'] == 1) & (team2.data_model_dict['Xval']['NumSatisfactoryTrades24.0'] == 1))] = np.random.uniform(0,0.5, len(val_conf2[np.where((team2.data_model_dict['Xval']['ExternalRiskEstimate65.0'] == 1) & (team2.data_model_dict['Xval']['NumSatisfactoryTrades24.0'] == 1))]))
 
-test_conf2[np.where((team2.data_model_dict['Xtest']['ExternalRiskEstimate65.0'] == 0) | (team2.data_model_dict['Xtest']['NumSatisfactoryTrades24.0'] == 0))] = 0.6
-test_conf2[np.where((team2.data_model_dict['Xtest']['ExternalRiskEstimate65.0'] == 1) & (team2.data_model_dict['Xtest']['NumSatisfactoryTrades24.0'] == 1))] = 0.4
+test_conf2[np.where((team2.data_model_dict['Xtest']['ExternalRiskEstimate65.0'] == 0) | (team2.data_model_dict['Xtest']['NumSatisfactoryTrades24.0'] == 0))] = np.random.uniform(0.5,1, len(test_conf2[np.where((team2.data_model_dict['Xtest']['ExternalRiskEstimate65.0'] == 0) | (team2.data_model_dict['Xtest']['NumSatisfactoryTrades24.0'] == 0))]))
+test_conf2[np.where((team2.data_model_dict['Xtest']['ExternalRiskEstimate65.0'] == 1) & (team2.data_model_dict['Xtest']['NumSatisfactoryTrades24.0'] == 1))] = np.random.uniform(0,0.5, len(test_conf2[np.where((team2.data_model_dict['Xtest']['ExternalRiskEstimate65.0'] == 1) & (team2.data_model_dict['Xtest']['NumSatisfactoryTrades24.0'] == 1))]))
 
 
 train_conf2[np.where(team2.data_model_dict['Ybtrain'] == 0)] = train_conf2[np.where(team2.data_model_dict['Ybtrain'] == 0)]*(1-asym_accept) 
@@ -95,6 +95,37 @@ test_conf2[np.where(team2.data_model_dict['Ybtest'] == 1)] = test_conf2[np.where
 
 
 team2.set_custom_confidence(train_conf2, val_conf2, test_conf2, 'deterministic')
+
+#asym behavior for team 1 and 2
+
+train_conf1 = team1.data_model_dict['train_conf']
+val_conf1 = team1.data_model_dict['val_conf']
+test_conf1 = team1.data_model_dict['test_conf']
+
+train_conf1[np.where(team1.data_model_dict['Ybtrain'] == 0)] = train_conf1[np.where(team1.data_model_dict['Ybtrain'] == 0)]*(1-asym_accept) 
+train_conf1[np.where(team1.data_model_dict['Ybtrain'] == 1)] = train_conf1[np.where(team1.data_model_dict['Ybtrain'] == 1)]*(1+asym_accept) 
+
+val_conf1[np.where(team1.data_model_dict['Ybval'] == 0)] = val_conf1[np.where(team1.data_model_dict['Ybval'] == 0)]*(1-asym_accept) 
+val_conf1[np.where(team1.data_model_dict['Ybval'] == 1)] = val_conf1[np.where(team1.data_model_dict['Ybval'] == 1)]*(1+asym_accept) 
+
+test_conf1[np.where(team1.data_model_dict['Ybtest'] == 0)] = test_conf1[np.where(team1.data_model_dict['Ybtest'] == 0)]*(1-asym_accept) 
+test_conf1[np.where(team1.data_model_dict['Ybtest'] == 1)] = test_conf1[np.where(team1.data_model_dict['Ybtest'] == 1)]*(1+asym_accept) 
+
+train_conf3 = team3.data_model_dict['train_conf']
+val_conf3 = team3.data_model_dict['val_conf']
+test_conf3 = team3.data_model_dict['test_conf']
+
+train_conf3[np.where(team3.data_model_dict['Ybtrain'] == 0)] = train_conf3[np.where(team3.data_model_dict['Ybtrain'] == 0)]*(1-asym_accept) 
+train_conf3[np.where(team3.data_model_dict['Ybtrain'] == 1)] = train_conf3[np.where(team3.data_model_dict['Ybtrain'] == 1)]*(1+asym_accept) 
+
+val_conf3[np.where(team3.data_model_dict['Ybval'] == 0)] = val_conf3[np.where(team3.data_model_dict['Ybval'] == 0)]*(1-asym_accept) 
+val_conf3[np.where(team3.data_model_dict['Ybval'] == 1)] = val_conf3[np.where(team3.data_model_dict['Ybval'] == 1)]*(1+asym_accept) 
+
+test_conf3[np.where(team3.data_model_dict['Ybtest'] == 0)] = test_conf3[np.where(team3.data_model_dict['Ybtest'] == 0)]*(1-asym_accept) 
+test_conf3[np.where(team3.data_model_dict['Ybtest'] == 1)] = test_conf3[np.where(team3.data_model_dict['Ybtest'] == 1)]*(1+asym_accept) 
+
+team1.set_custom_confidence(train_conf1, val_conf1, test_conf1, 'deterministic')
+team3.set_custom_confidence(train_conf3, val_conf3, test_conf3, 'deterministic')
 
 teams = [team1, team2, team3]
 
@@ -167,7 +198,7 @@ team3_rule_lists = pd.DataFrame(index=range(0, 20), columns=['TR_prules', 'TR_nr
 
 print('Starting Experiments....... \n')
 # Repeat Experiments
-for run in range(0, 15):
+for run in range(0, 10):
 
     team_info = pd.DataFrame(index=[1, 2, 3])
     coverage_regs = [0, 0.01, 0.05, 0.1, 0.2,
@@ -246,7 +277,7 @@ for run in range(0, 15):
         
         print('training team1 hyrs model...')
         # train hyrs baseline
-        '''
+        
         team1.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                   alpha,
                                   beta, iters, coverage_reg, contradiction_reg, fA)
@@ -260,7 +291,7 @@ for run in range(0, 15):
         team1.train_tr()
         team1.filter_tr_results(mental=False, error=False)
 
-        '''
+        
         print('training team2 hyrs model...')
         team2.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                   alpha,
@@ -275,7 +306,7 @@ for run in range(0, 15):
         team2.filter_tr_results(mental=False, error=False)
         
         
-        '''
+        
         print('training team3 hyrs model...')
         team3.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                   alpha,
@@ -308,13 +339,13 @@ for run in range(0, 15):
         team3_rule_lists.loc[run, 'TR_nrules'] = team3.tr.nrs_min
         team3_rule_lists.loc[run, 'HyRS_prules'] = team3.hyrs.prs_min
         team3_rule_lists.loc[run, 'HyRS_nrules'] = team3.hyrs.nrs_min
-        '''
+       
         # write results
         print('writing results...')
         
         # team1
         
-        '''
+        
         team1.full_hyrs_results.to_pickle('{}/cost_{}_team1_hyrs_filtered_run{}.pkl'.format(folder, reg, run))
         team1.full_tr_results.to_pickle('{}/cost_{}_team1_tr_filtered_run{}.pkl'.format(folder, reg, run))
 
@@ -326,7 +357,7 @@ for run in range(0, 15):
             pickle.dump(team1.hyrs_results, outp, pickle.HIGHEST_PROTOCOL)
         outp.close()
 
-        '''
+        
         # team2
         team2.full_hyrs_results.to_pickle('{}/cost_{}_team2_hyrs_filtered_run{}.pkl'.format(folder, reg, run))
         team2.full_tr_results.to_pickle('{}/cost_{}_team2_tr_filtered_run{}.pkl'.format(folder, reg, run))
@@ -338,7 +369,7 @@ for run in range(0, 15):
         with open('{}/cost_{}_team2_hyrs_results_run{}.pkl'.format(folder, reg, run), 'wb') as outp:
             pickle.dump(team2.hyrs_results, outp, pickle.HIGHEST_PROTOCOL)
         outp.close()
-        '''
+        
         
         # team3
 
@@ -353,7 +384,7 @@ for run in range(0, 15):
             pickle.dump(team3.hyrs_results, outp, pickle.HIGHEST_PROTOCOL)
         outp.close()
         
-       '''
+       
         
         
         

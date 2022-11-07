@@ -31,6 +31,7 @@ iters = 500
 coverage_reg = 0
 rejection_reg = 0
 fA=0.5
+asym_accept=0.2
 
 
 #make teams
@@ -73,13 +74,23 @@ train_conf2 = team2.data_model_dict['train_conf']
 val_conf2 = team2.data_model_dict['val_conf']
 test_conf2 = team2.data_model_dict['test_conf']
 
-train_conf2[np.where((team2.data_model_dict['Xtrain']['ExternalRiskEstimate65.0'] == 0) | (team2.data_model_dict['Xtrain']['NumSatisfactoryTrades24.0'] == 0))] = 0.8
-train_conf2[np.where((team2.data_model_dict['Xtrain']['ExternalRiskEstimate65.0'] == 1) & (team2.data_model_dict['Xtrain']['NumSatisfactoryTrades24.0'] == 1))] = 0.2
-val_conf2[np.where((team2.data_model_dict['Xval']['ExternalRiskEstimate65.0'] == 0) | (team2.data_model_dict['Xval']['NumSatisfactoryTrades24.0'] == 0))] = 0.8
-val_conf2[np.where((team2.data_model_dict['Xval']['ExternalRiskEstimate65.0'] == 1) & (team2.data_model_dict['Xval']['NumSatisfactoryTrades24.0'] == 1))] = 0.2
+train_conf2[np.where((team2.data_model_dict['Xtrain']['ExternalRiskEstimate65.0'] == 0) | (team2.data_model_dict['Xtrain']['NumSatisfactoryTrades24.0'] == 0))] = np.random.uniform(0.5,1,len(train_conf2[np.where((team2.data_model_dict['Xtrain']['ExternalRiskEstimate65.0'] == 0) | (team2.data_model_dict['Xtrain']['NumSatisfactoryTrades24.0'] == 0))]))
+train_conf2[np.where((team2.data_model_dict['Xtrain']['ExternalRiskEstimate65.0'] == 1) & (team2.data_model_dict['Xtrain']['NumSatisfactoryTrades24.0'] == 1))] = np.random.uniform(0.0,0.5,len(train_conf2[np.where((team2.data_model_dict['Xtrain']['ExternalRiskEstimate65.0'] == 1) & (team2.data_model_dict['Xtrain']['NumSatisfactoryTrades24.0'] == 1))]))
+val_conf2[np.where((team2.data_model_dict['Xval']['ExternalRiskEstimate65.0'] == 0) | (team2.data_model_dict['Xval']['NumSatisfactoryTrades24.0'] == 0))] = np.random.uniform(0.5,1, len(val_conf2[np.where((team2.data_model_dict['Xval']['ExternalRiskEstimate65.0'] == 0) | (team2.data_model_dict['Xval']['NumSatisfactoryTrades24.0'] == 0))]))
+val_conf2[np.where((team2.data_model_dict['Xval']['ExternalRiskEstimate65.0'] == 1) & (team2.data_model_dict['Xval']['NumSatisfactoryTrades24.0'] == 1))] = np.random.uniform(0,0.5, len(val_conf2[np.where((team2.data_model_dict['Xval']['ExternalRiskEstimate65.0'] == 1) & (team2.data_model_dict['Xval']['NumSatisfactoryTrades24.0'] == 1))]))
 
-test_conf2[np.where((team2.data_model_dict['Xtest']['ExternalRiskEstimate65.0'] == 0) | (team2.data_model_dict['Xtest']['NumSatisfactoryTrades24.0'] == 0))] = 0.8
-test_conf2[np.where((team2.data_model_dict['Xtest']['ExternalRiskEstimate65.0'] == 1) & (team2.data_model_dict['Xtest']['NumSatisfactoryTrades24.0'] == 1))] = 0.2
+test_conf2[np.where((team2.data_model_dict['Xtest']['ExternalRiskEstimate65.0'] == 0) | (team2.data_model_dict['Xtest']['NumSatisfactoryTrades24.0'] == 0))] = np.random.uniform(0.5,1, len(test_conf2[np.where((team2.data_model_dict['Xtest']['ExternalRiskEstimate65.0'] == 0) | (team2.data_model_dict['Xtest']['NumSatisfactoryTrades24.0'] == 0))]))
+test_conf2[np.where((team2.data_model_dict['Xtest']['ExternalRiskEstimate65.0'] == 1) & (team2.data_model_dict['Xtest']['NumSatisfactoryTrades24.0'] == 1))] = np.random.uniform(0,0.5, len(test_conf2[np.where((team2.data_model_dict['Xtest']['ExternalRiskEstimate65.0'] == 1) & (team2.data_model_dict['Xtest']['NumSatisfactoryTrades24.0'] == 1))]))
+
+
+train_conf2[np.where(team2.data_model_dict['Ybtrain'] == 0)] = train_conf2[np.where(team2.data_model_dict['Ybtrain'] == 0)]*(1-asym_accept) 
+train_conf2[np.where(team2.data_model_dict['Ybtrain'] == 1)] = train_conf2[np.where(team2.data_model_dict['Ybtrain'] == 1)]*(1+asym_accept) 
+
+val_conf2[np.where(team2.data_model_dict['Ybval'] == 0)] = val_conf2[np.where(team2.data_model_dict['Ybval'] == 0)]*(1-asym_accept) 
+val_conf2[np.where(team2.data_model_dict['Ybval'] == 1)] = val_conf2[np.where(team2.data_model_dict['Ybval'] == 1)]*(1+asym_accept) 
+
+test_conf2[np.where(team2.data_model_dict['Ybtest'] == 0)] = test_conf2[np.where(team2.data_model_dict['Ybtest'] == 0)]*(1-asym_accept) 
+test_conf2[np.where(team2.data_model_dict['Ybtest'] == 1)] = test_conf2[np.where(team2.data_model_dict['Ybtest'] == 1)]*(1+asym_accept) 
 
 
 team2.set_custom_confidence(train_conf2, val_conf2, test_conf2, 'deterministic')
@@ -155,11 +166,11 @@ team3_rule_lists = pd.DataFrame(index=range(0, 20), columns=['TR_prules', 'TR_nr
 
 print('Starting Experiments....... \n')
 
-disc_errors = [0, 0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+disc_errors = [0.01, 0.05, 0.25, 0.5, 0.8, 1]
 # Repeat Experiments
 for disc_error in disc_errors:
 
-    for run in range(0, 15):
+    for run in range(0, 10):
 
         team_info = pd.DataFrame(index=[1, 2, 3])
 
@@ -188,7 +199,7 @@ for disc_error in disc_errors:
                                                                         teams[i - 1].data_model_dict['Ybtest'])
 
         # train aversion and error boundary models
-        team1.train_mental_aversion_model('perfect', probWrong=disc_error, noise=0.1)
+        team1.train_mental_aversion_model('xgboost', probWrong=0, noise=0, data_to_use=disc_error)
         team1.train_mental_error_boundary_model()
         team_info.loc[1, 'human true accepts'] = (team1.data_model_dict['test_conf'] < team1_2_start_threshold).sum()
         team_info.loc[1, 'human true rejects'] = (team1.data_model_dict['test_conf'] >= team1_2_start_threshold).sum()
@@ -202,7 +213,7 @@ for disc_error in disc_errors:
             team1.data_model_dict['paccept_test'] > 0.5,
             team1.data_model_dict['test_accept'])
 
-        team2.train_mental_aversion_model('perfect', probWrong=disc_error, noise=0.1)
+        team2.train_mental_aversion_model('logistic', probWrong=0, noise=0, data_to_use=disc_error)
         team2.train_mental_error_boundary_model()
         team_info.loc[2, 'human true accepts'] = (team2.data_model_dict['test_conf'] < team1_2_start_threshold).sum()
         team_info.loc[2, 'human true rejects'] = (team2.data_model_dict['test_conf'] >= team1_2_start_threshold).sum()
@@ -216,7 +227,7 @@ for disc_error in disc_errors:
             team2.data_model_dict['paccept_test'] > 0.5,
             team2.data_model_dict['test_accept'])
 
-        team3.train_mental_aversion_model('perfect', probWrong=disc_error, noise=0.1)
+        team3.train_mental_aversion_model('xgboost', probWrong=0, noise=0, data_to_use=disc_error)
         team3.train_mental_error_boundary_model()
         team_info.loc[3, 'human true accepts'] = (team3.data_model_dict['test_conf'] < team3_4_start_threshold).sum()
         team_info.loc[3, 'human true rejects'] = (team3.data_model_dict['test_conf'] >= team3_4_start_threshold).sum()
@@ -231,7 +242,7 @@ for disc_error in disc_errors:
             team3.data_model_dict['test_accept'])
 
 
-        team_info.to_pickle('{}/team_info_err{}_run{}.pkl'.format(folder, disc_error, run))
+        team_info.to_pickle('{}/team_info_dataused{}_run{}.pkl'.format(folder, disc_error, run))
 
 
 

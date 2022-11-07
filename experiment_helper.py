@@ -753,15 +753,16 @@ class HAI_team():
 
         self.post_human_dict = deepcopy(self.data_model_dict)
 
-    def train_mental_aversion_model(self, type='xgboost', probWrong=0, noise=0):
+    def train_mental_aversion_model(self, type='xgboost', probWrong=0, noise=0, data_to_use=1):
         '''Needs to have human values before can be run'''
-
+        numItems = int(len(self.data_model_dict['train_accept'])*data_to_use)
         if type == 'xgboost':
             self.mental_aversion = xgb.XGBClassifier()
-            self.mental_aversion.fit(self.data_model_dict['Xtrain'], self.data_model_dict['train_accept'])
+            
+            self.mental_aversion.fit(self.data_model_dict['Xtrain'].iloc[0:numItems, :], self.data_model_dict['train_accept'][0:numItems])
         elif type == 'logistic':
-            self.mental_aversion = LogisticRegression(solver='sag').fit(self.data_model_dict['Xtrain'],
-                                                                        self.data_model_dict['train_accept'])
+            self.mental_aversion = LogisticRegression(solver='sag').fit(self.data_model_dict['Xtrain'].iloc[0:numItems, :],
+                                                                        self.data_model_dict['train_accept'][0:numItems])
         if type != 'perfect':
             self.data_model_dict['paccept_train'] = self.mental_aversion.predict_proba(self.data_model_dict['Xtrain'])[
                                                     :, 1]
