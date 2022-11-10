@@ -175,7 +175,7 @@ for disc_error in disc_errors:
         team_info = pd.DataFrame(index=[1, 2, 3])
 
         coverage_reg = 0
-        contradiction_reg = 0
+        contradiction_reg = 0.3
         fA = 0.5
         # split training and test randomly
         team1.makeAdditionalTestSplit(testPercent=0.2, replaceExisting=True, random_state=run,
