@@ -44,6 +44,7 @@ Plots/
 #data
 *.csv
 *.arff
+*.pkl
 
 # Distribution / packaging
 .Python

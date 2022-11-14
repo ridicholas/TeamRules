@@ -10,10 +10,10 @@ import math
 numRuns = 10 #adjust this depending on how many runs of results were produced
 
 #read in results
-path = 'fico_discretion_results/'
+path = 'fico_discretion_results_0.3cost/'
 data = path.split('_')[0]
 discErrors = [0.01, 0.05, 0.25, 0.5, 0.8, 1]
-cost = 0
+cost = 0.3
 
 
 teams = ['team1', 'team2', 'team3']
@@ -197,7 +197,7 @@ for whichTeam in range(len(settings)):
     plt.tick_params(labelrotation=45, labelsize=10)
     #row.set_title('{} Setting'.format(setting), fontsize=15)
     plt.legend(prop={'size': 6})
-    plt.savefig('Plots/discretion_{}_{}.png'.format(data,setting), bbox_inches='tight')
+    plt.savefig('Plots/discretion_{}_{}_cost{}.png'.format(data,setting, cost), bbox_inches='tight')
     
     
     

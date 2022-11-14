@@ -280,7 +280,7 @@ for run in range(0, 10):
         
         team1.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                   alpha,
-                                  beta, iters, coverage_reg, contradiction_reg, fA)
+                                  beta, iters, coverage_reg, contradiction_reg, fA, asym_loss = asym_loss)
         team1.setup_hyrs()
         team1.train_hyrs()
         team1.filter_hyrs_results(mental=False, error=False)
@@ -295,7 +295,7 @@ for run in range(0, 10):
         print('training team2 hyrs model...')
         team2.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                   alpha,
-                                  beta, iters, coverage_reg, contradiction_reg, fA, force_complete_coverage=False, asym_loss = asym_loss, asym_accept=asym_accept)
+                                  beta, iters, coverage_reg, contradiction_reg, fA, force_complete_coverage=False, asym_loss = asym_loss, asym_accept=0)
         team2.setup_hyrs()
         team2.train_hyrs()
         team2.filter_hyrs_results(mental=False, error=False)
@@ -310,7 +310,7 @@ for run in range(0, 10):
         print('training team3 hyrs model...')
         team3.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                   alpha,
-                                  beta, iters, coverage_reg, contradiction_reg, fA)
+                                  beta, iters, coverage_reg, contradiction_reg, fA, asym_loss = asym_loss)
         team3.setup_hyrs()
         team3.train_hyrs()
         team3.filter_hyrs_results(mental=False, error=False)
