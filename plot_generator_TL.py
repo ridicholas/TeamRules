@@ -7,7 +7,7 @@ from scipy.stats import ttest_ind
 from statistics import mean, stdev
 import math
 
-numRuns = 5 #adjust this depending on how many runs of results were produced
+numRuns = 4 #adjust this depending on how many runs of results were produced
 
 #read in results
 path = 'fico_asym_15_1_results/'

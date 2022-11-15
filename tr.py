@@ -23,18 +23,15 @@ def intersection(lst1, lst2):
     return lst3
 
 class tr(object):
-    def __init__(self, binary_data,Y,Yb, Paccept=None, Paccept_asym=None):
+    def __init__(self, binary_data,Y,Yb, Paccept=None):
         self.df = binary_data  
         self.Y = pd.Series(Y)
         self.N = float(len(Y))
         self.Yb = pd.Series(Yb)
-        if Paccept_asym!=None:
-            self.Paccept_
-        else:
-            self.Paccept = pd.Series(Paccept)
+        self.Paccept = pd.Series(Paccept)
 
     
-    def set_parameters(self, alpha = 0, beta = 0, coverage_reg = 0, contradiction_reg = 0, fA=0.5, rejectType = 'all', force_complete_coverage=False, asym_loss = [1,1], asym_accept=0):
+    def set_parameters(self, alpha = 0, beta = 0, coverage_reg = 0, contradiction_reg = 0, fA=0.5, rejectType = 'all', force_complete_coverage=False, asym_loss = [1,1]):
         """
         asym_loss = [loss from False Negatives (ground truth positive), loss from False Positives (ground truth negative)]
         """
@@ -47,7 +44,7 @@ class tr(object):
         self.rejectType = rejectType
         self.force_complete_coverage = force_complete_coverage
         self.asym_loss = asym_loss
-        self.asym_accept = asym_accept
+
 
     def generate_rulespace(self,supp,maxlen,N, need_negcode = False,njobs = 5, method = 'fpgrowth',criteria = 'IG',add_rules = []):
         if method == 'fpgrowth':
@@ -254,10 +251,14 @@ class tr(object):
         correctRejects += sum((self.Yb[pcovered & rejection] != 1) & (self.Y[pcovered & rejection] != 1))
 
         
+       
 
+        #Yhat[ncovered] = (Yhat[ncovered] * (1 - np.maximum(np.zeros(sum(ncovered)),(1-self.asym_accept)*self.Paccept[ncovered]))) + ((np.maximum(np.zeros(sum(ncovered)),(1-self.asym_accept)*self.Paccept[ncovered])) * 0)  # covers cases where model predicts negative
+        #Yhat[pcovered] = (self.Yb.copy()[pcovered] * (1 - np.minimum(np.ones(sum(pcovered)),(1+self.asym_accept)*self.Paccept[pcovered]))) + ((np.minimum(np.ones(sum(pcovered)),(1+self.asym_accept)*self.Paccept[pcovered])) * 1)  # covers cases where model predicts positive
+        
+        Yhat[ncovered] = (Yhat[ncovered] * (1 - self.Paccept[ncovered])) + ((self.Paccept[ncovered]) * 0)  # covers cases where model predicts negative
+        Yhat[pcovered] = (self.Yb.copy()[pcovered] * (1 - self.Paccept[pcovered])) + ((self.Paccept[pcovered]) * 1)  # covers cases where model predicts positive
 
-        Yhat[ncovered] = (Yhat[ncovered] * (1 - np.maximum(np.zeros(sum(ncovered)),(1-self.asym_accept)*self.Paccept[ncovered]))) + ((np.maximum(np.zeros(sum(ncovered)),(1-self.asym_accept)*self.Paccept[ncovered])) * 0)  # covers cases where model predicts negative
-        Yhat[pcovered] = (self.Yb.copy()[pcovered] * (1 - np.minimum(np.ones(sum(pcovered)),(1+self.asym_accept)*self.Paccept[pcovered]))) + ((np.minimum(np.ones(sum(pcovered)),(1+self.asym_accept)*self.Paccept[pcovered])) * 1)  # covers cases where model predicts positive
         
         
         Yhat_soft = Yhat.copy()
@@ -283,8 +284,7 @@ class tr(object):
         rulePreds[ncovered] = 0
         rulePreds[pcovered] = 1
         asymCosts = self.Y.replace({0: self.asym_loss[1], 1: self.asym_loss[0]})
-        asymADB = self.Y.replace({0: 1, 1: -1})
-        err = np.abs(self.Y - Yhat) * np.minimum(np.ones(len(self.Paccept)),(np.maximum(np.zeros(len(self.Paccept)),(1+asymADB*self.asym_accept)*self.Paccept))) * asymCosts
+        err = np.abs(self.Y - Yhat) * self.Paccept * asymCosts
         contras = np.where((rulePreds != self.Yb) & covered)[0]
         err[contras] += self.contradiction_reg
 

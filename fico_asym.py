@@ -31,8 +31,8 @@ iters = 500
 coverage_reg = 0
 rejection_reg = 0
 fA=0.5
-asym_loss = [2,1]
-asym_accept = 1
+asym_loss = [1.5,1]
+asym_accept = 0.5
 
 
 #make teams
@@ -64,7 +64,7 @@ team3.make_human_model(type='logistic',
                                     'badProb': 0.5,
                                     'badRange': [0.5, 1],
                                     'Rational': False,
-                                    'adder': 0.5})
+                                    'adder': 0.2})
 
 
 
@@ -187,7 +187,7 @@ team_info.loc[3, 'human reject region train acc'] = metrics.accuracy_score(team3
 
 print(team_info)
 
-folder = 'fico_asym_2_1_results'
+folder = 'fico_asym_15_1_results'
 team_info.to_pickle('{}/start_info.pkl'.format(folder))
 
 team1.data_model_dict['Xtrain'].to_pickle('{}/startDataSet.pkl'.format(folder))
@@ -280,7 +280,7 @@ for run in range(0, 10):
         
         team1.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                   alpha,
-                                  beta, iters, coverage_reg, contradiction_reg, fA, asym_loss = asym_loss, asym_accept=0)
+                                  beta, iters, coverage_reg, contradiction_reg, fA, asym_loss = asym_loss)
         team1.setup_hyrs()
         team1.train_hyrs()
         team1.filter_hyrs_results(mental=False, error=False)
@@ -295,7 +295,7 @@ for run in range(0, 10):
         print('training team2 hyrs model...')
         team2.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                   alpha,
-                                  beta, iters, coverage_reg, contradiction_reg, fA, force_complete_coverage=False, asym_loss = asym_loss, asym_accept=0)
+                                  beta, iters, coverage_reg, contradiction_reg, fA, force_complete_coverage=False, asym_loss = asym_loss)
         team2.setup_hyrs()
         team2.train_hyrs()
         team2.filter_hyrs_results(mental=False, error=False)
@@ -306,11 +306,10 @@ for run in range(0, 10):
         team2.filter_tr_results(mental=False, error=False)
         
         
-        
         print('training team3 hyrs model...')
         team3.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                   alpha,
-                                  beta, iters, coverage_reg, contradiction_reg, fA, asym_loss = asym_loss, asym_accept=0)
+                                  beta, iters, coverage_reg, contradiction_reg, fA, asym_loss = asym_loss)
         team3.setup_hyrs()
         team3.train_hyrs()
         team3.filter_hyrs_results(mental=False, error=False)
