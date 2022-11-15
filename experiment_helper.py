@@ -323,11 +323,10 @@ class HAI_team():
         self.fA = None
         self.force_complete_coverage = False
         self.asym_loss = [1,1]
-        self.asym_accept = 0
 
     def set_training_params(self, Niteration, Nchain, Nlevel, Nrules,
                             supp, maxlen, protected, budget, sample_ratio, alpha=0, beta=0, iters=1000, coverage_reg=0,
-                            contradiction_reg=0, fA=0.5, rejectType='all', force_complete_coverage=False, asym_loss = [1,1], asym_accept = 0):
+                            contradiction_reg=0, fA=0.5, rejectType='all', force_complete_coverage=False, asym_loss = [1,1]):
         self.Niteration = Niteration
         self.Nchain = Nchain
         self.Nlevel = Nlevel
@@ -346,7 +345,6 @@ class HAI_team():
         self.rejectType = rejectType
         self.force_complete_coverage = force_complete_coverage
         self.asym_loss = asym_loss
-        self.asym_accept = asym_accept
 
     def make_human_model(self, type='logistic', acceptThreshold=0.5, numExamplesToUse=100, numColsToUse=0,
                          biasFactor=0, partial_train_percent = 1, alterations=None, drop=[]):
@@ -1051,7 +1049,7 @@ class HAI_team():
                     self.data_model_dict['Ybtrain'],
                     self.data_model_dict['paccept_train'])
 
-        model.set_parameters(self.alpha, self.beta, self.coverage_reg, self.contradiction_reg, self.fA, self.rejectType, self.force_complete_coverage, self.asym_loss, self.asym_accept)
+        model.set_parameters(self.alpha, self.beta, self.coverage_reg, self.contradiction_reg, self.fA, self.rejectType, self.force_complete_coverage, self.asym_loss)
 
         model.generate_rulespace(self.supp, self.maxlen, self.Nrules, need_negcode=True, method='randomforest',
                                  criteria='precision')
