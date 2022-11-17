@@ -31,8 +31,8 @@ iters = 500
 coverage_reg = 0
 rejection_reg = 0
 fA=0.5
-asym_loss = [1.5,1]
-asym_accept = 0.5
+asym_loss = [2,1]
+asym_accept = 1
 
 
 #make teams
@@ -203,7 +203,7 @@ for team in teams:
     i+=1
 print(team_info)
 
-folder = 'fico_asym_15_1_results'
+folder = 'fico_asym_2_1_results'
 team_info.to_pickle('{}/start_info.pkl'.format(folder))
 
 team1.data_model_dict['Xtrain'].to_pickle('{}/startDataSet.pkl'.format(folder))
