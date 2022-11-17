@@ -7,11 +7,11 @@ from scipy.stats import ttest_ind
 from statistics import mean, stdev
 import math
 
-numRuns = 4 #adjust this depending on how many runs of results were produced
+numRuns = 5 #adjust this depending on how many runs of results were produced
 
 #read in results
-path = 'fico_asym_15_1_results/'
-asym_loss = [1.5,1]
+path = 'fico_asym_2_1_results/'
+asym_loss = [2,1]
 data = path.split('_')[0]
 costs = [0, 0.01, 0.05, 0.1, 0.2,
                      0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1]
@@ -249,4 +249,4 @@ for whichTeam in range(len(settings)):
             
         
         i+=1
-    fig.savefig('Plots/asym_15_1_{}_{}.png'.format(data,setting), bbox_inches='tight')
+    fig.savefig('Plots/asym_2_1_{}_{}.png'.format(data,setting), bbox_inches='tight')

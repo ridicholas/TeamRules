@@ -131,7 +131,7 @@ class tr(object):
         supp = np.array(np.sum(Z,axis=0).tolist()[0])[ind]
         return rules, RMatrix, supp, p1[ind], FP[ind]
 
-
+    
     def train(self, Niteration = 500, print_message=False, interpretability = 'size', T0 = 0.01):
         self.maps = []
         fA = self.fA
@@ -170,6 +170,9 @@ class tr(object):
             if iter >0.75 * Niteration:
                 prs_curr,nrs_curr,pcovered_curr,ncovered_curr,overlap_curr,covered_curr, Yhat_curr = prs_opt[:],nrs_opt[:],pcovered_opt[:],ncovered_opt[:],overlap_opt[:],covered_opt[:], Yhat_opt[:]
             #print("currp: {}, currn: {}, curr_err: {}, curr_covered: {}, curr_contras: {}, curr_obj: {}".format(prs_curr, nrs_curr, err_curr, covered_curr.sum(), contras_curr, err_curr + (contras_curr * self.contradiction_reg)))
+            
+            
+            
             prs_new,nrs_new , pcovered_new,ncovered_new,overlap_new,covered_new= self.propose_rs(prs_curr,nrs_curr,pcovered_curr,ncovered_curr,overlap_curr,covered_curr, Yhat_curr, Yhat_soft_curr, contras_curr, obj_min,print_message)
 
 
@@ -288,10 +291,12 @@ class tr(object):
         contras = np.where((rulePreds != self.Yb) & covered)[0]
         err[contras] += self.contradiction_reg
 
-        if random() <= 0.5: #randomly allow for top 5% of errors or take max error only
-            max_errs = np.where((err >= np.quantile(err, 0.95)))[0]
-        else:
-            max_errs = np.where((err >= max(err)))[0]
+        #if random() <= 0.5: #randomly allow for top 5% of errors or take max error only
+        #    max_errs = np.where((err >= np.quantile(err, 0.95)))[0]
+        #elif random() <= 0.5:
+        #    max_errs = np.where((err >= max(err)))[0]
+        #else: 
+        max_errs = np.where((err>= 0))[0]
 
 
         overlapped_ind = np.where(overlapped)[0]
@@ -336,7 +341,7 @@ class tr(object):
                     else:
                         # print('8')
                         move = ['cut', 'add']
-                        sign = [rs_indicator, rs_indicator]
+                        sign = [rs_indicator, 1-rs_indicator]
             else:  # incorrectly classified by the human/not covered
                 # print('9')
                 move = ['add']

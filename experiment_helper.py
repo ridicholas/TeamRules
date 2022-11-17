@@ -61,7 +61,7 @@ def make_gaussians(numExamples=5000, numFeats=20):
         startDict['Ytrain'][startDict['Xtrain']['accept'] == 0])
 
     startDict['Ytrain'] = pd.Series(startDict['Ytrain'])
-
+    
 
     #shuffles
     startDict['Xtrain'], startDict['Ytrain'] = shuffle(startDict['Xtrain'], startDict['Ytrain'], random_state=0)
