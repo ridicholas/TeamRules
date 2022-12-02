@@ -827,9 +827,7 @@ class HAI_team():
     def filter_hyrs_results(self, mental=False, error=False):
         #disregard filtering, it is related to other functionality we are working on and not to the paper, when set to false it should not filter
         if mental:
-            mental_confs = [0, 0.0000001, 0.00001, 0.000025, 0.0001, 0.0005, 0.1, 0.2, 0.3, 0.4, 0.5, 0.999, 0.9999,
-                            0.99999,
-                            0.999999, 0.9999999]
+            mental_confs = [0, .25, 0.5]
         else:
             mental_confs = [0]
 
@@ -927,9 +925,7 @@ class HAI_team():
         #disregard filtering, it is related to other functionality we are working on and not to the paper, when set to false it should not filter
 
         if mental:
-            mental_confs = [0, 0.0000001, 0.00001, 0.000025, 0.0001, 0.0005, 0.1, 0.2, 0.3, 0.4, 0.5, 0.999, 0.9999,
-                            0.99999,
-                            0.999999, 0.9999999]
+            mental_confs = [0, 0.25, 0.5]
         else:
             mental_confs = [0]
 

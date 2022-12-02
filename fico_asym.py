@@ -31,8 +31,8 @@ iters = 500
 coverage_reg = 0
 rejection_reg = 0
 fA=0.5
-asym_loss = [2,1]
-asym_accept = 1
+asym_loss = [1.5,1]
+asym_accept = 0.5
 
 
 #make teams
@@ -300,13 +300,13 @@ for run in range(0, 10):
                                   beta, iters, coverage_reg, contradiction_reg, fA, asym_loss = asym_loss)
         team1.setup_hyrs()
         team1.train_hyrs()
-        team1.filter_hyrs_results(mental=False, error=False)
+        team1.filter_hyrs_results(mental=True, error=False)
 
 
         print('training team1 tr model...')
         team1.setup_tr()
         team1.train_tr()
-        team1.filter_tr_results(mental=False, error=False)
+        team1.filter_tr_results(mental=True, error=False)
         '''
         
         print('training team2 hyrs model...')
@@ -315,12 +315,12 @@ for run in range(0, 10):
                                   beta, iters, coverage_reg, contradiction_reg, fA, force_complete_coverage=False, asym_loss = asym_loss)
         team2.setup_hyrs()
         team2.train_hyrs()
-        team2.filter_hyrs_results(mental=False, error=False)
+        team2.filter_hyrs_results(mental=True, error=False)
 
         print('training team2 tr model...')
         team2.setup_tr()
         team2.train_tr()
-        team2.filter_tr_results(mental=False, error=False)
+        team2.filter_tr_results(mental=True, error=False)
         
         '''
         
@@ -330,12 +330,12 @@ for run in range(0, 10):
                                   beta, iters, coverage_reg, contradiction_reg, fA, asym_loss = asym_loss)
         team3.setup_hyrs()
         team3.train_hyrs()
-        team3.filter_hyrs_results(mental=False, error=False)
+        team3.filter_hyrs_results(mental=True, error=False)
 
         print('training team3 tr model...')
         team3.setup_tr()
         team3.train_tr()
-        team3.filter_tr_results(mental=False, error=False)
+        team3.filter_tr_results(mental=True, error=False)
         
        
 

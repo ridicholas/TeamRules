@@ -170,7 +170,7 @@ disc_errors = [0.01, 0.05, 0.25, 0.5, 0.8, 1]
 # Repeat Experiments
 for disc_error in disc_errors:
 
-    for run in range(0, 10):
+    for run in range(0, 5):
 
         team_info = pd.DataFrame(index=[1, 2, 3])
 
@@ -253,13 +253,13 @@ for disc_error in disc_errors:
                                   beta, iters, coverage_reg, contradiction_reg, fA)
         team1.setup_hyrs()
         team1.train_hyrs()
-        team1.filter_hyrs_results(mental=False, error=False)
+        team1.filter_hyrs_results(mental=True, error=False)
 
 
         print('training team1 tr model...')
         team1.setup_tr()
         team1.train_tr()
-        team1.filter_tr_results(mental=False, error=False)
+        team1.filter_tr_results(mental=True, error=False)
 
         
         if contradiction_reg == 0:
@@ -274,12 +274,12 @@ for disc_error in disc_errors:
                                   beta, iters, coverage_reg, contradiction_reg, fA)
         team2.setup_hyrs()
         team2.train_hyrs()
-        team2.filter_hyrs_results(mental=False, error=False)
+        team2.filter_hyrs_results(mental=True, error=False)
 
         print('training team2 tr model...')
         team2.setup_tr()
         team2.train_tr()
-        team2.filter_tr_results(mental=False, error=False)
+        team2.filter_tr_results(mental=True, error=False)
         
         if contradiction_reg == 0:
             print('training team2 brs model...')
@@ -294,12 +294,12 @@ for disc_error in disc_errors:
                                   beta, iters, coverage_reg, contradiction_reg, fA)
         team3.setup_hyrs()
         team3.train_hyrs()
-        team3.filter_hyrs_results(mental=False, error=False)
+        team3.filter_hyrs_results(mental=True, error=False)
 
         print('training team3 tr model...')
         team3.setup_tr()
         team3.train_tr()
-        team3.filter_tr_results(mental=False, error=False)
+        team3.filter_tr_results(mental=True, error=False)
         
         if contradiction_reg == 0:
             print('training team3 brs model...')
