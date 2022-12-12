@@ -16,9 +16,12 @@ data = path.split('_')[0]
 costs = [0, 0.01, 0.05, 0.1, 0.2,
                      0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1]
 
+threshold = 0.5
 
 
-teams = ['team1', 'team2', 'team3']
+
+#teams = ['team1', 'team2', 'team3']
+teams = ['team2']
 team_infos = []
 datasets = []
 tr_results_filtered = {}
@@ -57,6 +60,7 @@ for i in range(0, numRuns):
 
 for run in range(numRuns):
     for team in teams:
+            
         for cost in costs:
             cost = str(cost)
             #if cost == '0':
@@ -82,11 +86,12 @@ for run in range(numRuns):
             hyrs_results_filtered[team][cost][run].loc[0,'total_acceptRegion'] = sum(datasets[run][team+'TestConf'] < 0.5)
 
 
-teams = []
-for t in start_info.sort_values(by='human accept region train acc').index:
-    teams.append('team{}'.format(t))
+#teams = []
+#for t in start_info.sort_values(by='human accept region train acc').index:
+#    teams.append('team{}'.format(t))
 
-settings = ['Rational', 'Neutral', 'Irrational']
+#settings = ['Rational', 'Neutral', 'Irrational']
+settings = ['Neutral']
 for whichTeam in range(len(settings)):
     fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(8, 2), dpi=200)
     fig.subplots_adjust(bottom=0.15, wspace=.4)
@@ -211,16 +216,16 @@ for whichTeam in range(len(settings)):
             
             
             costFrame.sort_values(by=['Costs'], inplace=True)
-            row.plot(costFrame['Costs'], costFrame['HyRS_Objective'], c='red', marker='v', label = 'c-HyRS', markersize=6)
-            row.plot(costFrame['Costs'], costFrame['TR_Objective'], c='blue', marker='.', label='TeamRules', markersize=6)
-            row.vlines(costFrame['Costs'], 
+            row.plot(costFrame['Costs'], costFrame['HyRS_Objective'], c='red', marker='v', label = 'c-HyRS', markersize=4)
+            row.plot(costFrame['Costs'], costFrame['TR_Objective'], c='blue', marker='.', label='TeamRules', markersize=4)
+            row.fill_between(costFrame['Costs'], 
                        costFrame['HyRS_Objective']-(2*costFrame['HyRS_Objective_SE']),
                        costFrame['HyRS_Objective']+(2*costFrame['HyRS_Objective_SE']) ,
-                      colors='red', alpha=0.7, linewidth=1)
-            row.vlines(costFrame['Costs'], 
+                      color='red', alpha=0.2)
+            row.fill_between(costFrame['Costs'], 
                        costFrame['TR_Objective']-(2*costFrame['TR_Objective_SE']),
                        costFrame['TR_Objective']+(2*costFrame['TR_Objective_SE']) ,
-                      colors='blue', alpha=0.7, linewidth=1)
+                      color='blue', alpha=0.2)
             row.set_xlabel('Contradiction Cost', fontsize=14)
             row.set_ylabel('Team Loss', fontsize=14)
             row.tick_params(labelrotation=45, labelsize=10)
@@ -237,9 +242,9 @@ for whichTeam in range(len(settings)):
 
             #col.plot(x, y)
             costFrame.sort_values(by=['HyRS_Contradictions'], inplace=True)
-            row.plot(costFrame['HyRS_Contradictions'], costFrame['HyRSTeamLoss'], marker = 'v', markersize=6, c='red', label = 'c-HyRS')
+            row.plot(costFrame['HyRS_Contradictions'], costFrame['HyRSTeamLoss'], marker = 'v', markersize=4, c='red', label = 'c-HyRS')
             costFrame.sort_values(by=['TR_Contradictions'], inplace=True)
-            row.plot(costFrame['TR_Contradictions'], costFrame['TeamRulesTeamLoss'], marker='.', markersize=6, c='blue', label='TeamRules')
+            row.plot(costFrame['TR_Contradictions'], costFrame['TeamRulesTeamLoss'], marker='.', markersize=4, c='blue', label='TeamRules')
             row.set_xlabel('# of Contradictions', fontsize=14)
             row.set_ylabel('Team Decision Loss', fontsize=14)
             row.tick_params(labelrotation=45, labelsize=10)
@@ -250,3 +255,4 @@ for whichTeam in range(len(settings)):
         
         i+=1
     fig.savefig('Plots/asym_2_1_{}_{}.png'.format(data,setting), bbox_inches='tight')
+    #fig.savefig('Plots/{}_{}.png'.format(data,setting), bbox_inches='tight')
