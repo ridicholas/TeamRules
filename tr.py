@@ -282,21 +282,21 @@ class tr(object):
         nrs = nrs_in.copy()
         Yhat = pd.Series(Yhat)
         incorr = np.where((Yhat!=self.Y) & covered)[0] # correct interpretable models
-        incorrb = np.where((Yhat!=self.Y) & ~covered)[0]
+        incorrb = np.where((Yhat!=self.Y) & ~covered)[0] 
         rulePreds = self.Yb.copy()
         rulePreds[ncovered] = 0
         rulePreds[pcovered] = 1
-        asymCosts = self.Y.replace({0: self.asym_loss[1], 1: self.asym_loss[0]})
-        err = np.abs(self.Y - Yhat) * self.Paccept * asymCosts
+        #asymCosts = self.Y.replace({0: self.asym_loss[1], 1: self.asym_loss[0]})
+        #err = np.abs(self.Y - Yhat) * self.Paccept * asymCosts
         contras = np.where((rulePreds != self.Yb) & covered)[0]
-        err[contras] += self.contradiction_reg
+        #err[contras] += self.contradiction_reg
 
-        if random() <= 0.5: #randomly allow for top 5% of errors or take max error only
-            max_errs = np.where((err >= np.quantile(err, 0.95)))[0]
-        elif random() <= 0.5:
-            max_errs = np.where((err >= max(err)))[0]
-        else: 
-            max_errs = np.where((err>= 0))[0]
+        #if random() <= 0.5: #randomly allow for top 5% of errors or take max error only
+        #    max_errs = np.where((err >= np.quantile(err, 0.95)))[0]
+        #elif random() <= 0.5:
+        #    max_errs = np.where((err >= max(err)))[0]
+        #else: 
+        #max_errs = np.where((err>= 0))[0]
 
 
         overlapped_ind = np.where(overlapped)[0]
@@ -322,7 +322,9 @@ class tr(object):
             if print_message:
                 print(' ===== decrease objective ===== ')
             # old version ex = sample(list(incorr) + list(incorrb),1)[0] #sample
-            ex = sample(list(max_errs), 1)[0]  # sample from highest 5% quantile of errors
+            #ex = sample(list(max_errs), 1)[0]  # sample from highest 5% quantile of errors
+            to_draw = list(set(incorr).union(set(incorrb)).union(set(contras)))
+            ex = sample(to_draw, 1)[0]
 
             if (ex in incorr) or (ex in contras):  # incorrectly classified by interpretable model
                 rs_indicator = (pcovered[ex]).astype(int)  # covered by prules

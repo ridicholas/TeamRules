@@ -15,7 +15,7 @@ startDict = make_FICO_data(numQs=5)
 
 
 #initial hyperparams
-Niteration = 500
+Niteration = 5000
 Nchain = 1
 Nlevel = 1
 Nrules = 10000
@@ -27,7 +27,7 @@ budget = 1
 sample_ratio = 1
 alpha = 0
 beta = 0
-iters = 500
+iters = Niteration
 coverage_reg = 0
 rejection_reg = 0
 fA=0.5
