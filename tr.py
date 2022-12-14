@@ -341,7 +341,7 @@ class tr(object):
                     else:
                         # print('8')
                         move = ['cut', 'add']
-                        sign = [rs_indicator, 1-rs_indicator]
+                        sign = [rs_indicator, rs_indicator]
             else:  # incorrectly classified by the human/not covered
                 # print('9')
                 move = ['add']

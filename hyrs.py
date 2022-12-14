@@ -319,7 +319,7 @@ class hyrs(object):
                         sign = [rs_indicator]
                         if self.force_complete_coverage:
                             move.append('add')
-                            sign.append('rs_indicator')
+                            sign.append(rs_indicator)
                         
                     else:
                         # print('8')
