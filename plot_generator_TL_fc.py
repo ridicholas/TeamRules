@@ -7,7 +7,7 @@ from scipy.stats import ttest_ind
 from statistics import mean, stdev
 import math
 
-numRuns = 15 #adjust this depending on how many runs of results were produced
+numRuns = 5 #adjust this depending on how many runs of results were produced
 
 #read in results
 path = 'fico_contradiction_results/'

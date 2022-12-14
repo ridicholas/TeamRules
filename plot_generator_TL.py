@@ -10,8 +10,10 @@ import math
 numRuns = 5 #adjust this depending on how many runs of results were produced
 
 #read in results
-path = 'fico_asym_2_1_results/'
-asym_loss = [2,1]
+#path = 'fico_asym_2_1_results/'
+path = 'fico_contradiction_results/'
+
+asym_loss = [1,1]
 data = path.split('_')[0]
 costs = [0, 0.01, 0.05, 0.1, 0.2,
                      0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1]
@@ -20,8 +22,8 @@ threshold = 0.5
 
 
 
-#teams = ['team1', 'team2', 'team3']
-teams = ['team2']
+teams = ['team1', 'team2', 'team3']
+#teams = ['team2']
 team_infos = []
 datasets = []
 tr_results_filtered = {}
@@ -86,12 +88,12 @@ for run in range(numRuns):
             hyrs_results_filtered[team][cost][run].loc[0,'total_acceptRegion'] = sum(datasets[run][team+'TestConf'] < 0.5)
 
 
-#teams = []
-#for t in start_info.sort_values(by='human accept region train acc').index:
-#    teams.append('team{}'.format(t))
+teams = []
+for t in start_info.sort_values(by='human accept region train acc').index:
+    teams.append('team{}'.format(t))
 
-#settings = ['Rational', 'Neutral', 'Irrational']
-settings = ['Neutral']
+settings = ['Rational', 'Neutral', 'Irrational']
+#settings = ['Neutral']
 for whichTeam in range(len(settings)):
     fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(8, 2), dpi=200)
     fig.subplots_adjust(bottom=0.15, wspace=.4)
@@ -254,5 +256,5 @@ for whichTeam in range(len(settings)):
             
         
         i+=1
-    fig.savefig('Plots/asym_2_1_{}_{}.png'.format(data,setting), bbox_inches='tight')
-    #fig.savefig('Plots/{}_{}.png'.format(data,setting), bbox_inches='tight')
+    #fig.savefig('Plots/asym_2_1_{}_{}.png'.format(data,setting), bbox_inches='tight')
+    fig.savefig('Plots/{}_{}.png'.format(data,setting), bbox_inches='tight')

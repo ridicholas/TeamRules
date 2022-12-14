@@ -10,7 +10,7 @@ import math
 numRuns = 10 #adjust this depending on how many runs of results were produced
 
 #read in results
-path = 'fico_discretion_results_0.3cost/'
+path = 'fico_discretion_results/'
 data = path.split('_')[0]
 discErrors = [0.01, 0.05, 0.25, 0.5, 0.8, 1]
 cost = 0.3

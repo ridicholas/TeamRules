@@ -291,12 +291,12 @@ class tr(object):
         contras = np.where((rulePreds != self.Yb) & covered)[0]
         err[contras] += self.contradiction_reg
 
-        #if random() <= 0.5: #randomly allow for top 5% of errors or take max error only
-        #    max_errs = np.where((err >= np.quantile(err, 0.95)))[0]
-        #elif random() <= 0.5:
-        #    max_errs = np.where((err >= max(err)))[0]
-        #else: 
-        max_errs = np.where((err>= 0))[0]
+        if random() <= 0.5: #randomly allow for top 5% of errors or take max error only
+            max_errs = np.where((err >= np.quantile(err, 0.95)))[0]
+        elif random() <= 0.5:
+            max_errs = np.where((err >= max(err)))[0]
+        else: 
+            max_errs = np.where((err>= 0))[0]
 
 
         overlapped_ind = np.where(overlapped)[0]
