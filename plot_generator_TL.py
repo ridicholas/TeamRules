@@ -225,8 +225,8 @@ for whichTeam in range(len(settings)):
                        costFrame['HyRS_Objective']+(2*costFrame['HyRS_Objective_SE']) ,
                       color='red', alpha=0.2)
             row.fill_between(costFrame['Costs'], 
-                       costFrame['TR_Objective']-(2*costFrame['TR_Objective_SE']),
-                       costFrame['TR_Objective']+(2*costFrame['TR_Objective_SE']) ,
+                       costFrame['TR_Objective']-(costFrame['TR_Objective_SE']),
+                       costFrame['TR_Objective']+(costFrame['TR_Objective_SE']) ,
                       color='blue', alpha=0.2)
             row.set_xlabel('Contradiction Cost', fontsize=14)
             row.set_ylabel('Team Loss', fontsize=14)
@@ -258,3 +258,6 @@ for whichTeam in range(len(settings)):
         i+=1
     #fig.savefig('Plots/asym_2_1_{}_{}.png'.format(data,setting), bbox_inches='tight')
     fig.savefig('Plots/{}_{}.png'.format(data,setting), bbox_inches='tight')
+
+
+    
