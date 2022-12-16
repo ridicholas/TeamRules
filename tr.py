@@ -140,11 +140,11 @@ class tr(object):
         T0 = T0
         nprules = len(self.prules)
         pnrules = len(self.nrules)
-        prs_curr = sample(list(range(nprules)),3)
+        prs_curr = []
         if self.force_complete_coverage:
             nrs_curr = list(range(pnrules))
         else:
-            nrs_curr = sample(list(range(pnrules)),3)
+            nrs_curr = []
         obj_curr = 1000000000
         obj_min = obj_curr
         self.maps.append([-1,obj_curr,prs_curr,nrs_curr,[]])
@@ -287,17 +287,17 @@ class tr(object):
         rulePreds = self.Yb.copy()
         rulePreds[ncovered] = 0
         rulePreds[pcovered] = 1
-        #asymCosts = self.Y.replace({0: self.asym_loss[1], 1: self.asym_loss[0]})
-        #err = np.abs(self.Y - Yhat) * self.Paccept * asymCosts
+        asymCosts = self.Y.replace({0: self.asym_loss[1], 1: self.asym_loss[0]})
+        err = np.abs(self.Y - Yhat) * self.Paccept * asymCosts
         contras = np.where((rulePreds != self.Yb) & covered)[0]
-        #err[contras] += self.contradiction_reg
+        err[contras] += self.contradiction_reg
 
         #if random() <= 0.5: #randomly allow for top 5% of errors or take max error only
         #    max_errs = np.where((err >= np.quantile(err, 0.95)))[0]
         #elif random() <= 0.5:
         #    max_errs = np.where((err >= max(err)))[0]
         #else: 
-        #max_errs = np.where((err >= 0))[0]
+        max_errs = np.where((err >= 0))[0]
         
 
 
@@ -324,13 +324,13 @@ class tr(object):
             if print_message:
                 print(' ===== decrease objective ===== ')
             # old version ex = sample(list(incorr) + list(incorrb),1)[0] #sample
-            #try:
-            #    ex = choices(population=max_errs, weights=err[max_errs], k=1)[0]
-            #except:
-            #    ex = sample(list(max_errs), 1)[0]
+            try:
+                ex = choices(population=max_errs, weights=err[max_errs], k=1)[0]
+            except:
+                ex = sample(list(max_errs), 1)[0]
             #ex = sample(list(max_errs), 1)[0]  
-            to_draw = list(set(incorr).union(set(incorrb)).union(set(contras)))
-            ex = sample(to_draw, 1)[0]
+            #to_draw = list(set(incorr).union(set(incorrb)).union(set(contras)))
+            #ex = sample(to_draw, 1)[0]
 
             if (ex in incorr) or (ex in contras):  # incorrectly classified by interpretable model
                 rs_indicator = (pcovered[ex]).astype(int)  # covered by prules

@@ -15,7 +15,7 @@ startDict = make_FICO_data(numQs=5)
 
 
 #initial hyperparams
-Niteration = 1000
+Niteration = 500
 Nchain = 1
 Nlevel = 1
 Nrules = 10000
@@ -203,7 +203,7 @@ for team in teams:
     i+=1
 print(team_info)
 
-folder = 'fico_asym_2_1_resultsRAND'
+folder = 'fico_asym_2_1_resultsEMPTY'
 team_info.to_pickle('{}/start_info.pkl'.format(folder))
 
 team1.data_model_dict['Xtrain'].to_pickle('{}/startDataSet.pkl'.format(folder))
