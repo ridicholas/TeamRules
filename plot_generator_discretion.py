@@ -7,10 +7,10 @@ from scipy.stats import ttest_ind
 from statistics import mean, stdev
 import math
 
-numRuns = 10 #adjust this depending on how many runs of results were produced
+numRuns = 5 #adjust this depending on how many runs of results were produced
 
 #read in results
-path = 'fico_discretion_results/'
+path = 'fico_discretion_resultsMONTY/'
 data = path.split('_')[0]
 discErrors = [0.01, 0.05, 0.25, 0.5, 0.8, 1]
 cost = 0.3
@@ -182,22 +182,22 @@ for whichTeam in range(len(settings)):
     
     
     discErrorFrame.sort_values(by=['discErrors'], inplace=True)
-    plt.plot(discErrorFrame['Discretion Error'], discErrorFrame['HyRS_Objective'], c='red', marker='v', label = 'c-HyRS', markersize=6)
-    plt.plot(discErrorFrame['Discretion Error'], discErrorFrame['TR_Objective'], c='blue', marker='.', label='TeamRules', markersize=6)
-    plt.vlines(discErrorFrame['Discretion Error'], 
-                discErrorFrame['HyRS_Objective']-(2*discErrorFrame['HyRS_Objective_SE']),
-                discErrorFrame['HyRS_Objective']+(2*discErrorFrame['HyRS_Objective_SE']) ,
-                colors='red', alpha=0.7, linewidth=1)
-    plt.vlines(discErrorFrame['Discretion Error'], 
-                discErrorFrame['TR_Objective']-(2*discErrorFrame['TR_Objective_SE']),
-                discErrorFrame['TR_Objective']+(2*discErrorFrame['TR_Objective_SE']) ,
-                colors='blue', alpha=0.7, linewidth=1)
+    plt.plot(discErrorFrame['Discretion Error'], discErrorFrame['HyRS_Objective'], c='red',  label = 'c-HyRS', markersize=6)
+    plt.plot(discErrorFrame['Discretion Error'], discErrorFrame['TR_Objective'], c='blue', label='TeamRules', markersize=6)
+    plt.fill_between(discErrorFrame['Discretion Error'], 
+                discErrorFrame['HyRS_Objective']-(discErrorFrame['HyRS_Objective_SE']),
+                discErrorFrame['HyRS_Objective']+(discErrorFrame['HyRS_Objective_SE']) ,
+                color='red', alpha=0.7, linewidth=1)
+    plt.fill_between(discErrorFrame['Discretion Error'], 
+                discErrorFrame['TR_Objective']-(discErrorFrame['TR_Objective_SE']),
+                discErrorFrame['TR_Objective']+(discErrorFrame['TR_Objective_SE']) ,
+                color='blue', alpha=0.2, linewidth=1)
     plt.xlabel('Mean Discretion Error', fontsize=14)
     plt.ylabel('Team Loss', fontsize=14)
     plt.tick_params(labelrotation=45, labelsize=10)
     #row.set_title('{} Setting'.format(setting), fontsize=15)
     plt.legend(prop={'size': 6})
-    plt.savefig('Plots/discretion_{}_{}_cost{}.png'.format(data,setting, cost), bbox_inches='tight')
+    plt.savefig('Plots/discretionMONTY_{}_{}_cost{}.png'.format(data,setting, cost), bbox_inches='tight')
     
     
     

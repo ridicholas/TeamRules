@@ -7,20 +7,20 @@ from scipy.stats import ttest_ind
 from statistics import mean, stdev
 import math
 
-numRuns = 5 #adjust this depending on how many runs of results were produced
+numRuns = 3 #adjust this depending on how many runs of results were produced
 
 #read in results
 #path = 'fico_asym_2_1_results/'
-path = 'fico_contradiction_results/'
+path = 'fico_contradiction_resultsEMPTY/'
 
 asym_loss = [1,1]
 data = path.split('_')[0]
 costs = [0, 0.01, 0.05, 0.1, 0.2,
                      0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1]
 
-threshold = 0.5
 
 
+mental_conf = 0.5
 
 teams = ['team1', 'team2', 'team3']
 #teams = ['team2']
@@ -50,12 +50,12 @@ for i in range(0, numRuns):
             cost = str(cost)
             #tr filtered
             tr_results_filtered[team][cost].append(pd.read_pickle(path + 'cost_{}_'.format(cost) + team + '_tr_filtered_run{}.pkl'.format(i)).sort_values(by='test_error'))
-            tr_results_filtered[team][cost][-1] = tr_results_filtered[team][cost][-1][tr_results_filtered[team][cost][-1]['error_conf'] == 0]
+            tr_results_filtered[team][cost][-1] = tr_results_filtered[team][cost][-1][tr_results_filtered[team][cost][-1]['mental_conf'] == mental_conf].reset_index()
             tr_results_filtered[team][cost]
 
             #hyrs filtered
             hyrs_results_filtered[team][cost].append(pd.read_pickle(path + 'cost_{}_'.format(cost)+ team + '_hyrs_filtered_run{}.pkl'.format(i)).sort_values(by='test_error'))
-            hyrs_results_filtered[team][cost][-1] = hyrs_results_filtered[team][cost][-1][hyrs_results_filtered[team][cost][-1]['error_conf'] == 0]
+            hyrs_results_filtered[team][cost][-1] = hyrs_results_filtered[team][cost][-1][hyrs_results_filtered[team][cost][-1]['mental_conf'] == mental_conf].reset_index()
         
             #if cost == '0':
                 #brs_results[team].append(pd.read_pickle(path + team + '_brs_run{}.pkl'.format(i)).sort_values(by='test_error_brs'))

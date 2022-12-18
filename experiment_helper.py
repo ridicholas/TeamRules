@@ -858,6 +858,10 @@ class HAI_team():
 
                 full_hyrs_preds = self.hyrs_results['modelonly_test_preds'].copy()
                 full_hyrs_result['modelonly_test_preds'] = full_hyrs_preds.copy()
+                #reset modelonly results from filtering
+                full_hyrs_result['modelonly_test_preds'][self.data_model_dict['paccept_test'] < mental_conf] = self.data_model_dict['Ybtest'][
+                        self.data_model_dict['paccept_test'] < mental_conf]
+
 
                 full_hyrs_result['test_rejects'] = sum((self.data_model_dict['Ybtest'] != full_hyrs_preds)[
                                                                (self.data_model_dict['paccept_test'] >= mental_conf) & ~
@@ -957,6 +961,9 @@ class HAI_team():
                                                              (self.data_model_dict[
                                                                   'prob_human_wrong_test'] >= error_conf)])
                 full_tr_result['modelonly_test_preds'] = self.tr_results['modelonly_test_preds']
+                #reset modelonly results from filtering
+                full_tr_result['modelonly_test_preds'][self.data_model_dict['paccept_test'] < mental_conf] = self.data_model_dict['Ybtest'][
+                        self.data_model_dict['paccept_test'] < mental_conf]
 
                 full_tr_result['test_rejectsINC'] = sum(((self.data_model_dict['Ybtest'] != full_tr_preds)[
                     (self.data_model_dict['paccept_test'] >= mental_conf) & ~

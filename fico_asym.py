@@ -217,8 +217,7 @@ print('Starting Experiments....... \n')
 for run in range(0, 10):
 
     team_info = pd.DataFrame(index=[1, 2, 3])
-    coverage_regs = [0, 0.01, 0.05, 0.1, 0.2,
-                     0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1]
+    coverage_regs = [0, 0.3, 0.6, 0.9, 1.2, 1.5, 1.8, 2.1]
 
     coverage_reg = 0
     contradiction_reg = 0
