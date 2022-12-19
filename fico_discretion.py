@@ -155,7 +155,7 @@ team_info.loc[3, 'human reject region train acc'] = metrics.accuracy_score(team3
 
 print(team_info)
 
-folder = 'fico_discretion_resultsEMPTY'
+folder = 'fico_discretion_results'
 team_info.to_pickle('{}/start_info.pkl'.format(folder))
 
 team1.data_model_dict['Xtrain'].to_pickle('{}/startDataSet.pkl'.format(folder))
