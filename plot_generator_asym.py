@@ -15,8 +15,7 @@ path = 'fico_asym_2_1_resultsEMPTY/'
 
 asym_loss = [2,1]
 data = path.split('_')[0]
-costs = [0, 0.01, 0.05, 0.1, 0.2,
-                     0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1]
+costs = [0, 0.3, 0.6, 0.9, 1.2, 1.5, 1.8, 2.1]
 
 threshold = 0.5
 
