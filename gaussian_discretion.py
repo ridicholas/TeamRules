@@ -27,7 +27,7 @@ budget = 1
 sample_ratio = 1
 alpha = 0
 beta = 0
-iters = 500
+iters = Niteration
 coverage_reg = 0
 contradiction_reg = 0
 fA = 0.5
@@ -190,11 +190,11 @@ team3_rule_lists = pd.DataFrame(index=range(0, 20), columns=[
 
 print('Starting Experiments....... \n')
 
-disc_errors = [0, 0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+disc_errors = [0.01, 0.05, 0.25, 0.5, 0.8, 1]
 # Repeat Experiments
 for disc_error in disc_errors:
 
-    for run in range(0, 15):
+    for run in range(0, 10):
 
         team_info = pd.DataFrame(index=[1, 2, 3])
 
@@ -223,7 +223,7 @@ for disc_error in disc_errors:
                                                                         teams[i - 1].data_model_dict['Ybtest'])
 
         # train aversion and error boundary models
-        team1.train_mental_aversion_model('perfect', probWrong=disc_error, noise=0.1)
+        team1.train_mental_aversion_model('xgboost', probWrong=0, noise=0, data_to_use=disc_error)
         team1.train_mental_error_boundary_model()
         team_info.loc[1, 'human true accepts'] = (team1.data_model_dict['test_conf'] < team1_2_start_threshold).sum()
         team_info.loc[1, 'human true rejects'] = (team1.data_model_dict['test_conf'] >= team1_2_start_threshold).sum()
@@ -237,7 +237,7 @@ for disc_error in disc_errors:
             team1.data_model_dict['paccept_test'] > 0.5,
             team1.data_model_dict['test_accept'])
 
-        team2.train_mental_aversion_model('perfect', probWrong=disc_error, noise=0.1)
+        team2.train_mental_aversion_model('logistic', probWrong=0, noise=0, data_to_use=disc_error)
         team2.train_mental_error_boundary_model()
         team_info.loc[2, 'human true accepts'] = (team2.data_model_dict['test_conf'] < team1_2_start_threshold).sum()
         team_info.loc[2, 'human true rejects'] = (team2.data_model_dict['test_conf'] >= team1_2_start_threshold).sum()
@@ -251,7 +251,7 @@ for disc_error in disc_errors:
             team2.data_model_dict['paccept_test'] > 0.5,
             team2.data_model_dict['test_accept'])
 
-        team3.train_mental_aversion_model('perfect', probWrong=disc_error, noise=0.1)
+        team3.train_mental_aversion_model('xgboost', probWrong=0, noise=0, data_to_use=disc_error)
         team3.train_mental_error_boundary_model()
         team_info.loc[3, 'human true accepts'] = (team3.data_model_dict['test_conf'] < team3_4_start_threshold).sum()
         team_info.loc[3, 'human true rejects'] = (team3.data_model_dict['test_conf'] >= team3_4_start_threshold).sum()
@@ -266,7 +266,7 @@ for disc_error in disc_errors:
             team3.data_model_dict['test_accept'])
 
 
-        team_info.to_pickle('{}/team_info_err{}_run{}.pkl'.format(folder, disc_error, run))
+        team_info.to_pickle('{}/team_info_dataused{}_run{}.pkl'.format(folder, disc_error, run))
 
 
 
@@ -277,13 +277,13 @@ for disc_error in disc_errors:
                                   beta, iters, coverage_reg, contradiction_reg, fA)
         team1.setup_hyrs()
         team1.train_hyrs()
-        team1.filter_hyrs_results(mental=False, error=False)
+        team1.filter_hyrs_results(mental=True, error=False)
 
 
         print('training team1 tr model...')
         team1.setup_tr()
         team1.train_tr()
-        team1.filter_tr_results(mental=False, error=False)
+        team1.filter_tr_results(mental=True, error=False)
 
         
         if contradiction_reg == 0:
@@ -298,12 +298,12 @@ for disc_error in disc_errors:
                                   beta, iters, coverage_reg, contradiction_reg, fA)
         team2.setup_hyrs()
         team2.train_hyrs()
-        team2.filter_hyrs_results(mental=False, error=False)
+        team2.filter_hyrs_results(mental=True, error=False)
 
         print('training team2 tr model...')
         team2.setup_tr()
         team2.train_tr()
-        team2.filter_tr_results(mental=False, error=False)
+        team2.filter_tr_results(mental=True, error=False)
         
         if contradiction_reg == 0:
             print('training team2 brs model...')
@@ -318,12 +318,12 @@ for disc_error in disc_errors:
                                   beta, iters, coverage_reg, contradiction_reg, fA)
         team3.setup_hyrs()
         team3.train_hyrs()
-        team3.filter_hyrs_results(mental=False, error=False)
+        team3.filter_hyrs_results(mental=True, error=False)
 
         print('training team3 tr model...')
         team3.setup_tr()
         team3.train_tr()
-        team3.filter_tr_results(mental=False, error=False)
+        team3.filter_tr_results(mental=True, error=False)
         
         if contradiction_reg == 0:
             print('training team3 brs model...')
@@ -368,7 +368,7 @@ for disc_error in disc_errors:
         with open('{}/discError_{}_team2_tr_results_run{}.pkl'.format(folder, disc_error, run), 'wb') as outp:
             pickle.dump(team2.tr_results, outp, pickle.HIGHEST_PROTOCOL)
         outp.close()
-        
+
         # team3
 
         team3.full_hyrs_results.to_pickle(
