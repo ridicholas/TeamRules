@@ -236,8 +236,8 @@ for run in range(0, 10):
                                   alpha,
                                   beta, iters, coverage_reg, contradiction_reg, fA)
         team1.setup_hyrs()
-        team1.train_hyrs()
-        team1.filter_hyrs_results(mental=True, error=False)
+        #team1.train_hyrs()
+        #team1.filter_hyrs_results(mental=True, error=False)
 
 
         print('training team1 tr model...')

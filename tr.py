@@ -355,12 +355,16 @@ class tr(object):
                 move = ['add']
                 sign = [int(self.Y[ex] == 1)]
 
-
+        if (ex in incorr) or (ex in contras):
+            print('signs: {}, prs_old:{}, nrs_old:{}'.format(sign, prs, nrs))
         for j in range(len(move)):
             if sign[j]==1:
                 prs = self.action(move[j],sign[j],ex,prs,Yhat,pcovered)
             else:
                 nrs = self.action(move[j],sign[j],ex,nrs,Yhat,ncovered)
+        if (ex in incorr) or (ex in contras):
+            print('prs_new:{}, nrs_new:{}'.format(prs, nrs))
+        
 
         p = np.sum(self.pRMatrix[:,prs],axis = 1)>0
         n = np.sum(self.nRMatrix[:,nrs],axis = 1)>0

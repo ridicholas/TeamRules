@@ -7,10 +7,10 @@ from scipy.stats import ttest_ind
 from statistics import mean, stdev
 import math
 
-numRuns = 10 #adjust this depending on how many runs of results were produced
+numRuns = 9 #adjust this depending on how many runs of results were produced
 
 #read in results
-path = 'fico_asym_2_1_resultsEMPTY/'
+path = 'fico_asym_21_results/'
 #path = 'fico_contradiction_results/'
 
 asym_loss = [2,1]
@@ -49,12 +49,12 @@ for i in range(0, numRuns):
             cost = str(cost)
             #tr filtered
             tr_results_filtered[team][cost].append(pd.read_pickle(path + 'cost_{}_'.format(cost) + team + '_tr_filtered_run{}.pkl'.format(i)).sort_values(by='test_error'))
-            tr_results_filtered[team][cost][-1] = tr_results_filtered[team][cost][-1][tr_results_filtered[team][cost][-1]['error_conf'] == 0]
+            tr_results_filtered[team][cost][-1] = tr_results_filtered[team][cost][-1][tr_results_filtered[team][cost][-1]['mental_conf'] == threshold].reset_index()
             tr_results_filtered[team][cost]
 
             #hyrs filtered
             hyrs_results_filtered[team][cost].append(pd.read_pickle(path + 'cost_{}_'.format(cost)+ team + '_hyrs_filtered_run{}.pkl'.format(i)).sort_values(by='test_error'))
-            hyrs_results_filtered[team][cost][-1] = hyrs_results_filtered[team][cost][-1][hyrs_results_filtered[team][cost][-1]['error_conf'] == 0]
+            hyrs_results_filtered[team][cost][-1] = hyrs_results_filtered[team][cost][-1][hyrs_results_filtered[team][cost][-1]['mental_conf'] == threshold].reset_index()
         
             #if cost == '0':
                 #brs_results[team].append(pd.read_pickle(path + team + '_brs_run{}.pkl'.format(i)).sort_values(by='test_error_brs'))
@@ -217,15 +217,15 @@ for whichTeam in range(len(settings)):
             
             
             costFrame.sort_values(by=['Costs'], inplace=True)
-            row.plot(costFrame['Costs'], costFrame['HyRS_Objective'], c='red', marker='v', label = 'c-HyRS', markersize=4)
-            row.plot(costFrame['Costs'], costFrame['TR_Objective'], c='blue', marker='.', label='TeamRules', markersize=4)
+            row.plot(costFrame['Costs'], costFrame['HyRS_Objective'], c='red', marker='v', label = 'c-HyRS', markersize=2)
+            row.plot(costFrame['Costs'], costFrame['TR_Objective'], c='blue', marker='.', label='TeamRules', markersize=2)
             row.fill_between(costFrame['Costs'], 
-                       costFrame['HyRS_Objective']-(2*costFrame['HyRS_Objective_SE']),
-                       costFrame['HyRS_Objective']+(2*costFrame['HyRS_Objective_SE']) ,
+                       costFrame['HyRS_Objective']-(costFrame['HyRS_Objective_SE']),
+                       costFrame['HyRS_Objective']+(costFrame['HyRS_Objective_SE']) ,
                       color='red', alpha=0.2)
             row.fill_between(costFrame['Costs'], 
-                       costFrame['TR_Objective']-(2*costFrame['TR_Objective_SE']),
-                       costFrame['TR_Objective']+(2*costFrame['TR_Objective_SE']) ,
+                       costFrame['TR_Objective']-(costFrame['TR_Objective_SE']),
+                       costFrame['TR_Objective']+(costFrame['TR_Objective_SE']) ,
                       color='blue', alpha=0.2)
             row.set_xlabel('Contradiction Cost', fontsize=14)
             row.set_ylabel('Team Loss', fontsize=14)
@@ -243,9 +243,9 @@ for whichTeam in range(len(settings)):
 
             #col.plot(x, y)
             costFrame.sort_values(by=['HyRS_Contradictions'], inplace=True)
-            row.plot(costFrame['HyRS_Contradictions'], costFrame['HyRSTeamLoss'], marker = 'v', markersize=4, c='red', label = 'c-HyRS')
+            row.plot(costFrame['HyRS_Contradictions'], costFrame['HyRSTeamLoss'], marker = 'v', markersize=2, c='red', label = 'c-HyRS')
             costFrame.sort_values(by=['TR_Contradictions'], inplace=True)
-            row.plot(costFrame['TR_Contradictions'], costFrame['TeamRulesTeamLoss'], marker='.', markersize=4, c='blue', label='TeamRules')
+            row.plot(costFrame['TR_Contradictions'], costFrame['TeamRulesTeamLoss'], marker='.', markersize=2, c='blue', label='TeamRules')
             row.set_xlabel('# of Contradictions', fontsize=14)
             row.set_ylabel('Team Decision Loss', fontsize=14)
             row.tick_params(labelrotation=45, labelsize=10)
