@@ -15,7 +15,12 @@ path = 'fico_asym_21_results/'
 
 asym_loss = [2,1]
 data = path.split('_')[0]
-costs = [0, 0.3, 0.6, 0.9, 1.2, 1.5, 1.8, 2.1]
+
+if asym_loss[0] == 2:
+    costs = [0, 0.3, 0.6, 0.9, 1.2, 1.5, 1.8, 2.1]
+elif asym_loss[0] == 1.5:
+    costs = [0, 0.15, 0.3, 0.45, 0.6, 0.75, 0.9, 1.05, 1.2, 1.35, 1.5]
+
 
 threshold = 0.5
 
@@ -54,7 +59,7 @@ for i in range(0, numRuns):
 
             #hyrs filtered
             hyrs_results_filtered[team][cost].append(pd.read_pickle(path + 'cost_{}_'.format(cost)+ team + '_hyrs_filtered_run{}.pkl'.format(i)).sort_values(by='test_error'))
-            hyrs_results_filtered[team][cost][-1] = hyrs_results_filtered[team][cost][-1][hyrs_results_filtered[team][cost][-1]['mental_conf'] == threshold].reset_index()
+            hyrs_results_filtered[team][cost][-1] = hyrs_results_filtered[team][cost][-1][hyrs_results_filtered[team][cost][-1]['mental_conf'] == 0].reset_index()
         
             #if cost == '0':
                 #brs_results[team].append(pd.read_pickle(path + team + '_brs_run{}.pkl'.format(i)).sort_values(by='test_error_brs'))
@@ -217,8 +222,8 @@ for whichTeam in range(len(settings)):
             
             
             costFrame.sort_values(by=['Costs'], inplace=True)
-            row.plot(costFrame['Costs'], costFrame['HyRS_Objective'], c='red', marker='v', label = 'c-HyRS', markersize=2)
-            row.plot(costFrame['Costs'], costFrame['TR_Objective'], c='blue', marker='.', label='TeamRules', markersize=2)
+            row.plot(costFrame['Costs'], costFrame['HyRS_Objective'], c='red', marker='v', label = 'c-HyRS', markersize=1)
+            row.plot(costFrame['Costs'], costFrame['TR_Objective'], c='blue', marker='.', label='TeamRules', markersize=1)
             row.fill_between(costFrame['Costs'], 
                        costFrame['HyRS_Objective']-(costFrame['HyRS_Objective_SE']),
                        costFrame['HyRS_Objective']+(costFrame['HyRS_Objective_SE']) ,
@@ -243,9 +248,9 @@ for whichTeam in range(len(settings)):
 
             #col.plot(x, y)
             costFrame.sort_values(by=['HyRS_Contradictions'], inplace=True)
-            row.plot(costFrame['HyRS_Contradictions'], costFrame['HyRSTeamLoss'], marker = 'v', markersize=2, c='red', label = 'c-HyRS')
+            row.plot(costFrame['HyRS_Contradictions'], costFrame['HyRSTeamLoss'], marker = 'v', markersize=1, c='red', label = 'c-HyRS')
             costFrame.sort_values(by=['TR_Contradictions'], inplace=True)
-            row.plot(costFrame['TR_Contradictions'], costFrame['TeamRulesTeamLoss'], marker='.', markersize=2, c='blue', label='TeamRules')
+            row.plot(costFrame['TR_Contradictions'], costFrame['TeamRulesTeamLoss'], marker='.', markersize=1, c='blue', label='TeamRules')
             row.set_xlabel('# of Contradictions', fontsize=14)
             row.set_ylabel('Team Decision Loss', fontsize=14)
             row.tick_params(labelrotation=45, labelsize=10)
@@ -255,5 +260,5 @@ for whichTeam in range(len(settings)):
             
         
         i+=1
-    fig.savefig('Plots/asym_2_1_{}_{}.png'.format(data,setting), bbox_inches='tight')
+    fig.savefig('Plots/asym_{}_{}_{}.png'.format(asym_loss, data,setting), bbox_inches='tight')
     #fig.savefig('Plots/{}_{}.png'.format(data,setting), bbox_inches='tight')

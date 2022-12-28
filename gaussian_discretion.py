@@ -274,13 +274,16 @@ for disc_error in disc_errors:
         # train hyrs baseline
         team1.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                   alpha,
-                                  beta, iters, coverage_reg, contradiction_reg, fA)
+                                  beta, iters, coverage_reg, 0, fA)
         team1.setup_hyrs()
         team1.train_hyrs()
         team1.filter_hyrs_results(mental=True, error=False)
 
 
         print('training team1 tr model...')
+        team1.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
+                                  alpha,
+                                  beta, iters, coverage_reg, contradiction_reg, fA)
         team1.setup_tr()
         team1.train_tr()
         team1.filter_tr_results(mental=True, error=False)
@@ -295,12 +298,15 @@ for disc_error in disc_errors:
         print('training team2 hyrs model...')
         team2.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                   alpha,
-                                  beta, iters, coverage_reg, contradiction_reg, fA)
+                                  beta, iters, coverage_reg, 0, fA)
         team2.setup_hyrs()
         team2.train_hyrs()
         team2.filter_hyrs_results(mental=True, error=False)
 
         print('training team2 tr model...')
+        team2.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
+                                  alpha,
+                                  beta, iters, coverage_reg, contradiction_reg, fA)
         team2.setup_tr()
         team2.train_tr()
         team2.filter_tr_results(mental=True, error=False)
@@ -315,12 +321,15 @@ for disc_error in disc_errors:
         print('training team3 hyrs model...')
         team3.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                   alpha,
-                                  beta, iters, coverage_reg, contradiction_reg, fA)
+                                  beta, iters, coverage_reg, 0, fA)
         team3.setup_hyrs()
         team3.train_hyrs()
         team3.filter_hyrs_results(mental=True, error=False)
 
         print('training team3 tr model...')
+        team3.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
+                                  alpha,
+                                  beta, iters, coverage_reg, contradiction_reg, fA)
         team3.setup_tr()
         team3.train_tr()
         team3.filter_tr_results(mental=True, error=False)
@@ -337,7 +346,6 @@ for disc_error in disc_errors:
         print('writing results...')
 
         # team1
-
 
         team1.full_hyrs_results.to_pickle(
             '{}/discError_{}_team1_hyrs_filtered_run{}.pkl'.format(folder, disc_error, run))

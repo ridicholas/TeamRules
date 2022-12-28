@@ -7,13 +7,15 @@ from scipy.stats import ttest_ind
 from statistics import mean, stdev
 import math
 
-numRuns = 5 #adjust this depending on how many runs of results were produced
+numRuns = 10 #adjust this depending on how many runs of results were produced
 
 #read in results
-path = 'fico_discretion_resultsMONTY/'
+path = 'gaussian_discretion_results0.3cost/'
 data = path.split('_')[0]
 discErrors = [0.01, 0.05, 0.25, 0.5, 0.8, 1]
 cost = 0.3
+tr_conf = 0.5
+hyrs_conf = 0
 
 
 teams = ['team1', 'team2', 'team3']
@@ -53,12 +55,12 @@ for i in range(0, numRuns):
             
             #tr filtered
             tr_results_filtered[team][discError].append(pd.read_pickle(path + 'discError_{}_'.format(discError) + team + '_tr_filtered_run{}.pkl'.format(i)).sort_values(by='test_error'))
-            tr_results_filtered[team][discError][-1] = tr_results_filtered[team][discError][-1][tr_results_filtered[team][discError][-1]['error_conf'] == 0]
+            tr_results_filtered[team][discError][-1] = tr_results_filtered[team][discError][-1][tr_results_filtered[team][discError][-1]['mental_conf'] == tr_conf].reset_index()
             tr_results_filtered[team][discError]
 
             #hyrs filtered
             hyrs_results_filtered[team][discError].append(pd.read_pickle(path + 'discError_{}_'.format(discError)+ team + '_hyrs_filtered_run{}.pkl'.format(i)).sort_values(by='test_error'))
-            hyrs_results_filtered[team][discError][-1] = hyrs_results_filtered[team][discError][-1][hyrs_results_filtered[team][discError][-1]['error_conf'] == 0]
+            hyrs_results_filtered[team][discError][-1] = hyrs_results_filtered[team][discError][-1][hyrs_results_filtered[team][discError][-1]['mental_conf'] == hyrs_conf].reset_index()
         
             if discError == '0':
                 brs_results[team].append(pd.read_pickle(path + team + '_brs_run{}.pkl'.format(i)).sort_values(by='test_error_brs'))
@@ -98,6 +100,7 @@ settings = ['Rational', 'Neutral', 'Irrational']
 
 for whichTeam in range(len(settings)):
     plt.clf()
+    fig = plt.figure(figsize=(3, 2), dpi=200)
     team = teams[whichTeam]
     setting = settings[whichTeam]
     discErrorFrame = pd.DataFrame(index=[str(x) for x in discErrors], data={'discErrors': [str(x) for x in discErrors], 
@@ -182,12 +185,12 @@ for whichTeam in range(len(settings)):
     
     
     discErrorFrame.sort_values(by=['discErrors'], inplace=True)
-    plt.plot(discErrorFrame['Discretion Error'], discErrorFrame['HyRS_Objective'], c='red',  label = 'c-HyRS', markersize=6)
-    plt.plot(discErrorFrame['Discretion Error'], discErrorFrame['TR_Objective'], c='blue', label='TeamRules', markersize=6)
+    plt.plot(discErrorFrame['Discretion Error'], discErrorFrame['HyRS_Objective'], c='red',  label = 'c-HyRS', markersize=1)
+    plt.plot(discErrorFrame['Discretion Error'], discErrorFrame['TR_Objective'], c='blue', label='TeamRules', markersize=1)
     plt.fill_between(discErrorFrame['Discretion Error'], 
                 discErrorFrame['HyRS_Objective']-(discErrorFrame['HyRS_Objective_SE']),
                 discErrorFrame['HyRS_Objective']+(discErrorFrame['HyRS_Objective_SE']) ,
-                color='red', alpha=0.7, linewidth=1)
+                color='red', alpha=0.2, linewidth=1)
     plt.fill_between(discErrorFrame['Discretion Error'], 
                 discErrorFrame['TR_Objective']-(discErrorFrame['TR_Objective_SE']),
                 discErrorFrame['TR_Objective']+(discErrorFrame['TR_Objective_SE']) ,
@@ -197,7 +200,7 @@ for whichTeam in range(len(settings)):
     plt.tick_params(labelrotation=45, labelsize=10)
     #row.set_title('{} Setting'.format(setting), fontsize=15)
     plt.legend(prop={'size': 6})
-    plt.savefig('Plots/discretionMONTY_{}_{}_cost{}.png'.format(data,setting, cost), bbox_inches='tight')
+    plt.savefig('Plots/discretion_{}_{}_cost{}.png'.format(data,setting, cost), bbox_inches='tight')
     
     
     
