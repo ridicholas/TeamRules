@@ -176,7 +176,7 @@ team_info.loc[3, 'human reject region train acc'] = metrics.accuracy_score(
 
 print(team_info)
 
-folder = 'gaussian_discretion_results0.3cost'
+folder = 'gaussian_discretion_results03cost'
 team_info.to_pickle('{}/start_info.pkl'.format(folder))
 
 team1.data_model_dict['Xtrain'].to_pickle('{}/startDataSet.pkl'.format(folder))
