@@ -24,12 +24,12 @@ def intersection(lst1, lst2):
     return lst3
 
 class tr(object):
-    def __init__(self, binary_data,Y,Yb, Paccept=None):
+    def __init__(self, binary_data,Y,Yb, conf_human=None):
         self.df = binary_data  
         self.Y = pd.Series(Y)
         self.N = float(len(Y))
         self.Yb = pd.Series(Yb)
-        self.Paccept = pd.Series(Paccept)
+        self.conf_human = pd.Series(conf_human)
 
     
     def set_parameters(self, alpha = 0, beta = 0, coverage_reg = 0, contradiction_reg = 0, fA=0.5, rejectType = 'all', force_complete_coverage=False, asym_loss = [1,1]):
@@ -88,11 +88,11 @@ class tr(object):
             df = 1-self.df 
             df.columns = [name.strip() + 'neg' for name in self.df.columns]
             df = pd.concat([self.df,df],axis = 1)
-        self.prules, self.pRMatrix, self.psupp, self.pprecision, self.perror = self.screen_rules(prules,df,self.Y,N,supp)
+        self.prules, self.pRMatrix, self.psupp, self.pprecision, self.perror, self.p_precision_matrix = self.screen_rules(prules,df,self.Y,N,supp)
         if self.force_complete_coverage:
-            self.nrules, self.nRMatrix, self.nsupp, self.nprecision, self.nerror = self.screen_rules(nrules,df,1-self.Y,N,0)
+            self.nrules, self.nRMatrix, self.nsupp, self.nprecision, self.nerror, self.n_precision_matrix = self.screen_rules(nrules,df,1-self.Y,N,0)
         else:
-            self.nrules, self.nRMatrix, self.nsupp, self.nprecision, self.nerror = self.screen_rules(nrules,df,1-self.Y,N,supp)
+            self.nrules, self.nRMatrix, self.nsupp, self.nprecision, self.nerror, self.n_precision_matrix = self.screen_rules(nrules,df,1-self.Y,N,supp)
 
         # print '\tTook %0.3fs to generate %d rules' % (self.screen_time, len(self.rules))
 
@@ -130,7 +130,10 @@ class tr(object):
         RMatrix = np.array(Z[:,ind])
         rules_len = [len(set([name.split('_')[0] for name in rule])) for rule in rules]
         supp = np.array(np.sum(Z,axis=0).tolist()[0])[ind]
-        return rules, RMatrix, supp, p1[ind], FP[ind]
+        precision_matrix = np.array(np.multiply(Z[:,ind], p1[ind]))
+        
+
+        return rules, RMatrix, supp, p1[ind], FP[ind], precision_matrix
 
     
     def train(self, Niteration = 500, print_message=False, interpretability = 'size', T0 = 0.01):
@@ -150,11 +153,23 @@ class tr(object):
         self.maps.append([-1,obj_curr,prs_curr,nrs_curr,[]])
         p = np.sum(self.pRMatrix[:,prs_curr],axis = 1)>0
         n = np.sum(self.nRMatrix[:,nrs_curr],axis = 1)>0
+
+        
+
+        
         overlap_curr = np.multiply(p,n)
         pcovered_curr = p
         ncovered_curr = n ^ overlap_curr
         covered_curr = np.logical_xor(p,n) + overlap_curr
-        Yhat_curr,TP,FP,TN,FN, numRejects_curr, Yhat_soft_curr  = self.compute_obj(pcovered_curr,ncovered_curr, fA)
+        if len(prs_curr) > 0:
+            p_model_conf_curr = np.max(self.p_precision_matrix[:,prs_curr],axis = 1)
+        else: 
+            p_model_conf_curr = np.zeros(len(pcovered_curr))
+        if len(nrs_curr) > 0:
+            n_model_conf_curr = np.max(self.n_precision_matrix[:,nrs_curr],axis = 1)
+        else:
+            n_model_conf_curr = np.zeros(len(ncovered_curr))
+        Yhat_curr,TP,FP,TN,FN, numRejects_curr, Yhat_soft_curr  = self.compute_obj(pcovered_curr,ncovered_curr, p_model_conf_curr, n_model_conf_curr)
         rulePreds_curr = self.Yb.copy()
         rulePreds_curr[ncovered_curr] = 0
         rulePreds_curr[pcovered_curr] = 1
@@ -177,12 +192,19 @@ class tr(object):
             prs_new,nrs_new , pcovered_new,ncovered_new,overlap_new,covered_new= self.propose_rs(prs_curr,nrs_curr,pcovered_curr,ncovered_curr,overlap_curr,covered_curr, Yhat_curr, Yhat_soft_curr, contras_curr, obj_min,print_message)
 
 
-
+            if len(prs_new) > 0:
+                p_model_conf_new = np.max(self.p_precision_matrix[:,prs_new],axis = 1)
+            else: 
+                p_model_conf_new = np.zeros(len(pcovered_new))
+            if len(nrs_new) > 0:
+                n_model_conf_new = np.max(self.n_precision_matrix[:,nrs_new],axis = 1)
+            else:
+                n_model_conf_new = np.zeros(len(ncovered_new)) 
 
 
             self.covered1 = covered_new[:]
             self.Yhat_curr = Yhat_curr
-            Yhat_new,TP,FP,TN,FN, numRejects_new, Yhat_soft_new = self.compute_obj(pcovered_new,ncovered_new, fA)
+            Yhat_new,TP,FP,TN,FN, numRejects_new, Yhat_soft_new = self.compute_obj(pcovered_new,ncovered_new, p_model_conf_new, n_model_conf_new)
             err_new = (np.abs(self.Y - Yhat_soft_new) * asymCosts).sum()
 
 
@@ -213,7 +235,7 @@ class tr(object):
                     print('prs = {}, nrs = {}'.format(prs_new, nrs_new))
             if random() <= alpha:
                 #look here maybe
-                prs_curr,nrs_curr,obj_curr,pcovered_curr,ncovered_curr,overlap_curr,covered_curr, Yhat_curr = prs_new[:],nrs_new[:],obj_new,pcovered_new[:],ncovered_new[:],overlap_new[:],covered_new[:], Yhat_new[:]
+                prs_curr, nrs_curr, obj_curr, pcovered_curr, ncovered_curr, overlap_curr, covered_curr, Yhat_curr = prs_new[:],nrs_new[:],obj_new,pcovered_new[:],ncovered_new[:],overlap_new[:],covered_new[:], Yhat_new[:]
                 err_curr = err_new
                 contras_curr = contras_new
                 Yhat_soft_curr = Yhat_soft_new
@@ -238,12 +260,19 @@ class tr(object):
         berror = sum(self.Y[~covered]!=Yhat[~covered])
         return perror, nerror, oerror, berror
 
-    def compute_obj(self,pcovered,ncovered, fA):
+    def compute_obj(self,pcovered,ncovered, pconfs, nconfs):
 
         Yhat = self.Yb.copy()  # will cover all cases where model does not have recommendation
         Yhat_rules = self.Yb.copy()
+        Yhat_rules[ncovered] = 0
+        Yhat_rules[pcovered] = 1
         Yhat = Yhat.astype(float)
-        rejection = self.Paccept <= fA
+
+        conf_model = nconfs
+        conf_model[pcovered] = pconfs[pcovered]
+        agreement = (Yhat_rules == self.Yb)
+        self.Paccept = self.fA(self.conf_human, conf_model, agreement)
+        rejection = self.Paccept <= 0.5
         numRejects = 0
         incorrectRejects = 0
         correctRejects = 0
@@ -271,23 +300,32 @@ class tr(object):
         Yhat[pcovered] = Yhat[pcovered].round()
         TP,FP,TN,FN = getConfusion(Yhat,self.Y)
 
-        if self.rejectType == 'all':
-            return  Yhat,TP,FP,TN,FN, numRejects, Yhat_soft
-        elif self.rejectType == 'cor':
-            return Yhat, TP, FP, TN, FN, correctRejects, Yhat_soft
-        else:
-            return Yhat,TP,FP,TN,FN, incorrectRejects, Yhat_soft
+       
+        return  Yhat,TP,FP,TN,FN, numRejects, Yhat_soft
+        
 
     def propose_rs(self, prs_in,nrs_in,pcovered,ncovered,overlapped, covered,Yhat, Yhat_soft, contras, vt,print_message = False):
         prs = prs_in.copy()
         nrs = nrs_in.copy()
         Yhat = pd.Series(Yhat)
+        if len(prs_in) > 0:
+            pconfs = np.max(self.p_precision_matrix[:,prs_in],axis = 1)
+        else: 
+            pconfs = np.zeros(len(pcovered))
+        if len(nrs_in) > 0:
+            nconfs = np.max(self.n_precision_matrix[:,nrs_in],axis = 1)
+        else:
+            nconfs = np.zeros(len(ncovered))
+        conf_model = nconfs
+        conf_model[pcovered] = pconfs[pcovered]
         incorr = np.where((Yhat!=self.Y) & covered)[0] # correct interpretable models
         incorrb = np.where((Yhat!=self.Y) & ~covered)[0] 
         rulePreds = self.Yb.copy()
         rulePreds[ncovered] = 0
         rulePreds[pcovered] = 1
         asymCosts = self.Y.replace({0: self.asym_loss[1], 1: self.asym_loss[0]})
+        agreement = (rulePreds == self.Yb)
+        self.Paccept = self.fA(self.conf_human, conf_model, agreement)
         err = np.abs(self.Y - Yhat) * self.Paccept * asymCosts
         contras = np.where((rulePreds != self.Yb) & covered)[0]
         err[contras] += self.contradiction_reg
@@ -355,15 +393,15 @@ class tr(object):
                 move = ['add']
                 sign = [int(self.Y[ex] == 1)]
 
-        if (ex in incorr) or (ex in contras):
-            print('signs: {}, prs_old:{}, nrs_old:{}'.format(sign, prs, nrs))
+        #if (ex in incorr) or (ex in contras):
+        #    print('signs: {}, prs_old:{}, nrs_old:{}'.format(sign, prs, nrs))
         for j in range(len(move)):
             if sign[j]==1:
                 prs = self.action(move[j],sign[j],ex,prs,Yhat,pcovered)
             else:
                 nrs = self.action(move[j],sign[j],ex,nrs,Yhat,ncovered)
-        if (ex in incorr) or (ex in contras):
-            print('prs_new:{}, nrs_new:{}'.format(prs, nrs))
+        #if (ex in incorr) or (ex in contras):
+        #    print('prs_new:{}, nrs_new:{}'.format(prs, nrs))
         
 
         p = np.sum(self.pRMatrix[:,prs],axis = 1)>0
@@ -520,7 +558,7 @@ class tr(object):
         Yhat[pind] = 1
         return Yhat,covered,Yb
 
-    def predictSoft(self, df, Yb, paccept):
+    def predictSoft(self, df, Yb, conf_human, fA):
         prules = [self.prules[i] for i in self.prs_min]
         nrules = [self.nrules[i] for i in self.nrs_min]
         # if isinstance(self.df, scipy.sparse.csc.csc_matrix)==False:
@@ -546,6 +584,8 @@ class tr(object):
         covered = [x for x in range(len(Yb)) if x in pind or x in nind]
         Yhat = np.array([i for i in Yb])
         Yhat = Yhat.astype(float)
+        conf_model = None
+        paccept = fA(conf_human, conf_model)
         Yhat[nind] = Yhat[nind] * (1 - paccept[nind]) + (paccept[nind]) * 0  # covers cases where model predicts negative
         Yhat[pind] = (Yb.copy()[pind] * (1 - paccept[pind])) + ((paccept[pind]) * 1)  # covers cases where model predicts positive
         # binarize the soft result
@@ -553,7 +593,7 @@ class tr(object):
         Yhat[pind] = Yhat[pind].round()
         return Yhat,covered,Yb
 
-    def predictHumanInLoop(self, df, Yb, accept):
+    def predictHumanInLoop(self, df, Yb, conf_human, fA):
         prules = [self.prules[i] for i in self.prs_min]
         nrules = [self.nrules[i] for i in self.nrs_min]
         dfn = 1-df #df has negative associations
@@ -574,6 +614,8 @@ class tr(object):
         else:
             n = np.zeros(len(Yb)).astype(bool)
 
+        conf_model = None        
+        accept = fA(conf_human, conf_model)
 
         pind = list(np.where(p)[0])
         nind = list(np.where(n)[0])

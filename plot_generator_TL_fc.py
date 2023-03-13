@@ -7,7 +7,7 @@ from scipy.stats import ttest_ind
 from statistics import mean, stdev
 import math
 
-numRuns = 5 #adjust this depending on how many runs of results were produced
+numRuns = 10 #adjust this depending on how many runs of results were produced
 
 #read in results
 path = 'fico_contradiction_results/'
@@ -215,30 +215,30 @@ for whichTeam in range(len(settings)):
             
             
             costFrame.sort_values(by=['Costs'], inplace=True)
-            row.plot(costFrame['Costs'], costFrame['fc_TR_Objective'], c='red', marker='v', label = 'fc_TeamRules', markersize=1)
+            row.plot(costFrame['Costs'], costFrame['fc_TR_Objective'], c='brown', marker='v', label = 'fc_TeamRules', markersize=1)
             row.plot(costFrame['Costs'], costFrame['TR_Objective'], c='blue', marker='.', label='TeamRules', markersize=1)
             row.fill_between(costFrame['Costs'], 
                        costFrame['fc_TR_Objective']-(costFrame['fc_TR_Objective_SE']),
                        costFrame['fc_TR_Objective']+(costFrame['fc_TR_Objective_SE']) ,
-                      color='red', alpha=0.2)
+                      color='brown', alpha=0.2)
             row.fill_between(costFrame['Costs'], 
                        costFrame['TR_Objective']-(costFrame['TR_Objective_SE']),
                        costFrame['TR_Objective']+(costFrame['TR_Objective_SE']) ,
                       color='blue', alpha=0.2)
-            row.set_xlabel('Contradiction Cost', fontsize=14)
+            row.set_xlabel('Reconciliation Cost', fontsize=14)
             row.set_ylabel('Team Loss', fontsize=14)
             row.tick_params(labelrotation=45, labelsize=10)
             row.legend(prop={'size': 6})
 
         else:
             row.scatter(TR_con, TR_loss, c='blue', marker = '.',  alpha=0.2, label='TeamRules', s=6)
-            row.scatter(fc_TR_con, fc_TR_loss, c='red', marker = 'v',  alpha=0.2, label='fc_TeamRules', s=6)
+            row.scatter(fc_TR_con, fc_TR_loss, c='brown', marker = 'v',  alpha=0.2, label='fc_TeamRules', s=6)
             leg = row.legend(prop={'size': 6})
             for lh in leg.legendHandles: 
                 lh.set_alpha(1)
 
             costFrame.sort_values(by=['fc_TR_Contradictions'], inplace=True)
-            row.plot(costFrame['fc_TR_Contradictions'], costFrame['fc_TRTeamLoss'], marker = 'v', markersize=1, c='red', label = 'fc_TeamRules')
+            row.plot(costFrame['fc_TR_Contradictions'], costFrame['fc_TRTeamLoss'], marker = 'v', markersize=1, c='brown', label = 'fc_TeamRules')
             costFrame.sort_values(by=['TR_Contradictions'], inplace=True)
             row.plot(costFrame['TR_Contradictions'], costFrame['TeamRulesTeamLoss'], marker='.', markersize=1, c='blue', label='TeamRules')
             row.set_xlabel('# of Contradictions', fontsize=14)

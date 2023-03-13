@@ -321,6 +321,7 @@ class HAI_team():
         self.tr = None
         self.hyrs = None
         self.fA = None
+        self.fA_true = None
         self.force_complete_coverage = False
         self.asym_loss = [1,1]
 
@@ -342,9 +343,13 @@ class HAI_team():
         self.coverage_reg = coverage_reg
         self.contradiction_reg = contradiction_reg
         self.fA = fA
+        self.fA_true = fA
         self.rejectType = rejectType
         self.force_complete_coverage = force_complete_coverage
         self.asym_loss = asym_loss
+    
+    def set_true_fA(fA):
+        self.fA_true = fA
 
     def make_human_model(self, type='logistic', acceptThreshold=0.5, numExamplesToUse=100, numColsToUse=0,
                          biasFactor=0, partial_train_percent = 1, alterations=None, drop=[]):
@@ -732,7 +737,7 @@ class HAI_team():
 
 
 
-    def set_custom_confidence(self, train, val, test, type='prob'):
+    def set_custom_confidence(self, train, val, test, type='prob', fA=None):
         self.data_model_dict['train_conf'] = pd.Series(train).clip(lower=0,upper=1)
         self.data_model_dict['val_conf'] = pd.Series(val).clip(lower=0,upper=1)
         self.data_model_dict['test_conf'] = pd.Series(test).clip(lower=0,upper=1)
@@ -750,6 +755,33 @@ class HAI_team():
 
 
         self.post_human_dict = deepcopy(self.data_model_dict)
+
+
+    def train_confidence_model(self, type='perfect', data_to_use=1):
+
+        numItems = int(len(self.data_model_dict['train_accept'])*data_to_use)
+        self.conf_model = xgb.XGBRegressor()
+        self.conf_model.fit(self.data_model_dict['Xtrain'].iloc[0:numItems, :], self.data_model_dict['train_conf'][0:numItems])
+        
+        if type != 'perfect':
+            self.data_model_dict['pred_conf_train'] = self.conf_model.predict_proba(self.data_model_dict['Xtrain'])[
+                                                    :, 1]
+            self.data_model_dict['pred_conf_val'] = self.conf_model.predict_proba(self.data_model_dict['Xval'])[:, 1]
+            self.data_model_dict['pred_conf_test'] = self.conf_model.predict_proba(self.data_model_dict['Xtest'])[:,
+                                                   1]
+            
+
+        elif type == 'perfect':
+            self.data_model_dict['pred_conf_train'] = self.data_model_dict['train_conf']
+            self.data_model_dict['pred_conf_val'] = self.data_model_dict['val_conf']
+            self.data_model_dict['pred_conf_test'] = self.data_model_dict['test_conf']
+            
+            
+        print('Accuracy of Conf Model on Train Data: ' + str(
+            metrics.mean_squared_error(self.data_model_dict['pred_conf_train'], self.data_model_dict['train_conf'])))
+        print('Accuracy of Mental Aversion Model on Val Data: ' + str(
+            metrics.mean_squared_error(self.data_model_dict['pred_conf_val'], self.data_model_dict['val_conf'])))
+
 
     def train_mental_aversion_model(self, type='xgboost', probWrong=0, noise=0, data_to_use=1):
         '''Needs to have human values before can be run'''
@@ -1050,7 +1082,7 @@ class HAI_team():
     def setup_tr(self):
         model = tr(self.data_model_dict['Xtrain'], self.data_model_dict['Ytrain'],
                     self.data_model_dict['Ybtrain'],
-                    self.data_model_dict['paccept_train'])
+                    self.data_model_dict['train_conf'])
 
         model.set_parameters(self.alpha, self.beta, self.coverage_reg, self.contradiction_reg, self.fA, self.rejectType, self.force_complete_coverage, self.asym_loss)
 
@@ -1063,9 +1095,25 @@ class HAI_team():
     def train_tr(self):
         iters = self.iters
         maps, accuracy_min, covered_min = self.tr.train(iters, T0=0.01, print_message=False)
+
+        conf_model_train = None
+        conf_model_val = None
+        conf_model_test = None
+
+        #given model, what is probability of accept behavior
+        self.data_model_dict['paccept_train'] = self.fA(self.data_model_dict['pred_conf_train'], conf_model_train)
+        self.data_model_dict['paccept_val'] = self.fA(self.data_model_dict['pred_conf_val'], conf_model_val)
+        self.data_model_dict['paccept_test'] = self.fA(self.data_model_dict['pred_conf_test'], conf_model_test)
+
+        #given model, what is realized accept behavior
+        self.data_model_dict['train_accept'] = (pd.Series(bernoulli.rvs(p=self.data_model_dict['paccept_train'], size=len(self.data_model_dict['paccept_train']))).astype(bool))
+        self.data_model_dict['val_accept'] = (pd.Series(bernoulli.rvs(p=self.data_model_dict['paccept_val'], size=len(self.data_model_dict['paccept_val']))).astype(bool))
+        self.data_model_dict['test_accept'] = (pd.Series(bernoulli.rvs(p=self.data_model_dict['paccept_test'], size=len(self.data_model_dict['paccept_test']))).astype(bool))
+
         train_preds, train_covered, train_Yb = self.tr.predictHumanInLoop(self.data_model_dict['Xtrain'],
                                                                               self.data_model_dict['Ybtrain'],
-                                                                              self.data_model_dict['train_accept'])
+                                                                              self.data_model_dict['train_conf'],
+                                                                              self.fA)
 
         modelonly_train_preds, _, _ = self.tr.predict(self.data_model_dict['Xtrain'],
                                                           self.data_model_dict['Ybtrain'])
@@ -1081,12 +1129,14 @@ class HAI_team():
 
         test_preds, test_covered, test_Yb = self.tr.predictHumanInLoop(self.data_model_dict['Xtest'],
                                                                            self.data_model_dict['Ybtest'],
-                                                                           self.data_model_dict['test_accept'])
+                                                                           self.data_model_dict['test_conf'],
+                                                                           self.fA_true)
 
         soft_train_preds, soft_train_covered, soft_train_Yb = self.tr.predictSoft(self.data_model_dict['Xtrain'],
                                                                                       self.data_model_dict['Ybtrain'],
                                                                                       self.data_model_dict[
-                                                                                          'paccept_train'])
+                                                                                          'train_conf'],
+                                                                                          self.fA)
 
         train_soft_error = 1 - metrics.accuracy_score(self.data_model_dict['Ytrain'],
                                                       soft_train_preds)
@@ -1099,7 +1149,8 @@ class HAI_team():
 
         soft_test_preds, soft_test_covered, soft_test_Yb = self.tr.predictSoft(self.data_model_dict['Xtest'],
                                                                                    self.data_model_dict['Ybtest'],
-                                                                                   self.data_model_dict['paccept_test'])
+                                                                                   self.data_model_dict['paccept_test'],
+                                                                                   self.fA_true)
 
         test_soft_error = 1 - metrics.accuracy_score(self.data_model_dict['Ytest'],
                                                      soft_test_preds)
@@ -1108,9 +1159,9 @@ class HAI_team():
                                'train_error_human': train_error_human,
                                'train_soft_error': train_soft_error,
                                'train_rejects_soft': sum(self.data_model_dict['Ybtrain'][(train_covered != -1) & (
-                                       self.data_model_dict['paccept_train'] <= 0.5)] != train_covered[
+                                       self.data_model_dict['train_accept'] == False)] != train_covered[
                                                              (train_covered != -1) & (self.data_model_dict[
-                                                                                          'paccept_train'] <= 0.5)]),
+                                                                                          'train_accept'] == False)]),
                                'train_rejects_actual': sum(self.data_model_dict['Ybtrain'][(train_covered != -1) & (
                                    ~self.data_model_dict['train_accept'])] != train_covered[(train_covered != -1) & (
                                    ~self.data_model_dict['train_accept'])]),

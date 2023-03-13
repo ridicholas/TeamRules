@@ -9,7 +9,7 @@ import math
 
 numRuns = 10 #adjust this depending on how many runs of results were produced
 
-path = 'adult_contradiction_results/'
+path = 'gaussian_contradiction_results/'
 
 asym_loss = [1,1]
 data = path.split('_')[0]
@@ -264,7 +264,7 @@ for whichTeam in range(len(settings)):
                        costFrame['TR_Objective']-(costFrame['TR_Objective_SE']),
                        costFrame['TR_Objective']+(costFrame['TR_Objective_SE']) ,
                       color='blue', alpha=0.2)
-            row.set_xlabel('Contradiction Cost', fontsize=14)
+            row.set_xlabel('Reconciliation Cost', fontsize=14)
             row.set_ylabel('Team Loss', fontsize=14)
             row.tick_params(labelrotation=45, labelsize=10)
             #row.set_title('{} Setting'.format(setting), fontsize=15)

@@ -30,7 +30,43 @@ beta = 0
 iters = Niteration
 coverage_reg = 0
 rejection_reg = 0
-fA=0.5
+
+
+def basic_ADB_func_det(c_human, c_model=None, agreement=None):
+    #returns the probability that the human accepts a recommendation given conf of human and conf of model
+    return c_human <= 0.5
+
+def basic_ADB_func_prob(c_human, c_model=None, agreement=None):
+    #returns the probability that the human accepts a recommendation given conf of human and conf of model
+    return 1-c_human
+
+def basic_ADB_predicted_accept(paccept):
+    #returns back the passed in probability that the human accepts a recommendation given feature values
+    return paccept
+
+def complex_ADB(c_human, c_model, agreement, delta=5, beta=0.05, k=0.63, gamma=0.95):
+    #from will you accept the AI recommendation
+    def w(p, k):
+        return (p**k)/((p**k)+(1-p)**k)
+    
+    c_human_new = c_human.copy()
+    c_human_new[~agreement] = 1-c_human_new[~agreement]
+    a = (c_model**gamma)/((c_model**gamma)+((1-c_model)**gamma))
+    b = (c_human_new**gamma)/((c_human_new**gamma)+((1-c_human_new)**gamma))
+    
+    conf = 1/(1+(((1-a)*(1-b))/(a*b)))
+    
+    util_accept = (1+beta)*w(conf,k)-beta
+    util_reject = 1-(1+beta)*w(conf,k)
+
+
+    prob = np.exp(delta*util_accept)/(np.exp(delta*util_accept)+np.exp(delta*util_reject))
+    df = pd.DataFrame({'c_human': c_human, 'c_human_new' : c_human_new, 'conf' : conf, 'c_model':c_model, 'agreement':agreement, 'prob': prob})
+
+    return prob
+
+
+fA=basic_ADB_func_det
 
 
 #make teams
@@ -163,7 +199,6 @@ for run in range(0, 10):
 
     coverage_reg = 0
     contradiction_reg = 0
-    fA = 0.5
     # split training and test randomly
     team1.makeAdditionalTestSplit(testPercent=0.2, replaceExisting=True, random_state=run, others=[team2, team3])
 
@@ -186,6 +221,7 @@ for run in range(0, 10):
 
     # train aversion and error boundary models
     team1.train_mental_aversion_model('perfect')
+    team1.train_confidence_model('perfect')
     team1.train_mental_error_boundary_model()
     team_info.loc[1, 'human true accepts'] = (team1.data_model_dict['test_conf'] < team1_2_start_threshold).sum()
     team_info.loc[1, 'human true rejects'] = (team1.data_model_dict['test_conf'] >= team1_2_start_threshold).sum()
@@ -199,6 +235,7 @@ for run in range(0, 10):
                                                                          team1.data_model_dict['test_accept'])
 
     team2.train_mental_aversion_model('perfect')
+    team2.train_confidence_model('perfect')
     team2.train_mental_error_boundary_model()
     team_info.loc[2, 'human true accepts'] = (team2.data_model_dict['test_conf'] < team1_2_start_threshold).sum()
     team_info.loc[2, 'human true rejects'] = (team2.data_model_dict['test_conf'] >= team1_2_start_threshold).sum()
@@ -212,6 +249,7 @@ for run in range(0, 10):
                                                                          team2.data_model_dict['test_accept'])
 
     team3.train_mental_aversion_model('perfect')
+    team3.train_confidence_model('perfect')
     team3.train_mental_error_boundary_model()
     team_info.loc[3, 'human true accepts'] = (team3.data_model_dict['test_conf'] < team3_4_start_threshold).sum()
     team_info.loc[3, 'human true rejects'] = (team3.data_model_dict['test_conf'] >= team3_4_start_threshold).sum()
@@ -236,8 +274,8 @@ for run in range(0, 10):
                                   alpha,
                                   beta, iters, coverage_reg, contradiction_reg, fA)
         team1.setup_hyrs()
-        #team1.train_hyrs()
-        #team1.filter_hyrs_results(mental=True, error=False)
+        team1.train_hyrs()
+        team1.filter_hyrs_results(mental=True, error=False)
 
 
         print('training team1 tr model...')
@@ -251,6 +289,7 @@ for run in range(0, 10):
             team1.setup_brs()
             team1.train_brs()
             # print(team1.brs_results['test_error_modelonly'])
+
         
         print('training team2 hyrs model...')
         team2.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
@@ -292,7 +331,7 @@ for run in range(0, 10):
             #print(team3.brs_results['test_error_modelonly'])
 
         
-
+        
         # append rules lists
         team1_rule_lists.loc[run, 'TR_prules'] = team1.tr.prs_min
         team1_rule_lists.loc[run, 'TR_nrules'] = team1.tr.nrs_min
@@ -316,16 +355,17 @@ for run in range(0, 10):
         
         
         team1.full_hyrs_results.to_pickle('{}/cost_{}_team1_hyrs_filtered_run{}.pkl'.format(folder, reg, run))
+        
         team1.full_tr_results.to_pickle('{}/cost_{}_team1_tr_filtered_run{}.pkl'.format(folder, reg, run))
 
         with open('{}/cost_{}_team1_tr_results_run{}.pkl'.format(folder, reg, run), 'wb') as outp:
             pickle.dump(team1.tr_results, outp, pickle.HIGHEST_PROTOCOL)
         outp.close()
-
+        
         with open('{}/cost_{}_team1_hyrs_results_run{}.pkl'.format(folder, reg, run), 'wb') as outp:
             pickle.dump(team1.hyrs_results, outp, pickle.HIGHEST_PROTOCOL)
         outp.close()
-
+        
         
         # team2
         team2.full_hyrs_results.to_pickle('{}/cost_{}_team2_hyrs_filtered_run{}.pkl'.format(folder, reg, run))
@@ -436,6 +476,7 @@ for run in range(0, 10):
         with open('{}/fc_cost_{}_team3_hyrs_results_run{}.pkl'.format(folder, reg, run), 'wb') as outp:
             pickle.dump(team3.hyrs_results, outp, pickle.HIGHEST_PROTOCOL)
         outp.close()
+        
 
         
 print('finally done.')

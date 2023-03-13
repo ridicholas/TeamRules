@@ -10,7 +10,7 @@ import math
 numRuns = 10 #adjust this depending on how many runs of results were produced
 
 #read in results
-path = 'gaussian_discretion_results0.3cost/'
+path = 'gaussian_discretion_results03cost/'
 data = path.split('_')[0]
 discErrors = [0.01, 0.05, 0.25, 0.5, 0.8, 1]
 cost = 0.3
@@ -185,7 +185,7 @@ for whichTeam in range(len(settings)):
     
     
     discErrorFrame.sort_values(by=['discErrors'], inplace=True)
-    plt.plot(discErrorFrame['Discretion Error'], discErrorFrame['HyRS_Objective'], c='red',  label = 'c-HyRS', markersize=1)
+    plt.plot(discErrorFrame['Discretion Error'], discErrorFrame['HyRS_Objective'], c='red',  label = 'HyRS', markersize=1)
     plt.plot(discErrorFrame['Discretion Error'], discErrorFrame['TR_Objective'], c='blue', label='TeamRules', markersize=1)
     plt.fill_between(discErrorFrame['Discretion Error'], 
                 discErrorFrame['HyRS_Objective']-(discErrorFrame['HyRS_Objective_SE']),
