@@ -114,6 +114,7 @@ class brs(object):
         select = np.argsort(cond_entropy[supp_select])[::-1][-N:]
         self.rules = [rules[i] for i in supp_select[select]]
         self.RMatrix = np.array(Z[:, supp_select[select]])
+        self.p_precision_matrix = np.array(np.multiply(Z[:,supp_select[select]], p1[supp_select[select]]))
         print('\tTook %0.3fs to generate %d rules' % (time.time() - start_time, len(self.rules)))
 
     def set_parameters(self, a1=100, b1=10, a2=100, b2=10, al=None, bl=None):

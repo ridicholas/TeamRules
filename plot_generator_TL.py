@@ -9,7 +9,7 @@ import math
 
 numRuns = 10 #adjust this depending on how many runs of results were produced
 
-path = 'gaussian_contradiction_results/'
+path = 'fico_contradiction_results/'
 
 asym_loss = [1,1]
 data = path.split('_')[0]
@@ -296,7 +296,7 @@ for whichTeam in range(len(settings)):
         
         i+=1
     #fig.savefig('Plots/asym_2_1_{}_{}.png'.format(data,setting), bbox_inches='tight')
-    fig.savefig('Plots/{}_{}.png'.format(data,setting), bbox_inches='tight')
+    fig.savefig('Plots/new{}_{}.png'.format(data,setting), bbox_inches='tight')
 
 
     

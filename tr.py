@@ -134,6 +134,57 @@ class tr(object):
         
 
         return rules, RMatrix, supp, p1[ind], FP[ind], precision_matrix
+    
+    def get_model_conf_agreement(self, df, Yb):
+        #get max confidence of each rule 
+        prules = [self.prules[i] for i in self.prs_min]
+        nrules = [self.nrules[i] for i in self.nrs_min]
+        pprecisions = [self.pprecision[i] for i in self.prs_min]
+        nprecisions = [self.nprecision[i] for i in self.nrs_min]
+        # if isinstance(self.df, scipy.sparse.csc.csc_matrix)==False:
+        dfn = 1-df #df has negative associations
+        dfn.columns = [name.strip() + 'neg' for name in df.columns]
+        df_test = pd.concat([df,dfn],axis = 1)
+        if len(prules):
+            p = [[] for rule in prules]
+            pconfs = [[] for rule in prules]
+            
+            for i,rule in enumerate(prules):
+                p[i] = (np.sum(df_test[list(rule)],axis=1)==len(rule)).astype(int)
+                pconfs[i] = p[i].replace(1, pprecisions[i])
+
+            p = (np.sum(p,axis=0)>0).astype(int)
+            pconfs = (np.max(pconfs,axis=0))
+        else:
+            p = np.zeros(len(Yb))
+            pconfs = p.copy()
+        if len(nrules):
+            n = [[] for rule in nrules]
+            nconfs = [[] for rule in nrules]
+            for i,rule in enumerate(nrules):
+                n[i] = (np.sum(df_test[list(rule)],axis=1)==len(rule)).astype(int)
+                nconfs[i] = n[i].replace(1, nprecisions[i])
+            n = (np.sum(n,axis=0)>0).astype(int)
+            nconfs = (np.max(nconfs,axis=0))
+        else:
+            n = np.zeros(len(Yb))
+            nconfs = n.copy()
+        pind = list(np.where(p)[0])
+        nind = list(np.where(n)[0])
+        confs = nconfs
+        confs[pind] = pconfs[pind]
+        rulePreds = Yb.copy()
+        rulePreds[nind] = 0
+        rulePreds[pind] = 1
+        agreement = (rulePreds == Yb)
+
+
+        return confs, agreement
+        
+
+
+
+
 
     
     def train(self, Niteration = 500, print_message=False, interpretability = 'size', T0 = 0.01):
@@ -259,6 +310,7 @@ class tr(object):
         oerror = sum(self.Y[overlapped]!=Yhat[overlapped])
         berror = sum(self.Y[~covered]!=Yhat[~covered])
         return perror, nerror, oerror, berror
+    
 
     def compute_obj(self,pcovered,ncovered, pconfs, nconfs):
 
@@ -581,11 +633,15 @@ class tr(object):
             n = np.zeros(len(Yb))
         pind = list(np.where(p)[0])
         nind = list(np.where(n)[0])
+        pcovered = [x for x in range(len(Yb)) if x in pind]
+        ncovered = [x for x in range(len(Yb)) if x in nind]
         covered = [x for x in range(len(Yb)) if x in pind or x in nind]
         Yhat = np.array([i for i in Yb])
         Yhat = Yhat.astype(float)
-        conf_model = None
-        paccept = fA(conf_human, conf_model)
+
+        conf_model, agreement = self.get_model_conf_agreement(df, Yb)
+        
+        paccept = fA(conf_human, conf_model, agreement)
         Yhat[nind] = Yhat[nind] * (1 - paccept[nind]) + (paccept[nind]) * 0  # covers cases where model predicts negative
         Yhat[pind] = (Yb.copy()[pind] * (1 - paccept[pind])) + ((paccept[pind]) * 1)  # covers cases where model predicts positive
         # binarize the soft result
@@ -601,6 +657,7 @@ class tr(object):
         df_test = pd.concat([df,dfn],axis = 1)
         if len(prules):
             p = [[] for rule in prules]
+            pconfs = [[] for rule in prules]
             for i,rule in enumerate(prules):
                 p[i] = (np.sum(df_test[list(rule)],axis=1)==len(rule)).astype(int)
             p = (np.sum(p,axis=0)>0).astype(bool)
@@ -614,8 +671,11 @@ class tr(object):
         else:
             n = np.zeros(len(Yb)).astype(bool)
 
-        conf_model = None        
-        accept = fA(conf_human, conf_model)
+        
+        conf_model, agreement = self.get_model_conf_agreement(df, Yb)
+        
+        paccept = fA(conf_human, conf_model, agreement)
+        accept = bernoulli.rvs(paccept, size=len(paccept)).astype(bool)
 
         pind = list(np.where(p)[0])
         nind = list(np.where(n)[0])

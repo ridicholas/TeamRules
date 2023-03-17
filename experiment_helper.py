@@ -1096,14 +1096,14 @@ class HAI_team():
         iters = self.iters
         maps, accuracy_min, covered_min = self.tr.train(iters, T0=0.01, print_message=False)
 
-        conf_model_train = None
-        conf_model_val = None
-        conf_model_test = None
+        conf_model_train, agreement_train = self.tr.get_model_conf_agreement(self.data_model_dict['Xtrain'], self.data_model_dict['Ybtrain'])
+        conf_model_val, agreement_val = self.tr.get_model_conf_agreement(self.data_model_dict['Xval'], self.data_model_dict['Ybval'])
+        conf_model_test, agreement_test = self.tr.get_model_conf_agreement(self.data_model_dict['Xtest'], self.data_model_dict['Ybtest'])
 
         #given model, what is probability of accept behavior
-        self.data_model_dict['paccept_train'] = self.fA(self.data_model_dict['pred_conf_train'], conf_model_train)
-        self.data_model_dict['paccept_val'] = self.fA(self.data_model_dict['pred_conf_val'], conf_model_val)
-        self.data_model_dict['paccept_test'] = self.fA(self.data_model_dict['pred_conf_test'], conf_model_test)
+        self.data_model_dict['paccept_train'] = self.fA_true(self.data_model_dict['pred_conf_train'], conf_model_train, agreement_train)
+        self.data_model_dict['paccept_val'] = self.fA_true(self.data_model_dict['pred_conf_val'], conf_model_val, agreement_val)
+        self.data_model_dict['paccept_test'] = self.fA_true(self.data_model_dict['pred_conf_test'], conf_model_test, agreement_test)
 
         #given model, what is realized accept behavior
         self.data_model_dict['train_accept'] = (pd.Series(bernoulli.rvs(p=self.data_model_dict['paccept_train'], size=len(self.data_model_dict['paccept_train']))).astype(bool))
@@ -1134,8 +1134,7 @@ class HAI_team():
 
         soft_train_preds, soft_train_covered, soft_train_Yb = self.tr.predictSoft(self.data_model_dict['Xtrain'],
                                                                                       self.data_model_dict['Ybtrain'],
-                                                                                      self.data_model_dict[
-                                                                                          'train_conf'],
+                                                                                      self.data_model_dict['train_conf'],
                                                                                           self.fA)
 
         train_soft_error = 1 - metrics.accuracy_score(self.data_model_dict['Ytrain'],
@@ -1149,7 +1148,7 @@ class HAI_team():
 
         soft_test_preds, soft_test_covered, soft_test_Yb = self.tr.predictSoft(self.data_model_dict['Xtest'],
                                                                                    self.data_model_dict['Ybtest'],
-                                                                                   self.data_model_dict['paccept_test'],
+                                                                                   self.data_model_dict['test_conf'],
                                                                                    self.fA_true)
 
         test_soft_error = 1 - metrics.accuracy_score(self.data_model_dict['Ytest'],
@@ -1223,11 +1222,27 @@ class HAI_team():
         iters = self.iters
         maps, accuracy_min, covered_min = self.hyrs.train(iters, T0=0.01, print_message=False)
 
+        conf_model_train, agreement_train = self.hyrs.get_model_conf_agreement(self.data_model_dict['Xtrain'], self.data_model_dict['Ybtrain'])
+        conf_model_val, agreement_val = self.hyrs.get_model_conf_agreement(self.data_model_dict['Xval'], self.data_model_dict['Ybval'])
+        conf_model_test, agreement_test = self.hyrs.get_model_conf_agreement(self.data_model_dict['Xtest'], self.data_model_dict['Ybtest'])
+
+        #given model, what is probability of accept behavior
+        self.data_model_dict['paccept_train'] = self.fA_true(self.data_model_dict['pred_conf_train'], conf_model_train, agreement_train)
+        self.data_model_dict['paccept_val'] = self.fA_true(self.data_model_dict['pred_conf_val'], conf_model_val, agreement_val)
+        self.data_model_dict['paccept_test'] = self.fA_true(self.data_model_dict['pred_conf_test'], conf_model_test, agreement_test)
+
+        #given model, what is realized accept behavior
+        self.data_model_dict['train_accept'] = (pd.Series(bernoulli.rvs(p=self.data_model_dict['paccept_train'], size=len(self.data_model_dict['paccept_train']))).astype(bool))
+        self.data_model_dict['val_accept'] = (pd.Series(bernoulli.rvs(p=self.data_model_dict['paccept_val'], size=len(self.data_model_dict['paccept_val']))).astype(bool))
+        self.data_model_dict['test_accept'] = (pd.Series(bernoulli.rvs(p=self.data_model_dict['paccept_test'], size=len(self.data_model_dict['paccept_test']))).astype(bool))
+
         train_preds, train_covered, train_Yb = self.hyrs.predict(self.data_model_dict['Xtrain'],
                                                                             self.data_model_dict['Ybtrain'])
 
         train_preds_collabing = self.hyrs.humanifyPreds(train_preds, self.data_model_dict['Ybtrain'],
-                                                                   self.data_model_dict['train_accept'])
+                                                                   self.data_model_dict['train_conf'], 
+                                                                   self.fA, 
+                                                                   self.data_model_dict['Xtrain'])
 
         train_error_hyrs = 1 - metrics.accuracy_score(self.data_model_dict['Ytrain'],
                                                           train_preds)
@@ -1242,7 +1257,9 @@ class HAI_team():
                                                                          self.data_model_dict['Ybtest'])
 
         test_preds_collabing = self.hyrs.humanifyPreds(test_preds, self.data_model_dict['Ybtest'],
-                                                                  self.data_model_dict['test_accept'])
+                                                                  self.data_model_dict['test_conf'],
+                                                                  self.fA_true, 
+                                                                   self.data_model_dict['Xtest'])
 
         test_error_hyrs = 1 - metrics.accuracy_score(self.data_model_dict['Ytest'],
                                                          test_preds)

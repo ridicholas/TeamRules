@@ -77,13 +77,13 @@ class hyrs(object):
             df = 1 - self.df
             df.columns = [name.strip() + 'neg' for name in self.df.columns]
             df = pd.concat([self.df, df], axis=1)
-        self.prules, self.pRMatrix, self.psupp, self.pprecision, self.perror = self.screen_rules(prules, df, self.Y, N,
+        self.prules, self.pRMatrix, self.psupp, self.pprecision, self.perror, self.p_precision_matrix = self.screen_rules(prules, df, self.Y, N,
                                                                                                  supp)
         if self.force_complete_coverage:
-            self.nrules, self.nRMatrix, self.nsupp, self.nprecision, self.nerror = self.screen_rules(nrules, df, 1 - self.Y,
+            self.nrules, self.nRMatrix, self.nsupp, self.nprecision, self.nerror, self.n_precision_matrix = self.screen_rules(nrules, df, 1 - self.Y,
                                                                                                  N, 0)
         else:
-            self.nrules, self.nRMatrix, self.nsupp, self.nprecision, self.nerror = self.screen_rules(nrules, df, 1 - self.Y,
+            self.nrules, self.nRMatrix, self.nsupp, self.nprecision, self.nerror, self.n_precision_matrix = self.screen_rules(nrules, df, 1 - self.Y,
                                                                                                  N, supp)
 
         # print '\tTook %0.3fs to generate %d rules' % (self.screen_time, len(self.rules))
@@ -129,7 +129,54 @@ class hyrs(object):
         RMatrix = np.array(Z[:, ind])
         rules_len = [len(set([name.split('_')[0] for name in rule])) for rule in rules]
         supp = np.array(np.sum(Z, axis=0).tolist()[0])[ind]
-        return rules, RMatrix, supp, p1[ind], FP[ind]
+        precision_matrix = np.array(np.multiply(Z[:,ind], p1[ind]))
+        return rules, RMatrix, supp, p1[ind], FP[ind], precision_matrix
+    
+    def get_model_conf_agreement(self, df, Yb):
+        #get max confidence of each rule 
+        prules = [self.prules[i] for i in self.prs_min]
+        nrules = [self.nrules[i] for i in self.nrs_min]
+        pprecisions = [self.pprecision[i] for i in self.prs_min]
+        nprecisions = [self.nprecision[i] for i in self.nrs_min]
+        # if isinstance(self.df, scipy.sparse.csc.csc_matrix)==False:
+        dfn = 1-df #df has negative associations
+        dfn.columns = [name.strip() + 'neg' for name in df.columns]
+        df_test = pd.concat([df,dfn],axis = 1)
+        if len(prules):
+            p = [[] for rule in prules]
+            pconfs = [[] for rule in prules]
+            
+            for i,rule in enumerate(prules):
+                p[i] = (np.sum(df_test[list(rule)],axis=1)==len(rule)).astype(int)
+                pconfs[i] = p[i].replace(1, pprecisions[i])
+
+            p = (np.sum(p,axis=0)>0).astype(int)
+            pconfs = (np.max(pconfs,axis=0))
+        else:
+            p = np.zeros(len(Yb))
+            pconfs = p.copy()
+        if len(nrules):
+            n = [[] for rule in nrules]
+            nconfs = [[] for rule in nrules]
+            for i,rule in enumerate(nrules):
+                n[i] = (np.sum(df_test[list(rule)],axis=1)==len(rule)).astype(int)
+                nconfs[i] = n[i].replace(1, nprecisions[i])
+            n = (np.sum(n,axis=0)>0).astype(int)
+            nconfs = (np.max(nconfs,axis=0))
+        else:
+            n = np.zeros(len(Yb))
+            nconfs = n.copy()
+        pind = list(np.where(p)[0])
+        nind = list(np.where(n)[0])
+        confs = nconfs
+        confs[pind] = pconfs[pind]
+        rulePreds = Yb.copy()
+        rulePreds[nind] = 0
+        rulePreds[pind] = 1
+        agreement = (rulePreds == Yb)
+
+
+        return confs, agreement
 
     def train(self, Niteration=5000, print_message=False, interpretability='size', T0=0.01):
         self.maps = []
@@ -510,7 +557,10 @@ class hyrs(object):
         Yhat[pind] = 1
         return Yhat, covered, Yb
 
-    def humanifyPreds(self, preds, Yb, accept):
+    def humanifyPreds(self, preds, Yb, conf_human, fA, X):
+        conf_model, agreement = self.get_model_conf_agreement(X, Yb)
+        paccept = fA(conf_human, conf_model, agreement)
+        accept = bernoulli.rvs(paccept, size=len(paccept)).astype(bool)    
         finalPreds = Yb.copy()
         finalPreds[accept] = preds[accept]
         return finalPreds
