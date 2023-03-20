@@ -49,9 +49,16 @@ def complex_ADB(c_human, c_model, agreement, delta=5, beta=0.05, k=0.63, gamma=0
     def w(p, k):
         return (p**k)/((p**k)+(1-p)**k)
     
+    
     c_human_new = c_human.copy()
+    c_human_new[c_human_new <= 0] = 0.0000001
+    c_human_new[c_human_new >= 1] = 0.9999999
+    c_model_new = c_model.copy()
+    c_model_new[c_model_new <= 0] = 0.0000001
+    c_model_new[c_model_new >= 1] = 0.9999999
+    
     c_human_new[~agreement] = 1-c_human_new[~agreement]
-    a = (c_model**gamma)/((c_model**gamma)+((1-c_model)**gamma))
+    a = (c_model_new**gamma)/((c_model_new**gamma)+((1-c_model_new)**gamma))
     b = (c_human_new**gamma)/((c_human_new**gamma)+((1-c_human_new)**gamma))
     
     conf = 1/(1+(((1-a)*(1-b))/(a*b)))
@@ -191,7 +198,7 @@ team3_rule_lists = pd.DataFrame(index=range(0, 20), columns=['TR_prules', 'TR_nr
 
 print('Starting Experiments....... \n')
 # Repeat Experiments
-for run in range(0, 1):
+for run in range(0, 10):
 
     team_info = pd.DataFrame(index=[1, 2, 3])
     coverage_regs = [0, 0.01, 0.05, 0.1, 0.2,
@@ -283,6 +290,7 @@ for run in range(0, 1):
         team1.setup_tr()
         team1.train_tr()
         team1.filter_tr_results(mental=True, error=False)
+        
 
         '''
         if contradiction_reg == 0:
@@ -297,10 +305,11 @@ for run in range(0, 1):
         team2.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                   alpha,
                                   beta, iters, coverage_reg, contradiction_reg, fA)
+        
         team2.setup_hyrs()
         team2.train_hyrs()
         team2.filter_hyrs_results(mental=True, error=False)
-
+        
         print('training team2 tr model...')
         team2.setup_tr()
         team2.train_tr()
