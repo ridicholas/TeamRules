@@ -348,8 +348,11 @@ class HAI_team():
         self.force_complete_coverage = force_complete_coverage
         self.asym_loss = asym_loss
     
-    def set_true_fA(fA):
+    def set_true_fA(self, fA):
         self.fA_true = fA
+    
+    def set_fA(self, fA):
+        self.fA = fA
 
     def make_human_model(self, type='logistic', acceptThreshold=0.5, numExamplesToUse=100, numColsToUse=0,
                          biasFactor=0, partial_train_percent = 1, alterations=None, drop=[]):
@@ -781,6 +784,44 @@ class HAI_team():
             metrics.mean_squared_error(self.data_model_dict['pred_conf_train'], self.data_model_dict['train_conf'])))
         print('Accuracy of Mental Aversion Model on Val Data: ' + str(
             metrics.mean_squared_error(self.data_model_dict['pred_conf_val'], self.data_model_dict['val_conf'])))
+        
+    def train_ADB_model(self, data_to_use=1):
+
+        numItems = int(len(self.data_model_dict['train_accept'])*data_to_use)
+        self.trained_ADB_model = xgb.XGBClassifier()
+        human_confs = self.data_model_dict['train_conf'][0:numItems]
+        agreement = ~(self.data_model_dict['pred_human_wrong_train'].astype(bool))[0:numItems]
+        agreement = bernoulli.rvs(p=0.5, size=numItems).astype(bool)
+        model_confs = self.data_model_dict['prob_human_wrong_train'][0:numItems]
+        model_confs[agreement] = 1-model_confs[agreement]
+
+        human_responses = self.fA_true(human_confs, model_confs, agreement)
+        y = bernoulli.rvs(p=human_responses, size=len(human_responses))
+
+        
+
+        X = pd.DataFrame({'human_conf': human_confs, 'model_confs': model_confs, 'agreement':agreement})
+        df = X.copy()
+        df['paccept'] = human_responses
+        df['y'] = y
+        
+
+        
+        self.trained_ADB_model.fit(X, y)
+        print('Accuracy of ADB Model on Train Data: ' + str(
+            self.trained_ADB_model.score(X, y)))
+        
+        df['pred_0'] = self.trained_ADB_model.predict_proba(X)[:, 0]
+        df['pred_1'] = self.trained_ADB_model.predict_proba(X)[:, 1]
+        
+    
+    def trained_ADB_model_wrapper(self, human_conf, model_conf, agreement):
+        X = pd.DataFrame({'human_conf': human_conf, 'model_confs': model_conf, 'agreement':agreement})
+        return self.trained_ADB_model.predict_proba(X)[:, 1]
+
+        
+        
+
 
 
     def train_mental_aversion_model(self, type='xgboost', probWrong=0, noise=0, data_to_use=1):
