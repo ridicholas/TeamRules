@@ -419,13 +419,13 @@ for run in range(0, 10):
             pickle.dump(team3.hyrs_results, outp, pickle.HIGHEST_PROTOCOL)
         outp.close()
         
-        '''
+        
         if contradiction_reg == 0:
             team1.brs_results.to_pickle('{}/team1_brs_run{}.pkl'.format(folder, run))
             team2.brs_results.to_pickle('{}/team2_brs_run{}.pkl'.format(folder, run))
             team3.brs_results.to_pickle('{}/team3_brs_run{}.pkl'.format(folder, run))
         
-        
+        '''
         #forced coverage versions
         
         team1.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
