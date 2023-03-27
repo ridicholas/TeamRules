@@ -896,11 +896,85 @@ class HAI_team():
         print('Accuracy of Mental Error Boundary Model on Val Data: ' + str(
             self.mental_error_boundary.score(self.data_model_dict['Xval'], self.data_model_dict['human_wrong_val'])))
 
+    def filter_procedure(self, on='test', mental_conf=0, error_conf=0, which='tr'):
 
+        if which=='tr':
+            results=self.tr_results
+            method = self.tr
+        elif which=='hyrs':
+            results=self.hyrs_results
+            method=self.hyrs
+
+        full_result = {}
+        full_preds, _, _ = method.predict(self.data_model_dict[f'X{on}'],
+                                                        self.data_model_dict[f'Yb{on}'])
+        full_result[f'{on}_rejects'] = sum((self.data_model_dict[f'Yb{on}'] != full_preds)[
+                                                        (self.data_model_dict[f'paccept_{on}'] >= mental_conf) & ~
+                                                        self.data_model_dict[f'{on}_accept'] &
+                                                        (self.data_model_dict[
+                                                            f'prob_human_wrong_{on}'] >= error_conf)])
+        full_result[f'modelonly_{on}_preds'] = results[f'modelonly_{on}_preds']
+        #reset modelonly results from filtering
+        full_result[f'modelonly_{on}_preds'][self.data_model_dict[f'paccept_{on}'] < mental_conf] = self.data_model_dict[f'Yb{on}'][
+                self.data_model_dict[f'paccept_{on}'] < mental_conf]
+
+        full_result[f'{on}_rejectsINC'] = sum(((self.data_model_dict[f'Yb{on}'] != full_preds)[
+            (self.data_model_dict[f'paccept_{on}'] >= mental_conf) & ~
+            self.data_model_dict[f'{on}_accept'] &
+            (self.data_model_dict[
+                    f'prob_human_wrong_{on}'] >= error_conf)]) &
+                                                    (np.array(
+                                                        self.data_model_dict[f'Yb{on}'] != self.data_model_dict[
+                                                            f'Y{on}'])[
+                                                        (self.data_model_dict[
+                                                                f'paccept_{on}'] >= mental_conf) & ~
+                                                        self.data_model_dict[f'{on}_accept'] &
+                                                        (self.data_model_dict[
+                                                                f'prob_human_wrong_{on}'] >= error_conf)]))
+
+        full_result[f'{on}_rejectsCOR'] = sum(((self.data_model_dict[f'Yb{on}'] != full_preds)[
+            (self.data_model_dict[f'paccept_{on}'] >= mental_conf) & ~
+            self.data_model_dict[f'{on}_accept'] &
+            (self.data_model_dict[
+                    f'prob_human_wrong_{on}'] >= error_conf)]) &
+                                                    (np.array(
+                                                        self.data_model_dict[f'Yb{on}'] == self.data_model_dict[
+                                                            f'Y{on}'])[
+                                                        (self.data_model_dict[
+                                                                f'paccept_{on}'] >= mental_conf) & ~
+                                                        self.data_model_dict[f'{on}_accept'] &
+                                                        (self.data_model_dict[
+                                                                f'prob_human_wrong_{on}'] >= error_conf)]))
+
+        # allow human to reject
+        full_preds = deepcopy(results[f'humanified_{on}_preds'])
+
+        # reset instances to human response where predicted mental is less than threshold
+        full_preds[self.data_model_dict[f'paccept_{on}'] < mental_conf] = self.data_model_dict[f'Yb{on}'][
+            self.data_model_dict[f'paccept_{on}'] < mental_conf]
+
+        # reset instances to human response where predicted chance of human error is less than threshold
+        full_preds[self.data_model_dict[f'prob_human_wrong_{on}'] < error_conf] = \
+            self.data_model_dict[f'Yb{on}'][
+                self.data_model_dict[f'prob_human_wrong_{on}'] < error_conf]
+
+        full_covered = (pd.Series(results[f'{on}_covered']) != -1) & pd.Series(
+            self.data_model_dict[f'paccept_{on}'] >= mental_conf) & \
+                                pd.Series(self.data_model_dict[f'prob_human_wrong_{on}'] >= error_conf)
+        full_result[f'{on}_coverage'] = (full_covered == 1).sum()
+        full_result[f'{on}_error'] = 1 - metrics.accuracy_score(self.data_model_dict[f'Y{on}'],
+                                                                        full_preds)
+        full_result[f'mental_conf'] = mental_conf
+        full_result[f'error_conf'] = error_conf
+        full_result[f'{on}_covereds'] = np.array(full_covered)
+        full_result[f'humanified_{on}_preds'] = full_preds
+
+        return full_result
+    
     def filter_hyrs_results(self, mental=False, error=False):
         #disregard filtering, it is related to other functionality we are working on and not to the paper, when set to false it should not filter
         if mental:
-            mental_confs = [0, .25, 0.5]
+            mental_confs = [0, 0.25, 0.5]
         else:
             mental_confs = [0]
 
@@ -910,93 +984,34 @@ class HAI_team():
             error_confs = [0]
 
         full_hyrs_results = pd.DataFrame(index=range(len(mental_confs) * len(error_confs)),
-                                             columns=['mental_conf',
-                                                      'error_conf',
-                                                      'train_covereds',
-                                                      'modelonly_train_preds',
-                                                      'humanified_train_preds',
-                                                      'train_coverage',
-                                                      'test_coverage',
-                                                      'test_rejects',
-                                                      'test_rejectsINC',
-                                                      'test_rejectsCOR',
-                                                      'test_error',
-                                                      'test_covereds',
-                                                      'modelonly_test_preds',
-                                                      'humanified_test_preds'])
+                                           columns=['mental_conf',
+                                                    'error_conf',
+                                                    'test_coverage',
+                                                    'test_rejects',
+                                                    'test_error',
+                                                    'test_covereds',
+                                                    'modelonly_test_preds',
+                                                    'humanified_test_preds'])
+        
+        full_hyrs_results_val = pd.DataFrame(index=range(len(mental_confs) * len(error_confs)),
+                                           columns=['mental_conf',
+                                                    'error_conf',
+                                                    'val_coverage',
+                                                    'val_rejects',
+                                                    'val_error',
+                                                    'val_covereds',
+                                                    'modelonly_val_preds',
+                                                    'humanified_val_preds'])
         index = 0
         for mental_conf in mental_confs:
             for error_conf in error_confs:
-                full_hyrs_result = {}
 
-                full_hyrs_preds = self.hyrs_results['modelonly_test_preds'].copy()
-                full_hyrs_result['modelonly_test_preds'] = full_hyrs_preds.copy()
-                #reset modelonly results from filtering
-                full_hyrs_result['modelonly_test_preds'][self.data_model_dict['paccept_test'] < mental_conf] = self.data_model_dict['Ybtest'][
-                        self.data_model_dict['paccept_test'] < mental_conf]
-
-
-                full_hyrs_result['test_rejects'] = sum((self.data_model_dict['Ybtest'] != full_hyrs_preds)[
-                                                               (self.data_model_dict['paccept_test'] >= mental_conf) & ~
-                                                               self.data_model_dict['test_accept'] &
-                                                               (self.data_model_dict[
-                                                                    'prob_human_wrong_test'] >= error_conf)])
-
-                full_hyrs_result['test_rejectsINC'] = sum(((self.data_model_dict['Ybtest'] != full_hyrs_preds)[
-                    (self.data_model_dict['paccept_test'] >= mental_conf) & ~
-                    self.data_model_dict['test_accept'] &
-                    (self.data_model_dict[
-                         'prob_human_wrong_test'] >= error_conf)]) &
-                                                              (np.array(self.data_model_dict['Ybtest'] !=
-                                                                        self.data_model_dict['Ytest'])[
-                                                                  (self.data_model_dict[
-                                                                       'paccept_test'] >= mental_conf) & ~
-                                                                  self.data_model_dict['test_accept'] &
-                                                                  (self.data_model_dict[
-                                                                       'prob_human_wrong_test'] >= error_conf)]))
-
-                full_hyrs_result['test_rejectsCOR'] = sum(((self.data_model_dict['Ybtest'] != full_hyrs_preds)[
-                    (self.data_model_dict['paccept_test'] >= mental_conf) & ~
-                    self.data_model_dict['test_accept'] &
-                    (self.data_model_dict[
-                         'prob_human_wrong_test'] >= error_conf)]) &
-                                                              (np.array(self.data_model_dict['Ybtest'] ==
-                                                                        self.data_model_dict['Ytest'])[
-                                                                  (self.data_model_dict[
-                                                                       'paccept_test'] >= mental_conf) & ~
-                                                                  self.data_model_dict['test_accept'] &
-                                                                  (self.data_model_dict[
-                                                                       'prob_human_wrong_test'] >= error_conf)]))
-
-                # allow human to reject preds
-                full_hyrs_preds = deepcopy(self.hyrs_results['humanified_test_preds'])
-
-                # reset instances where predicted acceptance is less than threshold to human response
-                full_hyrs_preds[self.data_model_dict['paccept_test'] < mental_conf] = \
-                    self.data_model_dict['Ybtest'][
-                        self.data_model_dict['paccept_test'] < mental_conf]
-
-                # reset instances where predicted chance of human error is greater than threshold to human response
-                full_hyrs_preds[self.data_model_dict['prob_human_wrong_test'] < error_conf] = \
-                    self.data_model_dict['Ybtest'][
-                        self.data_model_dict['prob_human_wrong_test'] < error_conf]
-
-                full_hyrs_covered = (pd.Series(self.hyrs_results['test_covered']) != -1) & \
-                                        pd.Series(self.data_model_dict['paccept_test'] >= mental_conf) & \
-                                        pd.Series(self.data_model_dict['prob_human_wrong_test'] >= error_conf)
-                full_hyrs_result['test_coverage'] = (full_hyrs_covered == 1).sum()
-                full_hyrs_result['test_error'] = 1 - metrics.accuracy_score(self.data_model_dict['Ytest'],
-                                                                                full_hyrs_preds)
-                full_hyrs_result['mental_conf'] = mental_conf
-                full_hyrs_result['error_conf'] = error_conf
-                full_hyrs_result['test_covereds'] = np.array(full_hyrs_covered)
-                full_hyrs_result['humanified_test_preds'] = full_hyrs_preds
-
-
-                full_hyrs_results.loc[index, :] = full_hyrs_result
+                full_hyrs_results.loc[index, :] = self.filter_procedure('test', mental_conf, error_conf, 'hyrs')
+                full_hyrs_results_val.loc[index, :] = self.filter_procedure('val', mental_conf, error_conf, 'hyrs')
 
                 index += 1
         self.full_hyrs_results = full_hyrs_results
+        self.full_hyrs_results_val = full_hyrs_results_val
 
     def filter_tr_results(self, mental=False, error=False):
         #disregard filtering, it is related to other functionality we are working on and not to the paper, when set to false it should not filter
@@ -1022,78 +1037,29 @@ class HAI_team():
                                                     'test_covereds',
                                                     'modelonly_test_preds',
                                                     'humanified_test_preds'])
+        
+        full_tr_results_val = pd.DataFrame(index=range(len(mental_confs) * len(error_confs)),
+                                           columns=['mental_conf',
+                                                    'error_conf',
+                                                    'val_coverage',
+                                                    'val_rejects',
+                                                    'val_rejectsINC',
+                                                    'val_rejectsCOR',
+                                                    'val_error',
+                                                    'val_covereds',
+                                                    'modelonly_val_preds',
+                                                    'humanified_val_preds'])
+        
         index = 0
+
+ 
         for mental_conf in mental_confs:
             for error_conf in error_confs:
-                full_tr_result = {}
-                full_tr_preds, _, _ = self.tr.predict(self.data_model_dict['Xtest'],
-                                                              self.data_model_dict['Ybtest'])
-                full_tr_result['test_rejects'] = sum((self.data_model_dict['Ybtest'] != full_tr_preds)[
-                                                             (self.data_model_dict['paccept_test'] >= mental_conf) & ~
-                                                             self.data_model_dict['test_accept'] &
-                                                             (self.data_model_dict[
-                                                                  'prob_human_wrong_test'] >= error_conf)])
-                full_tr_result['modelonly_test_preds'] = self.tr_results['modelonly_test_preds']
-                #reset modelonly results from filtering
-                full_tr_result['modelonly_test_preds'][self.data_model_dict['paccept_test'] < mental_conf] = self.data_model_dict['Ybtest'][
-                        self.data_model_dict['paccept_test'] < mental_conf]
-
-                full_tr_result['test_rejectsINC'] = sum(((self.data_model_dict['Ybtest'] != full_tr_preds)[
-                    (self.data_model_dict['paccept_test'] >= mental_conf) & ~
-                    self.data_model_dict['test_accept'] &
-                    (self.data_model_dict[
-                         'prob_human_wrong_test'] >= error_conf)]) &
-                                                            (np.array(
-                                                                self.data_model_dict['Ybtest'] != self.data_model_dict[
-                                                                    'Ytest'])[
-                                                                (self.data_model_dict[
-                                                                     'paccept_test'] >= mental_conf) & ~
-                                                                self.data_model_dict['test_accept'] &
-                                                                (self.data_model_dict[
-                                                                     'prob_human_wrong_test'] >= error_conf)]))
-
-                full_tr_result['test_rejectsCOR'] = sum(((self.data_model_dict['Ybtest'] != full_tr_preds)[
-                    (self.data_model_dict['paccept_test'] >= mental_conf) & ~
-                    self.data_model_dict['test_accept'] &
-                    (self.data_model_dict[
-                         'prob_human_wrong_test'] >= error_conf)]) &
-                                                            (np.array(
-                                                                self.data_model_dict['Ybtest'] == self.data_model_dict[
-                                                                    'Ytest'])[
-                                                                (self.data_model_dict[
-                                                                     'paccept_test'] >= mental_conf) & ~
-                                                                self.data_model_dict['test_accept'] &
-                                                                (self.data_model_dict[
-                                                                     'prob_human_wrong_test'] >= error_conf)]))
-
-                # allow human to reject
-                full_tr_preds = deepcopy(self.tr_results['humanified_test_preds'])
-
-                # reset instances to human response where predicted mental is less than threshold
-                full_tr_preds[self.data_model_dict['paccept_test'] < mental_conf] = self.data_model_dict['Ybtest'][
-                    self.data_model_dict['paccept_test'] < mental_conf]
-
-                # reset instances to human response where predicted chance of human error is less than threshold
-                full_tr_preds[self.data_model_dict['prob_human_wrong_test'] < error_conf] = \
-                    self.data_model_dict['Ybtest'][
-                        self.data_model_dict['prob_human_wrong_test'] < error_conf]
-
-                full_tr_covered = (pd.Series(self.tr_results['test_covered']) != -1) & pd.Series(
-                    self.data_model_dict['paccept_test'] >= mental_conf) & \
-                                      pd.Series(self.data_model_dict['prob_human_wrong_test'] >= error_conf)
-                full_tr_result['test_coverage'] = (full_tr_covered == 1).sum()
-                full_tr_result['test_coverage'] = (full_tr_covered == 1).sum()
-                full_tr_result['test_error'] = 1 - metrics.accuracy_score(self.data_model_dict['Ytest'],
-                                                                              full_tr_preds)
-                full_tr_result['mental_conf'] = mental_conf
-                full_tr_result['error_conf'] = error_conf
-                full_tr_result['test_covereds'] = np.array(full_tr_covered)
-                full_tr_result['humanified_test_preds'] = full_tr_preds
-
-                full_tr_results.loc[index, :] = full_tr_result
-
+                full_tr_results.loc[index, :] = self.filter_procedure('test', mental_conf, error_conf, 'tr')
+                full_tr_results_val.loc[index,:] = self.filter_procedure('val', mental_conf, error_conf, 'tr')
                 index += 1
         self.full_tr_results = full_tr_results
+        self.full_tr_results_val = full_tr_results_val
 
     def setup_brs(self):
         model = brs(self.data_model_dict['Xtrain'], self.data_model_dict['Ytrain'])
@@ -1104,19 +1070,53 @@ class HAI_team():
     def train_brs(self):
         self.brs_rules = self.brs_model.fit(self.iters, Nchain=1, print_message=False)
         modelonly_test_preds = brs_predict(self.brs_rules, self.data_model_dict['Xtest'])
-        team_test_preds = modelonly_test_preds.copy()
-        team_test_preds[self.data_model_dict['test_accept'] == False] = self.data_model_dict['Ybtest'][self.data_model_dict['test_accept'] == False]
+        modelonly_val_preds = brs_predict(self.brs_rules, self.data_model_dict['Xval'])
+        modelonly_train_preds = brs_predict(self.brs_rules, self.data_model_dict['Xtrain'])
 
-        self.brs_results = pd.DataFrame({'test_error_brs':1 - metrics.accuracy_score(self.data_model_dict['Ytest'],team_test_preds),
-                                         'test_error_modelonly':1 - metrics.accuracy_score(self.data_model_dict['Ytest'], modelonly_test_preds),
+        team_test_preds = modelonly_test_preds.copy()
+        team_val_preds = modelonly_val_preds.copy()
+        team_train_preds = modelonly_train_preds.copy()
+
+        #get training accuracy of brs model
+        acc = metrics.accuracy_score(self.data_model_dict['Ytrain'], brs_predict(self.brs_rules, self.data_model_dict['Xtrain']))
+        conf_model_val = np.zeros(len(self.data_model_dict['Yval']))
+        conf_model_test = np.zeros(len(self.data_model_dict['Ytest']))
+        conf_model_train = np.zeros(len(self.data_model_dict['Ytrain']))
+        conf_model_val[:] = acc
+        conf_model_test[:] = acc
+        conf_model_train[:] = acc
+
+        agreement_train = self.data_model_dict['Ybtrain'] == modelonly_train_preds
+        agreement_val = self.data_model_dict['Ybval'] == modelonly_val_preds
+        agreement_test = self.data_model_dict['Ybtest'] == modelonly_test_preds
+
+        #given model, what is probability of accept behavior
+        self.data_model_dict['paccept_train'] = self.fA_true(self.data_model_dict['pred_conf_train'], conf_model_train, agreement_train)
+        self.data_model_dict['paccept_val'] = self.fA_true(self.data_model_dict['pred_conf_val'], conf_model_val, agreement_val)
+        self.data_model_dict['paccept_test'] = self.fA_true(self.data_model_dict['pred_conf_test'], conf_model_test, agreement_test)
+
+        #given model, what is realized accept behavior
+        self.data_model_dict['train_accept'] = (pd.Series(bernoulli.rvs(p=self.data_model_dict['paccept_train'], size=len(self.data_model_dict['paccept_train']))).astype(bool))
+        self.data_model_dict['val_accept'] = (pd.Series(bernoulli.rvs(p=self.data_model_dict['paccept_val'], size=len(self.data_model_dict['paccept_val']))).astype(bool))
+        self.data_model_dict['test_accept'] = (pd.Series(bernoulli.rvs(p=self.data_model_dict['paccept_test'], size=len(self.data_model_dict['paccept_test']))).astype(bool))
+
+
+        
+        team_test_preds[self.data_model_dict['test_accept'] == False] = self.data_model_dict['Ybtest'][self.data_model_dict['test_accept'] == False]
+        team_val_preds[self.data_model_dict['val_accept'] == False] = self.data_model_dict['Ybval'][self.data_model_dict['val_accept'] == False]
+        team_train_preds[self.data_model_dict['train_accept'] == False] = self.data_model_dict['Ybtrain'][self.data_model_dict['train_accept'] == False]
+
+
+        self.brs_results = pd.DataFrame({'test_error_brs': 1 - metrics.accuracy_score(self.data_model_dict['Ytest'],team_test_preds),
+                                         'test_error_modelonly': 1 - metrics.accuracy_score(self.data_model_dict['Ytest'], modelonly_test_preds),
+                                         'val_error_brs': 1 - metrics.accuracy_score(self.data_model_dict['Yval'],team_val_preds),
+                                         'val_error_modelonly': 1 - metrics.accuracy_score(self.data_model_dict['Yval'], modelonly_val_preds),
                                          'modelonly_test_preds':[modelonly_test_preds],
                                          'team_test_preds':[team_test_preds],
+                                         'team_val_preds':[team_val_preds],
 
                                          'test_rejects':sum((modelonly_test_preds != self.data_model_dict['Ybtest']) &
-                                                            (self.data_model_dict['test_accept']==False)),
-                                         'test_rejectsCOR':sum((modelonly_test_preds != self.data_model_dict['Ybtest']) &
-                                                               (self.data_model_dict['test_accept']==False) &
-                                                               (self.data_model_dict['Ybtest'] == self.data_model_dict['Ytest']))})
+                                                            (self.data_model_dict['test_accept']==False))})
 
 
 
@@ -1167,11 +1167,19 @@ class HAI_team():
 
         modelonly_test_preds, _, _ = self.tr.predict(self.data_model_dict['Xtest'],
                                                          self.data_model_dict['Ybtest'])
+        
+        modelonly_val_preds, _, _ = self.tr.predict(self.data_model_dict['Xval'],
+                                                         self.data_model_dict['Ybval'])
 
         test_preds, test_covered, test_Yb = self.tr.predictHumanInLoop(self.data_model_dict['Xtest'],
                                                                            self.data_model_dict['Ybtest'],
                                                                            self.data_model_dict['test_conf'],
                                                                            self.fA_true)
+        
+        val_preds, val_covered, val_Yb = self.tr.predictHumanInLoop(self.data_model_dict['Xval'],
+                                                                           self.data_model_dict['Ybval'],
+                                                                           self.data_model_dict['val_conf'],
+                                                                           self.fA)
 
         soft_train_preds, soft_train_covered, soft_train_Yb = self.tr.predictSoft(self.data_model_dict['Xtrain'],
                                                                                       self.data_model_dict['Ybtrain'],
@@ -1183,6 +1191,9 @@ class HAI_team():
 
         test_error_tr = 1 - metrics.accuracy_score(self.data_model_dict['Ytest'],
                                                        test_preds)
+        
+        val_error_tr = 1 - metrics.accuracy_score(self.data_model_dict['Yval'],
+                                                       val_preds)
 
         test_error_human = 1 - metrics.accuracy_score(self.data_model_dict['Ytest'],
                                                       self.data_model_dict['Ybtest'])
@@ -1208,6 +1219,7 @@ class HAI_team():
                                'train_coverage': sum(train_covered != -1),
                                'train_covered': train_covered,
                                'test_error_tr': test_error_tr,
+                               'val_error_tr': val_error_tr,
                                'test_error_human': test_error_human,
                                'test_soft_error': test_soft_error,
                                'soft_train_preds': soft_train_preds,
@@ -1215,36 +1227,16 @@ class HAI_team():
                                                        (test_covered != -1) & (~self.data_model_dict['test_accept'])] !=
                                                    test_covered[
                                                        (test_covered != -1) & (~self.data_model_dict['test_accept'])]),
-                               'test_rejectsINC': sum((self.data_model_dict['Ybtest'][
-                                                           (test_covered != -1) & (
-                                                               ~self.data_model_dict['test_accept'])] !=
-                                                       test_covered[
-                                                           (test_covered != -1) & (
-                                                               ~self.data_model_dict['test_accept'])]) &
-                                                      (self.data_model_dict['Ybtest'][
-                                                           (test_covered != -1) & (
-                                                               ~self.data_model_dict['test_accept'])] !=
-                                                       np.array(self.data_model_dict['Ytest'])[
-                                                           (test_covered != -1) & (
-                                                               ~self.data_model_dict['test_accept'])])),
 
-                               'test_rejectsCOR': sum((self.data_model_dict['Ybtest'][
-                                                           (test_covered != -1) & (
-                                                               ~self.data_model_dict['test_accept'])] !=
-                                                       test_covered[
-                                                           (test_covered != -1) & (
-                                                               ~self.data_model_dict['test_accept'])]) &
-                                                      (self.data_model_dict['Ybtest'][
-                                                           (test_covered != -1) & (
-                                                               ~self.data_model_dict['test_accept'])] ==
-                                                       np.array(self.data_model_dict['Ytest'])[
-                                                           (test_covered != -1) & (
-                                                               ~self.data_model_dict['test_accept'])])),
                                'test_coverage': sum(test_covered != -1),
+                               'val_coverage': sum(val_covered != -1),
                                'modelonly_test_preds': modelonly_test_preds,
                                'modelonly_train_preds': modelonly_train_preds,
+                               'modelonly_val_preds': modelonly_val_preds,
                                'test_covered': test_covered,
-                               'humanified_test_preds': test_preds
+                               'val_covered': val_covered,
+                               'humanified_test_preds': test_preds,
+                               'humanified_val_preds': val_preds,
                                }
 
     def setup_hyrs(self):
@@ -1296,17 +1288,30 @@ class HAI_team():
 
         test_preds, test_covered, test_Yb = self.hyrs.predict(self.data_model_dict['Xtest'],
                                                                          self.data_model_dict['Ybtest'])
+        
+        val_preds, val_covered, val_Yb = self.hyrs.predict(self.data_model_dict['Xval'],
+                                                                         self.data_model_dict['Ybval'])
 
         test_preds_collabing = self.hyrs.humanifyPreds(test_preds, self.data_model_dict['Ybtest'],
                                                                   self.data_model_dict['test_conf'],
                                                                   self.fA_true, 
                                                                    self.data_model_dict['Xtest'])
+        
+        val_preds_collabing = self.hyrs.humanifyPreds(val_preds, self.data_model_dict['Ybval'],
+                                                                  self.data_model_dict['val_conf'],
+                                                                  self.fA, #use estimated behavior if true not available
+                                                                   self.data_model_dict['Xval'])
 
         test_error_hyrs = 1 - metrics.accuracy_score(self.data_model_dict['Ytest'],
                                                          test_preds)
+        val_error_hyrs = 1 - metrics.accuracy_score(self.data_model_dict['Yval'],
+                                                         val_preds)
 
         test_error_collabing = 1 - metrics.accuracy_score(self.data_model_dict['Ytest'],
                                                           test_preds_collabing)
+        
+        val_error_collabing = 1 - metrics.accuracy_score(self.data_model_dict['Yval'],
+                                                            val_preds_collabing)
 
         test_error_human = 1 - metrics.accuracy_score(self.data_model_dict['Ytest'],
                                                       self.data_model_dict['Ybtest'])
@@ -1322,40 +1327,22 @@ class HAI_team():
                                         'train_error_collabing': train_error_collabing,
                                         'test_error_hyrs': test_error_hyrs,
                                         'test_error_collabing': test_error_collabing,
+                                        'val_error_collabing': val_error_collabing,
                                         'test_error_human': test_error_human,
                                         'test_rejects': sum(self.data_model_dict['Ybtest'][
                                                                 (test_covered != -1) & (
                                                                     ~self.data_model_dict['test_accept'])] !=
                                                             test_covered[(test_covered != -1) & (
                                                                 ~self.data_model_dict['test_accept'])]),
-                                        'test_rejectsINC': sum((self.data_model_dict['Ybtest'][
-                                                                    (test_covered != -1) & (
-                                                                        ~self.data_model_dict['test_accept'])] !=
-                                                                test_covered[(test_covered != -1) & (
-                                                                    ~self.data_model_dict['test_accept'])]) &
-                                                               (np.array(self.data_model_dict['Ytest'])[
-                                                                    (test_covered != -1) & (
-                                                                        ~self.data_model_dict['test_accept'])] ==
-                                                                test_covered[(test_covered != -1) & (
-                                                                    ~self.data_model_dict['test_accept'])])),
-
-                                        'test_rejectsCOR': sum((self.data_model_dict['Ybtest'][
-                                                                    (test_covered != -1) & (
-                                                                        ~self.data_model_dict['test_accept'])] !=
-                                                                test_covered[(test_covered != -1) & (
-                                                                    ~self.data_model_dict['test_accept'])]) &
-                                                               (np.array(self.data_model_dict['Ytest'])[
-                                                                    (test_covered != -1) & (
-                                                                        ~self.data_model_dict['test_accept'])] !=
-                                                                test_covered[(test_covered != -1) & (
-                                                                    ~self.data_model_dict['test_accept'])])),
-
-
                                         'test_coverage': sum(test_covered != -1),
+                                        'val_coverage': sum(val_covered != -1),
                                         'modelonly_test_preds': test_preds,
+                                        'modelonly_val_preds': val_preds,
                                         'modelyonly_train_preds': train_preds,
                                         'test_covered': test_covered,
                                         'train_covered': train_covered,
+                                        'val_covered': val_covered,
                                         'humanified_test_preds': test_preds_collabing,
+                                        'humanified_val_preds': val_preds_collabing,
                                         'humanified_train_preds': train_preds_collabing
                                         }

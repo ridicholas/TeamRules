@@ -306,13 +306,13 @@ for run in range(0, 10):
         team1.filter_tr_results(mental=True, error=False)
         
 
-        '''
+        
         if contradiction_reg == 0:
             print('training team1 brs model...')
             team1.setup_brs()
             team1.train_brs()
             # print(team1.brs_results['test_error_modelonly'])
-        '''
+        
 
         
         print('training team2 hyrs model...')
@@ -329,13 +329,13 @@ for run in range(0, 10):
         team2.train_tr()
         team2.filter_tr_results(mental=True, error=False)
         
-        '''
+        
         if contradiction_reg == 0:
             print('training team2 brs model...')
             team2.setup_brs()
             team2.train_brs()
             # print(team2.brs_results['test_error_modelonly'])
-        '''
+        
 
         print('training team3 hyrs model...')
         team3.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
@@ -350,13 +350,13 @@ for run in range(0, 10):
         team3.train_tr()
         team3.filter_tr_results(mental=True, error=False)
         
-        '''
+        
         if contradiction_reg == 0:
             print('training team3 brs model...')
             team3.setup_brs()
             team3.train_brs()
             #print(team3.brs_results['test_error_modelonly'])
-        '''
+        
         
         
         # append rules lists
