@@ -96,7 +96,8 @@ class tr(object):
 
         # print '\tTook %0.3fs to generate %d rules' % (self.screen_time, len(self.rules))
 
-    def screen_rules(self,rules,df,y,N,supp,criteria = 'precision',njobs = 5,add_rules = []):
+    def screen_rules(self,rules,df,y,N,supp,criteria = 'precision',njobs = 5, add_rules = [], no_select=False):
+        N = int(N)
         # print 'screening rules'
         start_time = time.time()
         itemInd = {}
@@ -120,7 +121,7 @@ class tr(object):
         FP = np.array(np.sum(Z,axis = 0))[0] - TP
         p1 = TP.astype(float)/(TP+FP)
         
-        if self.force_complete_coverage:
+        if self.force_complete_coverage or no_select==True:
             supp_select = np.array([i for i in supp_select])
         else:
             supp_select = np.array([i for i in supp_select if p1[i]>np.mean(y)])
@@ -187,11 +188,12 @@ class tr(object):
 
 
     
-    def train(self, Niteration = 500, print_message=False, interpretability = 'size', T0 = 0.01):
+    def train(self, Niteration = 500, print_message=False, interpretability = 'size', T0 = 0.01, start_rules=None):
         self.maps = []
         fA = self.fA
         int_flag = int(interpretability =='size')
         T0 = T0
+        #find passed in rules in self rules
         nprules = len(self.prules)
         pnrules = len(self.nrules)
         prs_curr = []
@@ -334,10 +336,8 @@ class tr(object):
         incorrectRejects += sum((self.Yb[pcovered & rejection] != 1) & (self.Y[pcovered & rejection] == 1))
         correctRejects += sum((self.Yb[ncovered & rejection] == 1) & (self.Y[ncovered & rejection] == 1))
         correctRejects += sum((self.Yb[pcovered & rejection] != 1) & (self.Y[pcovered & rejection] != 1))
-
-        
-       
-
+    
+    
         #Yhat[ncovered] = (Yhat[ncovered] * (1 - np.maximum(np.zeros(sum(ncovered)),(1-self.asym_accept)*self.Paccept[ncovered]))) + ((np.maximum(np.zeros(sum(ncovered)),(1-self.asym_accept)*self.Paccept[ncovered])) * 0)  # covers cases where model predicts negative
         #Yhat[pcovered] = (self.Yb.copy()[pcovered] * (1 - np.minimum(np.ones(sum(pcovered)),(1+self.asym_accept)*self.Paccept[pcovered]))) + ((np.minimum(np.ones(sum(pcovered)),(1+self.asym_accept)*self.Paccept[pcovered])) * 1)  # covers cases where model predicts positive
         
@@ -354,8 +354,7 @@ class tr(object):
 
        
         return  Yhat,TP,FP,TN,FN, numRejects, Yhat_soft
-        
-
+    
     def propose_rs(self, prs_in,nrs_in,pcovered,ncovered,overlapped, covered,Yhat, Yhat_soft, contras, vt,print_message = False):
         prs = prs_in.copy()
         nrs = nrs_in.copy()

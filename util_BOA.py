@@ -70,7 +70,7 @@ def getConfusion(Yhat,Y):
 def brs_predict(rules,df):
     Z = [[] for rule in rules]
     dfn = 1-df #df has negative associations
-    dfn.columns = [name.strip() + '_neg' for name in df.columns]
+    dfn.columns = [name.strip() + 'neg' for name in df.columns]
     df = pd.concat([df,dfn],axis = 1)
     for i,rule in enumerate(rules):
         Z[i] = (np.sum(df[list(rule)],axis=1)==len(rule)).astype(int)
@@ -90,7 +90,7 @@ def extract_rules(tree, feature_names):
             lineage = []
         if child in left:
             parent = np.where(left == child)[0].item()
-            suffix = '_neg'
+            suffix = 'neg'
         else:
             parent = np.where(right == child)[0].item()
             suffix = ''

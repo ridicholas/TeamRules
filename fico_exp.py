@@ -80,7 +80,7 @@ def complex_ADB(c_human, c_model, agreement, delta=5, beta=0.05, k=0.63, gamma=0
     return prob
 
 
-fA=complex_ADB
+fA=basic_ADB_func_det
 
 
 #make teams
@@ -131,6 +131,10 @@ val_conf2[np.where((team2.data_model_dict['Xval']['ExternalRiskEstimate65.0'] ==
 test_conf2[np.where((team2.data_model_dict['Xtest']['ExternalRiskEstimate65.0'] == 0) | (team2.data_model_dict['Xtest']['NumSatisfactoryTrades24.0'] == 0))] = 0.8
 test_conf2[np.where((team2.data_model_dict['Xtest']['ExternalRiskEstimate65.0'] == 1) & (team2.data_model_dict['Xtest']['NumSatisfactoryTrades24.0'] == 1))] = 0.2
 
+team2.set_custom_confidence(team2.data_model_dict['train_conf'],
+                            team2.data_model_dict['val_conf'],
+                            team2.data_model_dict['test_conf'],
+                            'deterministic')
 
 
 
@@ -195,7 +199,7 @@ team_info.loc[3, 'human reject region train acc'] = metrics.accuracy_score(team3
 
 print(team_info)
 
-folder = 'fico_contradiction_results_learned'
+folder = 'fico_contradiction_results_det'
 team_info.to_pickle('{}/start_info.pkl'.format(folder))
 
 team1.data_model_dict['Xtrain'].to_pickle('{}/startDataSet.pkl'.format(folder))
@@ -238,8 +242,8 @@ for run in range(0, 10):
     team1.train_mental_aversion_model('perfect')
     team1.train_confidence_model('perfect')
     team1.train_mental_error_boundary_model()
-    team1.train_ADB_model(0.5)
-    team1.set_fA(team1.trained_ADB_model_wrapper)
+    #team1.train_ADB_model(0.5)
+    #team1.set_fA(team1.trained_ADB_model_wrapper)
     team_info.loc[1, 'human true accepts'] = (team1.data_model_dict['test_conf'] < team1_2_start_threshold).sum()
     team_info.loc[1, 'human true rejects'] = (team1.data_model_dict['test_conf'] >= team1_2_start_threshold).sum()
     team_info.loc[1, 'human accept region test acc'] = metrics.accuracy_score(
@@ -254,8 +258,8 @@ for run in range(0, 10):
     team2.train_mental_aversion_model('perfect')
     team2.train_confidence_model('perfect')
     team2.train_mental_error_boundary_model()
-    team2.train_ADB_model(0.5)
-    team2.set_fA(team1.trained_ADB_model_wrapper)
+    #team2.train_ADB_model(0.5)
+    #team2.set_fA(team1.trained_ADB_model_wrapper)
     team_info.loc[2, 'human true accepts'] = (team2.data_model_dict['test_conf'] < team1_2_start_threshold).sum()
     team_info.loc[2, 'human true rejects'] = (team2.data_model_dict['test_conf'] >= team1_2_start_threshold).sum()
     team_info.loc[2, 'human accept region test acc'] = metrics.accuracy_score(
@@ -270,8 +274,8 @@ for run in range(0, 10):
     team3.train_mental_aversion_model('perfect')
     team3.train_confidence_model('perfect')
     team3.train_mental_error_boundary_model()
-    team3.train_ADB_model(0.5)
-    team3.set_fA(team1.trained_ADB_model_wrapper)
+    #team3.train_ADB_model(0.5)
+    #team3.set_fA(team1.trained_ADB_model_wrapper)
     team_info.loc[3, 'human true accepts'] = (team3.data_model_dict['test_conf'] < team3_4_start_threshold).sum()
     team_info.loc[3, 'human true rejects'] = (team3.data_model_dict['test_conf'] >= team3_4_start_threshold).sum()
     team_info.loc[3, 'human accept region test acc'] = metrics.accuracy_score(
@@ -299,22 +303,18 @@ for run in range(0, 10):
         team1.train_hyrs()
         team1.filter_hyrs_results(mental=True, error=False)
 
-        
-        print('training team1 tr model...')
-        team1.setup_tr()
-        team1.train_tr()
-        team1.filter_tr_results(mental=True, error=False)
-        
-
-        
         if contradiction_reg == 0:
             print('training team1 brs model...')
             team1.setup_brs()
             team1.train_brs()
             # print(team1.brs_results['test_error_modelonly'])
         
-
+        print('training team1 tr model...')
+        team1.setup_tr()
+        team1.train_tr(alt_mods=['hyrs', 'brs'])
+        team1.filter_tr_results(mental=True, error=False)
         
+
         print('training team2 hyrs model...')
         team2.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                   alpha,
@@ -323,18 +323,20 @@ for run in range(0, 10):
         team2.setup_hyrs()
         team2.train_hyrs()
         team2.filter_hyrs_results(mental=True, error=False)
-        
-        print('training team2 tr model...')
-        team2.setup_tr()
-        team2.train_tr()
-        team2.filter_tr_results(mental=True, error=False)
-        
-        
+
         if contradiction_reg == 0:
             print('training team2 brs model...')
             team2.setup_brs()
             team2.train_brs()
             # print(team2.brs_results['test_error_modelonly'])
+            #      
+        print('training team2 tr model...')
+        team2.setup_tr()
+        team2.train_tr(alt_mods=['hyrs', 'brs'])
+        team2.filter_tr_results(mental=True, error=False)
+        
+        
+
         
 
         print('training team3 hyrs model...')
@@ -345,17 +347,19 @@ for run in range(0, 10):
         team3.train_hyrs()
         team3.filter_hyrs_results(mental=True, error=False)
 
-        print('training team3 tr model...')
-        team3.setup_tr()
-        team3.train_tr()
-        team3.filter_tr_results(mental=True, error=False)
-        
-        
         if contradiction_reg == 0:
             print('training team3 brs model...')
             team3.setup_brs()
             team3.train_brs()
             #print(team3.brs_results['test_error_modelonly'])
+
+        print('training team3 tr model...')
+        team3.setup_tr()
+        team3.train_tr(alt_mods=['hyrs', 'brs'])
+        team3.filter_tr_results(mental=True, error=False)
+        
+        
+
         
         
         

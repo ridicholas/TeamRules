@@ -32,9 +32,9 @@ class brs(object):
         start_time = time.time()
         """ compute the rule space from the levels in each attribute """
         for item in self.attributeNames:
-            self.attributeLevelNum[item + '_neg'] = self.attributeLevelNum[item]
+            self.attributeLevelNum[item + 'neg'] = self.attributeLevelNum[item]
         self.patternSpace = np.zeros(self.maxlen + 1)
-        tmp = [item + '_neg' for item in self.attributeNames]
+        tmp = [item + 'neg' for item in self.attributeNames]
         self.attributeNames.extend(tmp)
         for k in range(1, self.maxlen + 1, 1):
             for subset in combinations(self.attributeNames, k):
@@ -51,7 +51,7 @@ class brs(object):
         self.maxlen = maxlen
         self.supp = supp
         df = 1 - self.df  # df has negative associations
-        df.columns = [name.strip() + '_neg' for name in self.df.columns]
+        df.columns = [name.strip() + 'neg' for name in self.df.columns]
         df = pd.concat([self.df, df], axis=1)
         if method == 'fpgrowth' and maxlen <= 3:
             itemMatrix = [[item for item in df.columns if row[item] == 1] for i, row in df.iterrows()]

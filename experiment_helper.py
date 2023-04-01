@@ -745,6 +745,7 @@ class HAI_team():
         self.data_model_dict['val_conf'] = pd.Series(val).clip(lower=0,upper=1)
         self.data_model_dict['test_conf'] = pd.Series(test).clip(lower=0,upper=1)
 
+        
         if type=='prob':
 
             self.data_model_dict['train_accept'] = ~(pd.Series(bernoulli.rvs(p=train, size=len(train))).astype(bool))
@@ -755,6 +756,7 @@ class HAI_team():
             self.data_model_dict['train_accept'] = pd.Series(train < 0.5).astype(bool)
             self.data_model_dict['val_accept'] = pd.Series(val < 0.5).astype(bool)
             self.data_model_dict['test_accept'] = pd.Series(test < 0.5).astype(bool)
+        
 
 
         self.post_human_dict = deepcopy(self.data_model_dict)
@@ -1067,6 +1069,25 @@ class HAI_team():
         model.set_parameters()
         self.brs_model = model
 
+    def brs_objective(self, rejection_cost, on='val'):
+        modelonly_preds = brs_predict(self.brs_rules, self.data_model_dict[f'X{on}'])
+        team_preds = modelonly_preds.copy()
+        acc = metrics.accuracy_score(self.data_model_dict['Ytrain'], brs_predict(self.brs_rules, self.data_model_dict['Xtrain']))
+        conf_model = np.zeros(len(self.data_model_dict[f'Y{on}']))
+        conf_model[:] = acc
+        agreement = self.data_model_dict[f'Yb{on}'] == modelonly_preds
+        paccept = self.fA(self.data_model_dict[f'pred_conf_{on}'], conf_model, agreement)
+        accept = (pd.Series(bernoulli.rvs(p=paccept, size=len(paccept))).astype(bool))
+        team_preds = paccept*modelonly_preds + (1-paccept)*self.data_model_dict[f'Yb{on}']
+
+        contradictions = (self.data_model_dict[f'Yb{on}'] != modelonly_preds).sum()
+
+        error = np.abs(self.data_model_dict[f'Y{on}'] - team_preds).sum()/len(team_preds)
+
+        return error + ((rejection_cost * contradictions)/len(paccept))
+
+        
+
     def train_brs(self):
         self.brs_rules = self.brs_model.fit(self.iters, Nchain=1, print_message=False)
         modelonly_test_preds = brs_predict(self.brs_rules, self.data_model_dict['Xtest'])
@@ -1133,9 +1154,102 @@ class HAI_team():
 
         self.tr = model
 
-    def train_tr(self):
+    def tr_robust_replace(self, alt_mods):
+        tr_prs_min, tr_nrs_min, tr_pcovered_opt, tr_ncovered_opt = self.tr.prs_min, self.tr.nrs_min, self.tr.pcovered_opt, self.tr.ncovered_opt
+
+        conf_model_val, agreement_val = self.tr.get_model_conf_agreement(self.data_model_dict['Xval'], self.data_model_dict['Ybval'])
+        self.data_model_dict['paccept_val'] = self.fA(self.data_model_dict['pred_conf_val'], conf_model_val, agreement_val)
+        self.data_model_dict['val_accept'] = (pd.Series(bernoulli.rvs(p=self.data_model_dict['paccept_val'], size=len(self.data_model_dict['paccept_val']))).astype(bool))
+
+        
+        
+        modelonly_val_preds, _, _ = self.tr.predict(self.data_model_dict['Xval'],
+                                                         self.data_model_dict['Ybval'])
+        
+        tr_val_contradictions = (modelonly_val_preds != self.data_model_dict['Ybval']).sum()
+        paccept = self.data_model_dict['paccept_val']
+        val_preds = paccept*modelonly_val_preds + (1-paccept)*self.data_model_dict['Ybval']
+
+
+        val_error = np.abs(self.data_model_dict['Yval'] - val_preds).sum()/len(val_preds)
+        
+        tr_val_obj = val_error + ((self.tr.contradiction_reg * tr_val_contradictions)/len(val_preds))
+        
+
+
+        #replace if other model is superior
+        if 'hyrs' in alt_mods:
+            if self.hyrs.val_obj < tr_val_obj:
+                tr_val_obj = self.hyrs.val_obj
+                self.tr.prs_min = []
+                self.tr.nrs_min = []
+                
+
+                #add optimal hyrs rules to teamrules ruleset if not in already
+                for rule in self.hyrs.prs_min:
+                    if self.hyrs.prules[rule] not in self.tr.prules:
+                        self.tr.prules.append(self.hyrs.prules[rule])
+                    
+                    
+                for rule in self.hyrs.nrs_min:
+                    if self.hyrs.nrules[rule] not in self.tr.nrules:
+                        self.tr.nrules.append(self.hyrs.nrules[rule])
+                    
+
+                df = 1-self.tr.df 
+                df.columns = [name.strip() + 'neg' for name in self.tr.df.columns]
+                df = pd.concat([self.tr.df,df],axis = 1)
+                self.tr.prules, self.tr.pRMatrix, self.tr.psupp, self.tr.pprecision, self.tr.perror, self.tr.p_precision_matrix = self.tr.screen_rules(self.tr.prules,df,self.tr.Y,len(self.tr.prules), 0)
+                self.tr.nrules, self.tr.nRMatrix, self.tr.nsupp, self.tr.nprecision, self.tr.nerror, self.tr.n_precision_matrix = self.tr.screen_rules(self.tr.nrules,df,1-self.tr.Y,len(self.tr.nrules), 0)
+                
+                for rule in self.hyrs.nrs_min:
+                    self.tr.nrs_min.append(self.tr.nrules.index(self.hyrs.nrules[rule]))
+
+                for rule in self.hyrs.prs_min:
+                    self.tr.prs_min.append(self.tr.prules.index(self.hyrs.prules[rule]))
+
+        if 'brs' in alt_mods:
+            if self.brs_objective(self.contradiction_reg, 'val') < tr_val_obj:
+                tr_val_obj = self.brs_objective(self.contradiction_reg, 'val')
+                self.tr.prs_min = []
+                self.tr.nrs_min = []
+
+                #add positive and negative of first rule to cover everything as negative
+                first_rule = self.tr.nrules[0]
+                for rule in range(len(first_rule)):
+                    if 'neg' in first_rule[rule]:
+                        neg_rule = first_rule[rule].replace('neg','')
+                    else:
+                        neg_rule = first_rule[rule] + 'neg'
+
+                    if neg_rule not in self.tr.nrules:
+                            self.tr.nrules.append([neg_rule])
+                    self.tr.nrs_min.append(self.tr.nrules.index([neg_rule]))
+
+                self.tr.nrs_min.append(self.tr.nrules.index(first_rule))
+
+                for rule in self.brs_rules:
+                    if rule not in self.tr.prules:
+                        self.tr.prules.append(rule)
+
+                df = 1-self.tr.df 
+                df.columns = [name.strip() + 'neg' for name in self.tr.df.columns]
+                df = pd.concat([self.tr.df,df],axis = 1)
+                self.tr.prules, self.tr.pRMatrix, self.tr.psupp, self.tr.pprecision, self.tr.perror, self.tr.p_precision_matrix = self.tr.screen_rules(self.tr.prules,df,self.tr.Y,len(self.tr.prules), 0, no_select=True)
+                self.tr.nrules, self.tr.nRMatrix, self.tr.nsupp, self.tr.nprecision, self.tr.nerror, self.tr.n_precision_matrix = self.tr.screen_rules(self.tr.nrules,df,1-self.tr.Y,len(self.tr.nrules), 0, no_select=True)
+                    
+                for rule in self.brs_rules:
+                    self.tr.prs_min.append(self.tr.prules.index(rule))
+                self.tr.nrs_min.append(self.tr.nrules.index(first_rule))
+        
+        return tr_prs_min, tr_nrs_min, tr_pcovered_opt, tr_ncovered_opt
+
+
+    def train_tr(self, alt_mods=[], resume=False):
         iters = self.iters
         maps, accuracy_min, covered_min = self.tr.train(iters, T0=0.01, print_message=False)
+        tr_prs_min, tr_nrs_min, tr_pcovered_opt, tr_ncovered_opt = self.tr_robust_replace(alt_mods)
+
 
         conf_model_train, agreement_train = self.tr.get_model_conf_agreement(self.data_model_dict['Xtrain'], self.data_model_dict['Ybtrain'])
         conf_model_val, agreement_val = self.tr.get_model_conf_agreement(self.data_model_dict['Xval'], self.data_model_dict['Ybval'])
@@ -1301,6 +1415,11 @@ class HAI_team():
                                                                   self.data_model_dict['val_conf'],
                                                                   self.fA, #use estimated behavior if true not available
                                                                    self.data_model_dict['Xval'])
+        
+        paccept = self.data_model_dict['paccept_val']
+        val_preds_soft = paccept*val_preds + (1-paccept)*self.data_model_dict['Ybval']
+
+        val_error_soft = (np.abs(self.data_model_dict['Yval'] - val_preds_soft).sum()/len(val_preds_soft))
 
         test_error_hyrs = 1 - metrics.accuracy_score(self.data_model_dict['Ytest'],
                                                          test_preds)
@@ -1315,6 +1434,10 @@ class HAI_team():
 
         test_error_human = 1 - metrics.accuracy_score(self.data_model_dict['Ytest'],
                                                       self.data_model_dict['Ybtest'])
+        
+        val_contradictions = (val_preds != self.data_model_dict['Ybval']).sum()
+        
+        self.hyrs.val_obj = val_error_soft + (self.contradiction_reg * val_contradictions)/len(val_preds)
 
         self.hyrs_results = {'train_error_hyrs': train_error_hyrs,
                                         'train_error_human': train_error_human,
