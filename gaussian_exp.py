@@ -8,6 +8,7 @@ from util import *
 from hmac import trans_36
 from experiment_helper import *
 import warnings
+from sklearn.preprocessing import MinMaxScaler
 
 warnings.filterwarnings('ignore')
 
