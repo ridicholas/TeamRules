@@ -769,11 +769,9 @@ class HAI_team():
         self.conf_model.fit(self.data_model_dict['Xtrain'].iloc[0:numItems, :], self.data_model_dict['train_conf'][0:numItems])
         
         if type != 'perfect':
-            self.data_model_dict['pred_conf_train'] = self.conf_model.predict_proba(self.data_model_dict['Xtrain'])[
-                                                    :, 1]
-            self.data_model_dict['pred_conf_val'] = self.conf_model.predict_proba(self.data_model_dict['Xval'])[:, 1]
-            self.data_model_dict['pred_conf_test'] = self.conf_model.predict_proba(self.data_model_dict['Xtest'])[:,
-                                                   1]
+            self.data_model_dict['pred_conf_train'] = self.conf_model.predict(self.data_model_dict['Xtrain'])
+            self.data_model_dict['pred_conf_val'] = self.conf_model.predict(self.data_model_dict['Xval'])
+            self.data_model_dict['pred_conf_test'] = self.conf_model.predict(self.data_model_dict['Xtest'])
             
 
         elif type == 'perfect':
@@ -1170,8 +1168,8 @@ class HAI_team():
         paccept = self.data_model_dict['paccept_val']
         val_preds = paccept*modelonly_val_preds + (1-paccept)*self.data_model_dict['Ybval']
 
-
-        val_error = np.abs(self.data_model_dict['Yval'] - val_preds).sum()/len(val_preds)
+        asymCosts = self.data_model_dict['Yval'].replace({0: self.asym_loss[1], 1: self.asym_loss[0]})
+        val_error = (np.abs(self.data_model_dict['Yval'] - val_preds) * asymCosts).sum()/len(val_preds)
         
         tr_val_obj = val_error + ((self.tr.contradiction_reg * tr_val_contradictions)/len(val_preds))
         
@@ -1418,7 +1416,7 @@ class HAI_team():
         paccept = self.data_model_dict['paccept_val']
         val_preds_soft = paccept*val_preds + (1-paccept)*self.data_model_dict['Ybval']
 
-        val_error_soft = (np.abs(self.data_model_dict['Yval'] - val_preds_soft).sum()/len(val_preds_soft))
+        
 
         test_error_hyrs = 1 - metrics.accuracy_score(self.data_model_dict['Ytest'],
                                                          test_preds)
@@ -1435,6 +1433,10 @@ class HAI_team():
                                                       self.data_model_dict['Ybtest'])
         
         val_contradictions = (val_preds != self.data_model_dict['Ybval']).sum()
+
+        asymCosts = self.data_model_dict['Yval'].replace({0: self.asym_loss[1], 1: self.asym_loss[0]})
+        
+        val_error_soft = (np.abs(self.data_model_dict['Yval'] - val_preds_soft) * asymCosts).sum()/len(val_preds_soft)
         
         self.hyrs.val_obj = val_error_soft + (self.contradiction_reg * val_contradictions)/len(val_preds)
 

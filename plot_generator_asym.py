@@ -222,7 +222,7 @@ for whichTeam in range(len(settings)):
             
             
             costFrame.sort_values(by=['Costs'], inplace=True)
-            row.plot(costFrame['Costs'], costFrame['HyRS_Objective'], c='red', marker='v', label = 'c-HyRS', markersize=1)
+            row.plot(costFrame['Costs'], costFrame['HyRS_Objective'], c='red', marker='v', label = 'HyRS', markersize=1)
             row.plot(costFrame['Costs'], costFrame['TR_Objective'], c='blue', marker='.', label='TeamRules', markersize=1)
             row.fill_between(costFrame['Costs'], 
                        costFrame['HyRS_Objective']-(costFrame['HyRS_Objective_SE']),
@@ -240,7 +240,7 @@ for whichTeam in range(len(settings)):
 
         else:
             row.scatter(TR_con, TR_loss, c='blue', marker = '.',  alpha=0.2, label='TeamRules', s=6)
-            row.scatter(HyRS_con, HyRS_loss, c='red', marker = 'v',  alpha=0.2, label='c-HyRS', s=6)
+            row.scatter(HyRS_con, HyRS_loss, c='red', marker = 'v',  alpha=0.2, label='HyRS', s=6)
             leg = row.legend(prop={'size': 6})
             for lh in leg.legendHandles: 
                 lh.set_alpha(1)
@@ -248,7 +248,7 @@ for whichTeam in range(len(settings)):
 
             #col.plot(x, y)
             costFrame.sort_values(by=['HyRS_Contradictions'], inplace=True)
-            row.plot(costFrame['HyRS_Contradictions'], costFrame['HyRSTeamLoss'], marker = 'v', markersize=1, c='red', label = 'c-HyRS')
+            row.plot(costFrame['HyRS_Contradictions'], costFrame['HyRSTeamLoss'], marker = 'v', markersize=1, c='red', label = 'HyRS')
             costFrame.sort_values(by=['TR_Contradictions'], inplace=True)
             row.plot(costFrame['TR_Contradictions'], costFrame['TeamRulesTeamLoss'], marker='.', markersize=1, c='blue', label='TeamRules')
             row.set_xlabel('# of Contradictions', fontsize=14)
