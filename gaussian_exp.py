@@ -226,7 +226,7 @@ team_info.loc[3, 'human reject region train acc'] = metrics.accuracy_score(
 
 print(team_info)
 
-folder = 'gaussian_contradiction_results'
+folder = 'gaussian_contradiction_results_det'
 team_info.to_pickle('{}/start_info.pkl'.format(folder))
 
 team1.data_model_dict['Xtrain'].to_pickle('{}/startDataSet.pkl'.format(folder))
@@ -245,8 +245,8 @@ for run in range(0, 10):
 
     team_info = pd.DataFrame(index=[1, 2, 3])
     coverage_regs = [0, 0.01, 0.05, 0.1, 0.2,
-                     0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1]
-
+                     0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
+    
     coverage_reg = 0
     contradiction_reg = 0 
     # split training and test randomly
@@ -327,25 +327,26 @@ for run in range(0, 10):
         print('training team1 hyrs model...')
         # train hyrs baseline
         
+        
         team1.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                   alpha,
                                   beta, iters, coverage_reg, contradiction_reg, fA)
         team1.setup_hyrs()
         team1.train_hyrs()
         team1.filter_hyrs_results(mental=True, error=False)
-
+     
         if contradiction_reg == 0:
             print('training team1 brs model...')
             team1.setup_brs()
             team1.train_brs()
             # print(team1.brs_results['test_error_modelonly'])
-        
+     
         print('training team1 tr model...')
         team1.setup_tr()
         team1.train_tr(alt_mods=['hyrs', 'brs'])
         team1.filter_tr_results(mental=True, error=False)
         
-
+        
         print('training team2 hyrs model...')
         team2.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                   alpha,
@@ -353,8 +354,9 @@ for run in range(0, 10):
         
         team2.setup_hyrs()
         team2.train_hyrs()
-        team2.filter_hyrs_results(mental=True, error=False)
-
+        #team2.filter_hyrs_results(mental=True, error=False)
+        
+    
         if contradiction_reg == 0:
             print('training team2 brs model...')
             team2.setup_brs()
@@ -459,6 +461,8 @@ for run in range(0, 10):
             team1.brs_results.to_pickle('{}/team1_brs_run{}.pkl'.format(folder, run))
             team2.brs_results.to_pickle('{}/team2_brs_run{}.pkl'.format(folder, run))
             team3.brs_results.to_pickle('{}/team3_brs_run{}.pkl'.format(folder, run))
+        
+      
         
         '''
         #forced coverage versions

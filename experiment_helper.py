@@ -974,7 +974,7 @@ class HAI_team():
         return full_result
     
     def filter_hyrs_results(self, mental=False, error=False):
-        #disregard filtering, it is related to other functionality we are working on and not to the paper, when set to false it should not filter
+        
         if mental:
             mental_confs = [0, 0.25, 0.5]
         else:
@@ -1361,7 +1361,6 @@ class HAI_team():
         model.generate_rulespace(self.supp, self.maxlen, self.Nrules, need_negcode=True, method='randomforest',
                                  criteria='precision')
         
-
         self.hyrs = model
 
     def train_hyrs(self):

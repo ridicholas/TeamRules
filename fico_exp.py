@@ -214,8 +214,8 @@ for run in range(0, 10):
 
     team_info = pd.DataFrame(index=[1, 2, 3])
     coverage_regs = [0, 0.01, 0.05, 0.1, 0.2,
-                     0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1]
-
+                     0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
+    
     coverage_reg = 0
     contradiction_reg = 0 
     # split training and test randomly
@@ -302,6 +302,8 @@ for run in range(0, 10):
         team1.setup_hyrs()
         team1.train_hyrs()
         team1.filter_hyrs_results(mental=True, error=False)
+
+      
 
         if contradiction_reg == 0:
             print('training team1 brs model...')
@@ -428,6 +430,9 @@ for run in range(0, 10):
             team1.brs_results.to_pickle('{}/team1_brs_run{}.pkl'.format(folder, run))
             team2.brs_results.to_pickle('{}/team2_brs_run{}.pkl'.format(folder, run))
             team3.brs_results.to_pickle('{}/team3_brs_run{}.pkl'.format(folder, run))
+
+            
+        
         
         '''
         #forced coverage versions

@@ -7,9 +7,9 @@ from scipy.stats import ttest_ind
 from statistics import mean, stdev
 import math
 
-numRuns = 5 #adjust this depending on how many runs of results were produced
+numRuns = 10 #adjust this depending on how many runs of results were produced
 
-path = 'fico_contradiction_results_learned/'
+path = 'gaussian_contradiction_results/'
 
 asym_loss = [1,1]
 data = path.split('_')[0]
@@ -284,7 +284,7 @@ for whichTeam in range(len(settings)):
             costFrame.sort_values(by=['HyRS_Contradictions'], inplace=True)
             row.plot(costFrame['HyRS_Contradictions'], costFrame['HyRSTeamLoss'], marker = 'v', markersize=4, c='red', label = 'HyRS')
             costFrame.sort_values(by=['BRS_Contradictions'], inplace=True)
-        #    row.plot(costFrame['BRS_Contradictions'], costFrame['BRSTeamLoss'], marker = 'x', markersize=4, c='gray', label = 'BRS')
+            row.plot(costFrame['BRS_Contradictions'], costFrame['BRSTeamLoss'], marker = 'x', markersize=4, c='gray', label = 'BRS')
             costFrame.sort_values(by=['TR_Contradictions'], inplace=True)
             row.plot(costFrame['TR_Contradictions'], costFrame['TeamRulesTeamLoss'], marker='.', markersize=4, c='blue', label='TeamRules')
             row.set_xlabel('# of Contradictions', fontsize=14)
@@ -297,7 +297,7 @@ for whichTeam in range(len(settings)):
         
         i+=1
     #fig.savefig('Plots/asym_2_1_{}_{}.png'.format(data,setting), bbox_inches='tight')
-    fig.savefig('Plots/learned_{}_{}.png'.format(data,setting), bbox_inches='tight')
+    fig.savefig('Plots/det_{}_{}.png'.format(data,setting), bbox_inches='tight')
 
 
     
