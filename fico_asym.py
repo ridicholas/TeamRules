@@ -295,9 +295,9 @@ for run in range(0, 10):
     
     # train aversion and error boundary models
     team1.train_mental_aversion_model('perfect')
-    team1.train_confidence_model('xg')
+    team1.train_confidence_model('xg', 0.2)
     team1.train_mental_error_boundary_model()
-    team1.train_ADB_model(0.3)
+    team1.train_ADB_model(0.2)
     team1.set_fA(team1.trained_ADB_model_wrapper)
     team_info.loc[1, 'human true accepts'] = (team1.data_model_dict['test_conf'] < team1_2_start_threshold).sum()
     team_info.loc[1, 'human true rejects'] = (team1.data_model_dict['test_conf'] >= team1_2_start_threshold).sum()
@@ -311,9 +311,9 @@ for run in range(0, 10):
                                                                          team1.data_model_dict['test_accept'])
     
     team2.train_mental_aversion_model('perfect')
-    team2.train_confidence_model('xg')
+    team2.train_confidence_model('xg', 0.2)
     team2.train_mental_error_boundary_model()
-    team2.train_ADB_model(0.3)
+    team2.train_ADB_model(0.2)
     team2.set_fA(team2.trained_ADB_model_wrapper)
     team_info.loc[2, 'human true accepts'] = (team2.data_model_dict['test_conf'] < team1_2_start_threshold).sum()
     team_info.loc[2, 'human true rejects'] = (team2.data_model_dict['test_conf'] >= team1_2_start_threshold).sum()
@@ -328,9 +328,9 @@ for run in range(0, 10):
 
     
     team3.train_mental_aversion_model('perfect')
-    team3.train_confidence_model('xg')
+    team3.train_confidence_model('xg', 0.2)
     team3.train_mental_error_boundary_model()
-    team3.train_ADB_model(0.3)
+    team3.train_ADB_model(0.2)
     team3.set_fA(team3.trained_ADB_model_wrapper)
     team_info.loc[3, 'human true accepts'] = (team3.data_model_dict['test_conf'] < team3_4_start_threshold).sum()
     team_info.loc[3, 'human true rejects'] = (team3.data_model_dict['test_conf'] >= team3_4_start_threshold).sum()

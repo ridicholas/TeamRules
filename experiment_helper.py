@@ -913,7 +913,7 @@ class HAI_team():
                                                         self.data_model_dict[f'{on}_accept'] &
                                                         (self.data_model_dict[
                                                             f'prob_human_wrong_{on}'] >= error_conf)])
-        full_result[f'modelonly_{on}_preds'] = results[f'modelonly_{on}_preds']
+        full_result[f'modelonly_{on}_preds'] = results[f'modelonly_{on}_preds'].copy()
         #reset modelonly results from filtering
         full_result[f'modelonly_{on}_preds'][self.data_model_dict[f'paccept_{on}'] < mental_conf] = self.data_model_dict[f'Yb{on}'][
                 self.data_model_dict[f'paccept_{on}'] < mental_conf]
