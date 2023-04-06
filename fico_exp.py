@@ -273,9 +273,9 @@ for run in range(0, 10):
 
     team3.train_mental_aversion_model('perfect')
     team3.train_confidence_model('perfect', 0.2)
-    #team3.train_mental_error_boundary_model()
+    team3.train_mental_error_boundary_model()
     #team3.train_ADB_model(0.2)
-    team3.set_fA(team3.trained_ADB_model_wrapper)
+    #team3.set_fA(team3.trained_ADB_model_wrapper)
     team_info.loc[3, 'human true accepts'] = (team3.data_model_dict['test_conf'] < team3_4_start_threshold).sum()
     team_info.loc[3, 'human true rejects'] = (team3.data_model_dict['test_conf'] >= team3_4_start_threshold).sum()
     team_info.loc[3, 'human accept region test acc'] = metrics.accuracy_score(
