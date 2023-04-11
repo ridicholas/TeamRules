@@ -7,9 +7,9 @@ from scipy.stats import ttest_ind
 from statistics import mean, stdev
 import math
 
-numRuns = 4 #adjust this depending on how many runs of results were produced
+numRuns = 10 #adjust this depending on how many runs of results were produced
 
-path = 'fico_contradiction_resultsSIGKDD/'
+path = 'gaussian_contradiction_results_det/'
 
 asym_loss = [1,1]
 data = path.split('_')[0]

@@ -7,13 +7,13 @@ from scipy.stats import ttest_ind
 from statistics import mean, stdev
 import math
 
-numRuns = 9 #adjust this depending on how many runs of results were produced
+numRuns = 10 #adjust this depending on how many runs of results were produced
 
 #read in results
-path = 'fico_asym_21_results/'
+path = 'fico_asym_151_results_learned/'
 #path = 'fico_contradiction_results/'
 
-asym_loss = [2,1]
+asym_loss = [1.5,1]
 data = path.split('_')[0]
 
 if asym_loss[0] == 2:
@@ -58,7 +58,7 @@ for i in range(0, numRuns):
             tr_results_filtered[team][cost]
 
             #hyrs filtered
-            hyrs_results_filtered[team][cost].append(pd.read_pickle(path + 'cost_{}_'.format(cost)+ team + '_hyrs_filtered_run{}.pkl'.format(i)).sort_values(by='test_error'))
+            hyrs_results_filtered[team][cost].append(pd.read_pickle(path + 'cost_0_'.format(cost)+ team + '_hyrs_filtered_run{}.pkl'.format(i)).sort_values(by='test_error'))
             hyrs_results_filtered[team][cost][-1] = hyrs_results_filtered[team][cost][-1][hyrs_results_filtered[team][cost][-1]['mental_conf'] == 0].reset_index()
         
             #if cost == '0':

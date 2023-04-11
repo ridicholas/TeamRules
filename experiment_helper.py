@@ -112,7 +112,9 @@ def make_checkers(numExamples=5000):
     startDict['Xtrain'] = startDict['Xtrain'].reset_index(drop=True)
     startDict['Ytrain'] = startDict['Ytrain'].reset_index(drop=True)
 
-    # make test
+    # make splits
+    startDict['Xtrain'], startDict['']
+
     startDict['Xtest'] = startDict['Xtrain'].iloc[-500:, :].reset_index(drop=True)
     startDict['Xtrain'] = startDict['Xtrain'].iloc[:-500, :]
     startDict['Ytest'] = startDict['Ytrain'][-500:].reset_index(drop=True)
@@ -204,21 +206,37 @@ def make_FICO_data(numQs=5):
             startDict['Xtrain'] = startDict['Xtrain'].drop(columns=[col])
 
 
-
+    startDict['Xtrain']['sensitive'] = bernoulli.rvs(p=0.5, size=len(startDict['Ytrain']))
+    startDict['Xtrain']['acc'] = 0
+    startDict['Xtrain']['acc'][startDict['Xtrain']['sensitive'] == 1] = bernoulli.rvs(p=0.6, size=(startDict['Xtrain']['sensitive'] == 1).sum())
+    startDict['Xtrain']['acc'][startDict['Xtrain']['sensitive'] == 0]= bernoulli.rvs(p=0.9, size=(startDict['Xtrain']['sensitive'] == 0).sum())
     startDict['Xtrain'] = pd.concat([startDict['Xtrain'],
                                      pd.get_dummies(startDict['Xtrain'].MaxDelq2PublicRecLast12M, prefix='MaxDelq2PublicRecLast12M')], axis=1)
     startDict['Xtrain'] = pd.concat([startDict['Xtrain'],
                                      pd.get_dummies(startDict['Xtrain'].MaxDelqEver, prefix='MaxDelqEver')], axis=1)
     startDict['Xtrain'] = startDict['Xtrain'].drop(
-        columns=['RiskPerformance', 'MaxDelqEver',  'MaxDelq2PublicRecLast12M'])
+        columns=['RiskPerformance', 'MaxDelqEver',  'MaxDelq2PublicRecLast12M']) #.sample(frac=1).reset_index(drop=True)
 
     #make test
-    startDict['Xtest'] = startDict['Xtrain'].iloc[-500:,:]
-    startDict['Xtrain'] = startDict['Xtrain'].iloc[:-500,:]
-    startDict['Ytest'] = startDict['Ytrain'][-500:]
-    startDict['Ytrain'] = startDict['Ytrain'][:-500]
+
+    startDict['Xtrain'], startDict['Xtest'], startDict['Ytrain'], \
+                startDict['Ytest'] = split(startDict['Xtrain'],
+                                                      startDict['Ytrain'],
+                                                      test_size=0.1,
+                                                      stratify=startDict['Ytrain'],
+                                                      random_state=2)
+    
+    
+    
+   
+    #startDict['Xtest'] = startDict['Xtrain'].iloc[-500:,:]
+    #startDict['Xtrain'] = startDict['Xtrain'].iloc[:-500,:]
+    #startDict['Ytest'] = startDict['Ytrain'][-500:]
+    #startDict['Ytrain'] = startDict['Ytrain'][:-500]
     startDict['Xval'] = startDict['Xtest'].copy()
     startDict['Yval'] = startDict['Ytest'].copy()
+    
+    
 
     return startDict
 
