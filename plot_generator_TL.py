@@ -9,7 +9,7 @@ import math
 
 numRuns = 10 #adjust this depending on how many runs of results were produced
 
-path = 'gaussian_contradiction_results_det/'
+path = 'gaussian_contradiction_results_bias/'
 
 asym_loss = [1,1]
 data = path.split('_')[0]

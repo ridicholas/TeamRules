@@ -32,7 +32,7 @@ coverage_reg = 0
 rejection_reg = 0
 fA=0.5
 asym_loss = [1.5,1]
-asym_accept = 0.5
+asym_accept = 0.25
 
 def basic_ADB_func_det(c_human, c_model=None, agreement=None):
     #returns the probability that the human accepts a recommendation given conf of human and conf of model
@@ -351,49 +351,102 @@ for run in range(0, 10):
         
         print('training team1 hyrs model...')
         # train hyrs baseline
-        '''
+        
         
         team1.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                   alpha,
                                   beta, iters, coverage_reg, contradiction_reg, fA, asym_loss = asym_loss)
         team1.setup_hyrs()
-        team1.train_hyrs()
+
+        tempval = 100
+        tempTeam = deepcopy(team1)
+        for i in range(3):
+            tempTeam.train_hyrs()
+            if tempTeam.hyrs.val_obj < tempval:
+                team1 = tempTeam
+                tempval = tempTeam.hyrs.val_obj
+        del tempTeam
+        #team1.train_hyrs()
         team1.filter_hyrs_results(mental=True, error=False)
 
 
         print('training team1 tr model...')
         team1.setup_tr()
-        team1.train_tr()
-        team1.filter_tr_results(mental=True, error=False)
-        '''
+        tempval = 100
+        tempTeam = deepcopy(team1)
+        for i in range(3):
+            tempTeam.train_tr(alt_mods=['hyrs'])
+            tempTeam.filter_tr_results(mental=True, error=False)
+            if tempTeam.full_tr_results_val.iloc[2, :]['objective'] < tempval:
+                team1 = tempTeam
+                tempval = tempTeam.full_tr_results_val.iloc[2, :]['objective']
+        #team1.train_tr(alt_mods=['hyrs', 'brs'])
+        #team1.filter_tr_results(mental=True, error=False)
+        
         
         print('training team2 hyrs model...')
         team2.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                   alpha,
                                   beta, iters, coverage_reg, contradiction_reg, fA, force_complete_coverage=False, asym_loss = asym_loss)
         team2.setup_hyrs()
-        team2.train_hyrs()
+
+        tempval = 100
+        tempTeam = deepcopy(team2)
+        for i in range(3):
+            tempTeam.train_hyrs()
+            if tempTeam.hyrs.val_obj < tempval:
+                team2 = tempTeam
+                tempval = tempTeam.hyrs.val_obj
+        del tempTeam
+        #team2.train_hyrs()
         team2.filter_hyrs_results(mental=True, error=False)
+
+
 
         print('training team2 tr model...')
         team2.setup_tr()
-        team2.train_tr(alt_mods=['hyrs'])
-        team2.filter_tr_results(mental=True, error=False)
+        tempval = 100
+        tempTeam = deepcopy(team2)
+        for i in range(3):
+            tempTeam.train_tr(alt_mods=['hyrs', 'brs'])
+            tempTeam.filter_tr_results(mental=True, error=False)
+            if tempTeam.full_tr_results_val.iloc[2, :]['objective'] < tempval:
+                team2 = tempTeam
+                tempval = tempTeam.full_tr_results_val.iloc[2, :]['objective']
+        #team2.train_tr(alt_mods=['hyrs', 'brs'])
+        #team2.filter_tr_results(mental=True, error=False)
         
-        '''
+        
         
         print('training team3 hyrs model...')
         team3.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                   alpha,
                                   beta, iters, coverage_reg, contradiction_reg, fA, asym_loss = asym_loss)
         team3.setup_hyrs()
-        team3.train_hyrs()
+
+        tempval = 100
+        tempTeam = deepcopy(team3)
+        for i in range(3):
+            tempTeam.train_hyrs()
+            if tempTeam.hyrs.val_obj < tempval:
+                team3 = tempTeam
+                tempval = tempTeam.hyrs.val_obj
+        del tempTeam
+        #team3.train_hyrs()
         team3.filter_hyrs_results(mental=True, error=False)
 
         print('training team3 tr model...')
         team3.setup_tr()
-        team3.train_tr()
-        team3.filter_tr_results(mental=True, error=False)
+        tempval = 100
+        tempTeam = deepcopy(team3)
+        for i in range(3):
+            tempTeam.train_tr(alt_mods=['hyrs', 'brs'])
+            tempTeam.filter_tr_results(mental=True, error=False)
+            if tempTeam.full_tr_results_val.iloc[2, :]['objective'] < tempval:
+                team3 = tempTeam
+                tempval = tempTeam.full_tr_results_val.iloc[2, :]['objective']
+        #team3.train_tr(alt_mods=['hyrs', 'brs'])
+        #team3.filter_tr_results(mental=True, error=False)
         
        
 
@@ -405,24 +458,24 @@ for run in range(0, 10):
         team1_rule_lists.loc[run, 'HyRS_prules'] = team1.hyrs.prs_min
         team1_rule_lists.loc[run, 'HyRS_nrules'] = team1.hyrs.nrs_min
 
-        '''
+        
         team2_rule_lists.loc[run, 'TR_prules'] = team2.tr.prs_min
         team2_rule_lists.loc[run, 'TR_nrules'] = team2.tr.nrs_min
         team2_rule_lists.loc[run, 'HyRS_prules'] = team2.hyrs.prs_min
         team2_rule_lists.loc[run, 'HyRS_nrules'] = team2.hyrs.nrs_min
 
-        '''
+        
         team3_rule_lists.loc[run, 'TR_prules'] = team3.tr.prs_min
         team3_rule_lists.loc[run, 'TR_nrules'] = team3.tr.nrs_min
         team3_rule_lists.loc[run, 'HyRS_prules'] = team3.hyrs.prs_min
         team3_rule_lists.loc[run, 'HyRS_nrules'] = team3.hyrs.nrs_min
-        '''
+        
         # write results
         print('writing results...')
         
         # team1
         
-        '''
+        
         team1.full_hyrs_results.to_pickle('{}/cost_{}_team1_hyrs_filtered_run{}.pkl'.format(folder, reg, run))
         team1.full_tr_results.to_pickle('{}/cost_{}_team1_tr_filtered_run{}.pkl'.format(folder, reg, run))
 
@@ -434,7 +487,7 @@ for run in range(0, 10):
             pickle.dump(team1.hyrs_results, outp, pickle.HIGHEST_PROTOCOL)
         outp.close()
 
-        '''
+        
         # team2
         team2.full_hyrs_results.to_pickle('{}/cost_{}_team2_hyrs_filtered_run{}.pkl'.format(folder, reg, run))
         team2.full_tr_results.to_pickle('{}/cost_{}_team2_tr_filtered_run{}.pkl'.format(folder, reg, run))
@@ -447,7 +500,7 @@ for run in range(0, 10):
             pickle.dump(team2.hyrs_results, outp, pickle.HIGHEST_PROTOCOL)
         outp.close()
         
-        '''
+        
         # team3
 
         team3.full_hyrs_results.to_pickle('{}/cost_{}_team3_hyrs_filtered_run{}.pkl'.format(folder, reg, run))
@@ -460,7 +513,7 @@ for run in range(0, 10):
         with open('{}/cost_{}_team3_hyrs_results_run{}.pkl'.format(folder, reg, run), 'wb') as outp:
             pickle.dump(team3.hyrs_results, outp, pickle.HIGHEST_PROTOCOL)
         outp.close()
-        '''
+        
        
         
         

@@ -206,10 +206,10 @@ def make_FICO_data(numQs=5):
             startDict['Xtrain'] = startDict['Xtrain'].drop(columns=[col])
 
 
-    startDict['Xtrain']['sensitive'] = bernoulli.rvs(p=0.5, size=len(startDict['Ytrain']))
-    startDict['Xtrain']['acc'] = 0
-    startDict['Xtrain']['acc'][startDict['Xtrain']['sensitive'] == 1] = bernoulli.rvs(p=0.6, size=(startDict['Xtrain']['sensitive'] == 1).sum())
-    startDict['Xtrain']['acc'][startDict['Xtrain']['sensitive'] == 0]= bernoulli.rvs(p=0.9, size=(startDict['Xtrain']['sensitive'] == 0).sum())
+    #startDict['Xtrain']['sensitive'] = bernoulli.rvs(p=0.5, size=len(startDict['Ytrain']))
+    #startDict['Xtrain']['acc'] = 0
+    #startDict['Xtrain']['acc'][startDict['Xtrain']['sensitive'] == 1] = bernoulli.rvs(p=0.6, size=(startDict['Xtrain']['sensitive'] == 1).sum())
+    #startDict['Xtrain']['acc'][startDict['Xtrain']['sensitive'] == 0]= bernoulli.rvs(p=0.9, size=(startDict['Xtrain']['sensitive'] == 0).sum())
     startDict['Xtrain'] = pd.concat([startDict['Xtrain'],
                                      pd.get_dummies(startDict['Xtrain'].MaxDelq2PublicRecLast12M, prefix='MaxDelq2PublicRecLast12M')], axis=1)
     startDict['Xtrain'] = pd.concat([startDict['Xtrain'],
@@ -964,6 +964,8 @@ class HAI_team():
                                                         (self.data_model_dict[
                                                                 f'prob_human_wrong_{on}'] >= error_conf)]))
 
+
+        contradicts = (full_result[f'modelonly_{on}_preds'] != self.data_model_dict[f'Yb{on}']).sum()
         # allow human to reject
         full_preds = deepcopy(results[f'humanified_{on}_preds'])
 
@@ -980,12 +982,16 @@ class HAI_team():
             self.data_model_dict[f'paccept_{on}'] >= mental_conf) & \
                                 pd.Series(self.data_model_dict[f'prob_human_wrong_{on}'] >= error_conf)
         full_result[f'{on}_coverage'] = (full_covered == 1).sum()
-        full_result[f'{on}_error'] = 1 - metrics.accuracy_score(self.data_model_dict[f'Y{on}'],
-                                                                        full_preds)
+
+        asymCosts = self.data_model_dict[f'Y{on}'].replace({0: self.asym_loss[1], 1: self.asym_loss[0]})
+        full_result[f'{on}_error'] = (np.abs(self.data_model_dict[f'Y{on}'] - full_preds) * asymCosts).sum()/len(full_preds)
         full_result[f'mental_conf'] = mental_conf
         full_result[f'error_conf'] = error_conf
         full_result[f'{on}_covereds'] = np.array(full_covered)
         full_result[f'humanified_{on}_preds'] = full_preds
+
+        full_result['contradicts'] = contradicts
+        full_result['objective'] = full_result[f'{on}_error'] + (self.contradiction_reg*full_result['contradicts']/len(full_preds))
 
         return full_result
     
@@ -1007,6 +1013,8 @@ class HAI_team():
                                                     'test_coverage',
                                                     'test_rejects',
                                                     'test_error',
+                                                    'contradicts',
+                                                    'objective',
                                                     'test_covereds',
                                                     'modelonly_test_preds',
                                                     'humanified_test_preds'])
@@ -1018,6 +1026,8 @@ class HAI_team():
                                                     'val_rejects',
                                                     'val_error',
                                                     'val_covereds',
+                                                    'contradicts',
+                                                    'objective',
                                                     'modelonly_val_preds',
                                                     'humanified_val_preds'])
         index = 0
@@ -1052,6 +1062,8 @@ class HAI_team():
                                                     'test_rejectsINC',
                                                     'test_rejectsCOR',
                                                     'test_error',
+                                                    'contradicts',
+                                                    'objective',
                                                     'test_covereds',
                                                     'modelonly_test_preds',
                                                     'humanified_test_preds'])
@@ -1064,6 +1076,8 @@ class HAI_team():
                                                     'val_rejectsINC',
                                                     'val_rejectsCOR',
                                                     'val_error',
+                                                    'contradicts',
+                                                    'objective',
                                                     'val_covereds',
                                                     'modelonly_val_preds',
                                                     'humanified_val_preds'])
