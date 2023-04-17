@@ -31,7 +31,7 @@ iters = Niteration
 coverage_reg = 0
 rejection_reg = 0
 fA=0.5
-asym_loss = [1.5,1]
+asym_loss = [2,1]
 asym_accept = 0.25
 
 def basic_ADB_func_det(c_human, c_model=None, agreement=None):
@@ -253,7 +253,7 @@ for team in teams:
     i+=1
 print(team_info)
 
-folder = 'fico_asym_151_results_learned'
+folder = 'fico_asym_21_results_learned'
 team_info.to_pickle('{}/start_info.pkl'.format(folder))
 
 team1.data_model_dict['Xtrain'].to_pickle('{}/startDataSet.pkl'.format(folder))
@@ -267,7 +267,7 @@ print('Starting Experiments....... \n')
 for run in range(0, 10):
 
     team_info = pd.DataFrame(index=[1, 2, 3])
-    coverage_regs = [0, 0.15, 0.3, 0.45, 0.6, 0.75, 0.9, 1.05, 1.2, 1.35, 1.5]
+    coverage_regs = [0, 0.3, 0.45, 0.6, 0.75, 0.9, 1.05, 1.2, 1.35, 1.5, 2]
 
     coverage_reg = 0
     contradiction_reg = 0
