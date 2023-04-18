@@ -31,7 +31,7 @@ iters = Niteration
 coverage_reg = 0
 rejection_reg = 0
 fA=0.5
-asym_loss = [3,1]
+asym_loss = [2,1]
 asym_accept = 0.25
 
 def basic_ADB_func_det(c_human, c_model=None, agreement=None):
@@ -253,7 +253,7 @@ for team in teams:
     i+=1
 print(team_info)
 
-folder = 'fico_asym_31_results_learned'
+folder = 'fico_asym_21_results_learned'
 team_info.to_pickle('{}/start_info.pkl'.format(folder))
 
 team1.data_model_dict['Xtrain'].to_pickle('{}/startDataSet.pkl'.format(folder))
