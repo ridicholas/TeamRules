@@ -248,7 +248,7 @@ for run in range(0, 10):
     coverage_regs = [0, 0.01, 0.05, 0.1, 0.2,
                      0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
     
-    coverage_regs = [0]
+    
     
     coverage_reg = 0
     contradiction_reg = 0 

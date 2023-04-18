@@ -267,7 +267,7 @@ print('Starting Experiments....... \n')
 for run in range(0, 10):
 
     team_info = pd.DataFrame(index=[1, 2, 3])
-    coverage_regs = [0, 0.3, 0.45, 0.6, 0.75, 0.9, 1.05, 1.2, 1.35, 1.5, 2]
+    coverage_regs = [0, 0.3, 0.45, 0.6, 0.75, 0.9, 1.05, 1.2, 1.35, 1.5, 2, 2.5]
 
     coverage_reg = 0
     contradiction_reg = 0
@@ -408,7 +408,7 @@ for run in range(0, 10):
         tempval = 100
         tempTeam = deepcopy(team2)
         for i in range(3):
-            tempTeam.train_tr(alt_mods=['hyrs', 'brs'])
+            tempTeam.train_tr(alt_mods=['hyrs'])
             tempTeam.filter_tr_results(mental=True, error=False)
             if tempTeam.full_tr_results_val.iloc[2, :]['objective'] < tempval:
                 team2 = tempTeam
@@ -440,7 +440,7 @@ for run in range(0, 10):
         tempval = 100
         tempTeam = deepcopy(team3)
         for i in range(3):
-            tempTeam.train_tr(alt_mods=['hyrs', 'brs'])
+            tempTeam.train_tr(alt_mods=['hyrs'])
             tempTeam.filter_tr_results(mental=True, error=False)
             if tempTeam.full_tr_results_val.iloc[2, :]['objective'] < tempval:
                 team3 = tempTeam
