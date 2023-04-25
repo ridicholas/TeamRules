@@ -112,8 +112,8 @@ def make_checkers(numExamples=5000):
     startDict['Xtrain'] = startDict['Xtrain'].reset_index(drop=True)
     startDict['Ytrain'] = startDict['Ytrain'].reset_index(drop=True)
 
+
     # make splits
-    startDict['Xtrain'], startDict['']
 
     startDict['Xtest'] = startDict['Xtrain'].iloc[-500:, :].reset_index(drop=True)
     startDict['Xtrain'] = startDict['Xtrain'].iloc[:-500, :]
