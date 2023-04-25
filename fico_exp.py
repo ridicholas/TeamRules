@@ -81,7 +81,7 @@ def complex_ADB(c_human, c_model, agreement, delta=5, beta=0.05, k=0.63, gamma=0
     return prob
 
 
-fA=basic_ADB_func_det
+fA=complex_ADB
 
 
 #make teams
@@ -146,22 +146,6 @@ team2.set_custom_confidence(team2.data_model_dict['train_conf'],
 
 
 
-'''
-bias
-team2.data_model_dict['Ybtrain'] = team2.data_model_dict['Ytrain'].copy()
-team2.data_model_dict['Ybtrain'][team2.data_model_dict['Xtrain']['acc'] == 0] = np.abs(team2.data_model_dict['Ytrain'][team2.data_model_dict['Xtrain']['acc'] == 0]-1)
-
-team2.data_model_dict['Ybval'] = team2.data_model_dict['Yval'].copy()
-team2.data_model_dict['Ybval'][team2.data_model_dict['Xval']['acc'] == 0] = np.abs(team2.data_model_dict['Yval'][team2.data_model_dict['Xval']['acc'] == 0]-1)
-
-team2.data_model_dict['Ybtest'] = team2.data_model_dict['Ytest'].copy()
-team2.data_model_dict['Ybtest'][team2.data_model_dict['Xtest']['acc'] == 0] = np.abs(team2.data_model_dict['Ytest'][team2.data_model_dict['Xtest']['acc'] == 0]-1)
-
-
-team2.data_model_dict['Xtrain'].drop(columns=['acc'], inplace=True)
-team2.data_model_dict['Xval'].drop(columns=['acc'], inplace=True)
-team2.data_model_dict['Xtest'].drop(columns=['acc'], inplace=True)
-'''
 
 
 
@@ -225,7 +209,7 @@ team_info.loc[3, 'human reject region train acc'] = metrics.accuracy_score(team3
 
 print(team_info)
 
-folder = 'fico_contradiction_results_det'
+folder = 'fico_contradiction_results_learned'
 team_info.to_pickle('{}/start_info.pkl'.format(folder))
 
 team1.data_model_dict['Xtrain'].to_pickle('{}/startDataSet.pkl'.format(folder))
@@ -235,9 +219,7 @@ team2_rule_lists = pd.DataFrame(index=range(0, 20), columns=['TR_prules', 'TR_nr
 team3_rule_lists = pd.DataFrame(index=range(0, 20), columns=['TR_prules', 'TR_nrules', 'HyRS_prules', 'HyRS_nrules'])
 
 
-hyrs_mat = {'sensitive': [[0,0],[0,0]], 'not_sensitive': [[0,0],[0,0]]}
-tr_mat = {'sensitive': [[0,0],[0,0]], 'not_sensitive': [[0,0],[0,0]]}
-brs_mat = {'sensitive': [[0,0],[0,0]], 'not_sensitive': [[0,0],[0,0]]}
+
 
 
 print('Starting Experiments....... \n')
@@ -276,8 +258,8 @@ for run in range(0, 10):
     team1.train_mental_aversion_model('perfect')
     team1.train_confidence_model('perfect', 0.2)
     team1.train_mental_error_boundary_model()
-    #team1.train_ADB_model(0.2)
-    #team1.set_fA(team1.trained_ADB_model_wrapper)
+    team1.train_ADB_model(0.2)
+    team1.set_fA(team1.trained_ADB_model_wrapper)
     team_info.loc[1, 'human true accepts'] = (team1.data_model_dict['test_conf'] < team1_2_start_threshold).sum()
     team_info.loc[1, 'human true rejects'] = (team1.data_model_dict['test_conf'] >= team1_2_start_threshold).sum()
     team_info.loc[1, 'human accept region test acc'] = metrics.accuracy_score(
@@ -292,8 +274,8 @@ for run in range(0, 10):
     team2.train_mental_aversion_model('perfect')
     team2.train_confidence_model('perfect', 0.2)
     team2.train_mental_error_boundary_model()
-    #team2.train_ADB_model(0.2)
-    #team2.set_fA(team2.trained_ADB_model_wrapper)
+    team2.train_ADB_model(0.2)
+    team2.set_fA(team2.trained_ADB_model_wrapper)
     team_info.loc[2, 'human true accepts'] = (team2.data_model_dict['test_conf'] < team1_2_start_threshold).sum()
     team_info.loc[2, 'human true rejects'] = (team2.data_model_dict['test_conf'] >= team1_2_start_threshold).sum()
     team_info.loc[2, 'human accept region test acc'] = metrics.accuracy_score(
@@ -308,8 +290,8 @@ for run in range(0, 10):
     team3.train_mental_aversion_model('perfect')
     team3.train_confidence_model('perfect', 0.2)
     team3.train_mental_error_boundary_model()
-    #team3.train_ADB_model(0.2)
-    #team3.set_fA(team3.trained_ADB_model_wrapper)
+    team3.train_ADB_model(0.2)
+    team3.set_fA(team3.trained_ADB_model_wrapper)
     team_info.loc[3, 'human true accepts'] = (team3.data_model_dict['test_conf'] < team3_4_start_threshold).sum()
     team_info.loc[3, 'human true rejects'] = (team3.data_model_dict['test_conf'] >= team3_4_start_threshold).sum()
     team_info.loc[3, 'human accept region test acc'] = metrics.accuracy_score(
@@ -560,7 +542,7 @@ for run in range(0, 10):
             
         
         
-        '''
+        
         #forced coverage versions
         
         team1.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
@@ -639,7 +621,7 @@ for run in range(0, 10):
         with open('{}/fc_cost_{}_team3_hyrs_results_run{}.pkl'.format(folder, reg, run), 'wb') as outp:
             pickle.dump(team3.hyrs_results, outp, pickle.HIGHEST_PROTOCOL)
         outp.close()
-        '''
+        
 
         
 print('finally done.')

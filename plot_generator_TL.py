@@ -7,9 +7,9 @@ from scipy.stats import ttest_ind
 from statistics import mean, stdev
 import math
 
-numRuns = 10 #adjust this depending on how many runs of results were produced
+numRuns = 4 #adjust this depending on how many runs of results were produced
 
-path = 'gaussian_contradiction_results_bias/'
+path = 'fico_contradiction_results_det/'
 
 asym_loss = [1,1]
 data = path.split('_')[0]
@@ -243,7 +243,7 @@ for whichTeam in range(len(settings)):
     z = list(zip(*[i for n, i in enumerate(l) if i not in l[:n]]))
     BRS_loss = np.array(z[0])
     BRS_con = np.array(z[1])
-    #fig.suptitle('{} Setting'.format(setting), fontsize=16)
+    fig.suptitle('{} Setting'.format(setting), fontsize=16)
     i=0
     for row in ax:
         if i==0:

@@ -7,27 +7,27 @@ from scipy.stats import ttest_ind
 from statistics import mean, stdev
 import math
 
-numRuns = 10 #adjust this depending on how many runs of results were produced
+numRuns = 4 #adjust this depending on how many runs of results were produced
 
 #read in results
-path = 'fico_asym_151_results_learned/'
+path = 'fico_asym_31_results_learned/'
 #path = 'fico_contradiction_results/'
 
-asym_loss = [1.5,1]
+asym_loss = [3,1]
 data = path.split('_')[0]
 
 if asym_loss[0] == 2:
-    costs = [0, 0.3, 0.6, 0.9, 1.2, 1.5, 1.8, 2.1]
+    costs = [0, 0.3, 0.45, 0.6, 0.75, 0.9, 1.05, 1.2, 1.35, 1.5, 2, 2.5]
 elif asym_loss[0] == 1.5:
-    costs = [0, 0.15, 0.3, 0.45, 0.6, 0.75, 0.9, 1.05, 1.2, 1.35, 1.5]
+    costs = [0, 0.3, 0.45, 0.6, 0.75, 0.9, 1.05, 1.2, 1.35, 1.5, 2, 2.5]
 
-
+costs = [0, 0.3, 0.45, 0.6, 0.75, 0.9, 1.05, 1.2, 1.35, 1.5, 2, 2.5]
 threshold = 0.5
 
 
 
-#teams = ['team1', 'team2', 'team3']
-teams = ['team2']
+teams = ['team1', 'team2', 'team3']
+#teams = ['team2']
 team_infos = []
 datasets = []
 tr_results_filtered = {}
@@ -96,8 +96,8 @@ for run in range(numRuns):
 #for t in start_info.sort_values(by='human accept region train acc').index:
 #    teams.append('team{}'.format(t))
 
-#settings = ['Rational', 'Neutral', 'Irrational']
-settings = ['Neutral']
+settings = ['Rational', 'Neutral', 'Irrational']
+#settings = ['Neutral']
 for whichTeam in range(len(settings)):
     fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(8, 2), dpi=200)
     fig.subplots_adjust(bottom=0.15, wspace=.4)
@@ -215,7 +215,7 @@ for whichTeam in range(len(settings)):
     z = list(zip(*[i for n, i in enumerate(l) if i not in l[:n]]))
     HyRS_loss = np.array(z[0])
     HyRS_con = np.array(z[1])
-    #fig.suptitle('{} Setting'.format(setting), fontsize=16)
+    fig.suptitle('{} Setting'.format(setting), fontsize=16)
     i=0
     for row in ax:
         if i==0:

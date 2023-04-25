@@ -195,6 +195,7 @@ def make_FICO_data(numQs=5):
     startDict['Xtrain'] = pd.read_csv('FICO.csv')
     startDict['Ytrain'] = startDict['Xtrain']['RiskPerformance']
     startDict['Ytrain'] = startDict['Ytrain'].replace({"Bad": 1, "Good":0})
+    startDict['Xtrain_non_binarized'] = startDict['Xtrain'].copy()
 
 
     for col in startDict['Xtrain'].columns:
@@ -216,12 +217,16 @@ def make_FICO_data(numQs=5):
                                      pd.get_dummies(startDict['Xtrain'].MaxDelqEver, prefix='MaxDelqEver')], axis=1)
     startDict['Xtrain'] = startDict['Xtrain'].drop(
         columns=['RiskPerformance', 'MaxDelqEver',  'MaxDelq2PublicRecLast12M']) #.sample(frac=1).reset_index(drop=True)
+    startDict['Xtrain_non_binarized'] = startDict['Xtrain_non_binarized'].drop(
+        columns=['RiskPerformance', 'MaxDelqEver',  'MaxDelq2PublicRecLast12M']) #.sample(frac=1).reset_index(drop=True)
+    
 
     #make test
 
     startDict['Xtrain'], startDict['Xtest'], startDict['Ytrain'], \
-                startDict['Ytest'] = split(startDict['Xtrain'],
-                                                      startDict['Ytrain'],
+                startDict['Ytest'], startDict['Xtrain_non_binarized'], startDict['Xtest_non_binarized'] = split(startDict['Xtrain'],
+                                                      startDict['Ytrain'], 
+                                                      startDict['Xtrain_non_binarized'],
                                                       test_size=0.1,
                                                       stratify=startDict['Ytrain'],
                                                       random_state=2)
