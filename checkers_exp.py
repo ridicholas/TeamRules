@@ -9,6 +9,8 @@ from datetime import date
 from copy import deepcopy
 import pickle
 from sklearn import tree
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import confusion_matrix
 
 
 

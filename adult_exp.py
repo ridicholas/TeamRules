@@ -10,6 +10,7 @@ import pickle
 import math
 import random
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import confusion_matrix
 
 startDict = make_Adult_data()
 
