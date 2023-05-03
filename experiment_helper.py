@@ -1296,9 +1296,13 @@ class HAI_team():
         return tr_prs_min, tr_nrs_min, tr_pcovered_opt, tr_ncovered_opt
 
 
-    def train_tr(self, alt_mods=[], resume=False):
+    def train_tr(self, alt_mods=[], resume=False, resume_with=None):
         iters = self.iters
-        maps, accuracy_min, covered_min = self.tr.train(iters, T0=0.01, print_message=False)
+
+        if resume:
+            maps, accuracy_min, covered_min = self.tr.train(iters, T0=0.01, print_message=False, start_rules=resume_with)
+        else:
+            maps, accuracy_min, covered_min = self.tr.train(iters, T0=0.01, print_message=False)
         tr_prs_min, tr_nrs_min, tr_pcovered_opt, tr_ncovered_opt = self.tr_robust_replace(alt_mods)
 
 

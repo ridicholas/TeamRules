@@ -201,6 +201,10 @@ class tr(object):
             nrs_curr = list(range(pnrules))
         else:
             nrs_curr = []
+        
+        if start_rules != None:
+            prs_curr = start_rules['prs']
+            nrs_curr = start_rules['nrs']
         obj_curr = 1000000000
         obj_min = obj_curr
         self.maps.append([-1,obj_curr,prs_curr,nrs_curr,[]])
@@ -284,7 +288,7 @@ class tr(object):
                 accuracy_not_sensitive = TP + TN / TP + FP + TN + FN
         
                 fairness_new = np.abs(accuracy_sensitive-accuracy_not_sensitive)
-            
+
             self.Yhat_new = Yhat_new
             rulePreds_new = self.Yb.copy()
             rulePreds_new[ncovered_new] = 0
