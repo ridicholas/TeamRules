@@ -28,7 +28,7 @@ sample_ratio = 1
 alpha = 0
 beta = 0
 iters = Niteration
-coverage_reg = 0
+fairness_reg = 0
 rejection_reg = 0
 fA=0.5
 asym_loss = [1.5,1]
@@ -87,9 +87,9 @@ fA=complex_ADB
 
 #make teams
 team1 = HAI_team(startDict)
-team1.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio, alpha, beta, iters,coverage_reg, rejection_reg, fA)
+team1.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio, alpha, beta, iters,fairness_reg, rejection_reg, fA)
 team3 = HAI_team(startDict)
-team3.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio, alpha, beta, iters,coverage_reg, rejection_reg, fA)
+team3.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio, alpha, beta, iters,fairness_reg, rejection_reg, fA)
 
 # make humans
 team1.make_human_model(type='logistic',
@@ -267,9 +267,9 @@ print('Starting Experiments....... \n')
 for run in range(0, 10):
 
     team_info = pd.DataFrame(index=[1, 2, 3])
-    coverage_regs = [0, 0.3, 0.45, 0.6, 0.75, 0.9, 1.05, 1.2, 1.35, 1.5, 2, 2.5]
+    fairness_regs = [0, 0.3, 0.45, 0.6, 0.75, 0.9, 1.05, 1.2, 1.35, 1.5, 2, 2.5]
 
-    coverage_reg = 0
+    fairness_reg = 0
     contradiction_reg = 0
 
     # split training and test randomly
@@ -345,7 +345,7 @@ for run in range(0, 10):
     
     team_info.to_pickle('{}/team_info_run{}.pkl'.format(folder, run))
 
-    for reg in coverage_regs:
+    for reg in fairness_regs:
         contradiction_reg = reg
 
         
@@ -355,7 +355,7 @@ for run in range(0, 10):
         
         team1.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                   alpha,
-                                  beta, iters, coverage_reg, contradiction_reg, fA, asym_loss = asym_loss)
+                                  beta, iters, fairness_reg, contradiction_reg, fA, asym_loss = asym_loss)
         team1.setup_hyrs()
 
         tempval = 100
@@ -387,7 +387,7 @@ for run in range(0, 10):
         print('training team2 hyrs model...')
         team2.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                   alpha,
-                                  beta, iters, coverage_reg, contradiction_reg, fA, force_complete_coverage=False, asym_loss = asym_loss)
+                                  beta, iters, fairness_reg, contradiction_reg, fA, force_complete_coverage=False, asym_loss = asym_loss)
         team2.setup_hyrs()
 
         tempval = 100
@@ -421,7 +421,7 @@ for run in range(0, 10):
         print('training team3 hyrs model...')
         team3.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                   alpha,
-                                  beta, iters, coverage_reg, contradiction_reg, fA, asym_loss = asym_loss)
+                                  beta, iters, fairness_reg, contradiction_reg, fA, asym_loss = asym_loss)
         team3.setup_hyrs()
 
         tempval = 100

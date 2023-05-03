@@ -29,9 +29,8 @@ sample_ratio = 1
 alpha = 0
 beta = 0
 iters = Niteration
-coverage_reg = 0
 contradiction_reg = 0
-rejection_reg = 0
+fairness_reg = 0
 
 def basic_ADB_func_det(c_human, c_model=None, agreement=None):
     #returns the probability that the human accepts a recommendation given conf of human and conf of model
@@ -86,12 +85,12 @@ fA=complex_ADB
 # make teams
 team1 = HAI_team(startDict)
 team1.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio, alpha,
-                          beta, iters, coverage_reg, contradiction_reg, fA)
+                          beta, iters, fairness_reg, contradiction_reg, fA)
 
 
 team3 = HAI_team(startDict)
 team3.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio, alpha,
-                          beta, iters, coverage_reg, contradiction_reg, fA)
+                          beta, iters, fairness_reg, contradiction_reg, fA)
 
 # make humans
 team1.make_human_model(type='logistic',
@@ -243,13 +242,12 @@ team3_rule_lists = pd.DataFrame(index=range(0, 20), columns=[
 for run in range(0, 10):
 
     team_info = pd.DataFrame(index=[1, 2, 3])
-    coverage_regs = [0, 0.01, 0.05, 0.1, 0.2,
+    contradiction_regs = [0, 0.01, 0.05, 0.1, 0.2,
                      0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
     
     
     
-    coverage_reg = 0
-    contradiction_reg = 0 
+    contradiction_reg = 0
     # split training and test randomly
     team1.makeAdditionalTestSplit(testPercent=0.2, replaceExisting=True, random_state=run, others=[team2, team3])
 
@@ -321,7 +319,7 @@ for run in range(0, 10):
 
     team_info.to_pickle('{}/team_info_run{}.pkl'.format(folder, run))
 
-    for reg in coverage_regs:
+    for reg in contradiction_regs:
         contradiction_reg = reg
         
         
@@ -331,7 +329,7 @@ for run in range(0, 10):
 
         team1.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                   alpha,
-                                  beta, iters, coverage_reg, contradiction_reg, fA)
+                                  beta, iters, fairness_reg, contradiction_reg, fA)
         
         team1.setup_hyrs()
 
@@ -384,7 +382,7 @@ for run in range(0, 10):
         print('training team2 hyrs model...')
         team2.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                   alpha,
-                                  beta, iters, coverage_reg, contradiction_reg, fA)
+                                  beta, iters, fairness_reg, contradiction_reg, fA)
         
         team2.setup_hyrs()
 
@@ -437,7 +435,7 @@ for run in range(0, 10):
         print('training team3 hyrs model...')
         team3.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                   alpha,
-                                  beta, iters, coverage_reg, contradiction_reg, fA)
+                                  beta, iters, fairness_reg, contradiction_reg, fA)
         
         team3.setup_hyrs()
 
@@ -557,14 +555,13 @@ for run in range(0, 10):
 
             
         
-      
         
-        '''
+        
         #forced coverage versions
-        
+        '''
         team1.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                   alpha,
-                                  beta, iters, coverage_reg, contradiction_reg, fA, force_complete_coverage=True)
+                                  beta, iters, fairness_reg, contradiction_reg, fA, force_complete_coverage=True)
         team1.setup_hyrs()
         team1.train_hyrs()
         team1.filter_hyrs_results(mental=True, error=False)
@@ -577,7 +574,7 @@ for run in range(0, 10):
 
         team2.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                   alpha,
-                                  beta, iters, coverage_reg, contradiction_reg, fA, force_complete_coverage=True)
+                                  beta, iters, fairness_reg, contradiction_reg, fA, force_complete_coverage=True)
         team2.setup_hyrs()
         team2.train_hyrs()
         team2.filter_hyrs_results(mental=True, error=False)
@@ -590,7 +587,7 @@ for run in range(0, 10):
 
         team3.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                   alpha,
-                                  beta, iters, coverage_reg, contradiction_reg, fA, force_complete_coverage=True)
+                                  beta, iters, fairness_reg, contradiction_reg, fA, force_complete_coverage=True)
         team3.setup_hyrs()
         team3.train_hyrs()
         team3.filter_hyrs_results(mental=True, error=False)
@@ -639,6 +636,7 @@ for run in range(0, 10):
             pickle.dump(team3.hyrs_results, outp, pickle.HIGHEST_PROTOCOL)
         outp.close()
         '''
+        
 
         
 print('finally done.')

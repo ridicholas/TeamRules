@@ -10,19 +10,16 @@ import pickle
 import math
 import random
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.metrics import confusion_matrix
-import time
 
-startDict = make_FICO_data(numQs=5)
+startDict = make_HR_data()
 
-
-#initial hyperparams
-Niteration = 1000
+# initial hyperparams
+Niteration = 500
 Nchain = 1
 Nlevel = 1
 Nrules = 10000
 supp = 5
-maxlen = 5
+maxlen = 3
 accept_criteria = 0.5
 protected = 'NA'
 budget = 1
@@ -31,8 +28,10 @@ alpha = 0
 beta = 0
 iters = Niteration
 contradiction_reg = 0
-fairness_reg = 0
+fairness_reg = 1
 
+for col in startDict['Xtrain'].columns:
+    print(col)
 
 def basic_ADB_func_det(c_human, c_model=None, agreement=None):
     #returns the probability that the human accepts a recommendation given conf of human and conf of model
@@ -84,12 +83,13 @@ def complex_ADB(c_human, c_model, agreement, delta=5, beta=0.05, k=0.63, gamma=0
 
 fA=complex_ADB
 
-
-#make teams
+# make teams
 team1 = HAI_team(startDict)
-team1.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio, alpha, beta, iters, fairness_reg, contradiction_reg, fA)
+team1.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio, alpha,
+                          beta, iters, fairness_reg, contradiction_reg, fA, fair_feat='Gender_Female')
 team3 = HAI_team(startDict)
-team3.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio, alpha, beta, iters, fairness_reg, contradiction_reg, fA)
+team3.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio, alpha,
+                          beta, iters, fairness_reg, contradiction_reg, fA, fair_feat = 'Gender_Female')
 
 # make humans
 team1.make_human_model(type='logistic',
@@ -121,34 +121,21 @@ team3.make_human_model(type='logistic',
 team2 = deepcopy(team1)
 
 
-#make neutral setting by making rational setting slightly less rational
 train_conf2 = team2.data_model_dict['train_conf']
 val_conf2 = team2.data_model_dict['val_conf']
 test_conf2 = team2.data_model_dict['test_conf']
 
-train_conf2[np.where((team2.data_model_dict['Xtrain']['ExternalRiskEstimate65.0'] == 0) | (team2.data_model_dict['Xtrain']['NumSatisfactoryTrades24.0'] == 0))] = 0.8
-train_conf2[np.where((team2.data_model_dict['Xtrain']['ExternalRiskEstimate65.0'] == 1) & (team2.data_model_dict['Xtrain']['NumSatisfactoryTrades24.0'] == 1))] = 0.2
-val_conf2[np.where((team2.data_model_dict['Xval']['ExternalRiskEstimate65.0'] == 0) | (team2.data_model_dict['Xval']['NumSatisfactoryTrades24.0'] == 0))] = 0.8
-val_conf2[np.where((team2.data_model_dict['Xval']['ExternalRiskEstimate65.0'] == 1) & (team2.data_model_dict['Xval']['NumSatisfactoryTrades24.0'] == 1))] = 0.2
+train_conf2[np.where((team2.data_model_dict['Xtrain']['RelationshipSatisfaction3.0'] == 0) & (team2.data_model_dict['Xtrain']['StockOptionLevel0.0'] == 0))] = 0.2
+train_conf2[np.where((team2.data_model_dict['Xtrain']['RelationshipSatisfaction3.0'] == 1) | (team2.data_model_dict['Xtrain']['StockOptionLevel0.0'] == 1))] = 0.8
+val_conf2[np.where((team2.data_model_dict['Xval']['RelationshipSatisfaction3.0'] == 0) & (team2.data_model_dict['Xval']['StockOptionLevel0.0'] == 0))] = 0.2
+val_conf2[np.where((team2.data_model_dict['Xval']['RelationshipSatisfaction3.0'] == 1) | (team2.data_model_dict['Xval']['StockOptionLevel0.0'] == 1))] = 0.8
 
-test_conf2[np.where((team2.data_model_dict['Xtest']['ExternalRiskEstimate65.0'] == 0) | (team2.data_model_dict['Xtest']['NumSatisfactoryTrades24.0'] == 0))] = 0.8
-test_conf2[np.where((team2.data_model_dict['Xtest']['ExternalRiskEstimate65.0'] == 1) & (team2.data_model_dict['Xtest']['NumSatisfactoryTrades24.0'] == 1))] = 0.2
-
-
+test_conf2[np.where((team2.data_model_dict['Xtest']['RelationshipSatisfaction3.0'] == 0) & (team2.data_model_dict['Xtest']['StockOptionLevel0.0'] == 0))] = 0.2
+test_conf2[np.where((team2.data_model_dict['Xtest']['RelationshipSatisfaction3.0'] == 1) | (team2.data_model_dict['Xtest']['StockOptionLevel0.0'] == 1))] = 0.8
 
 
 
-
-
-team2.set_custom_confidence(team2.data_model_dict['train_conf'],
-                            team2.data_model_dict['val_conf'],
-                            team2.data_model_dict['test_conf'],
-                            'deterministic')
-
-
-
-
-
+team2.set_custom_confidence(train_conf2, val_conf2, test_conf2, 'deterministic')
 
 teams = [team1, team2, team3]
 
@@ -158,8 +145,13 @@ team_info = pd.DataFrame(index=[1, 2, 3])
 team1_2_start_threshold = 0.5
 team3_4_start_threshold = 0.5
 
+
+
+
 for i in range(1, 4):
     team_info.loc[i,'Human Train Acc'] = metrics.accuracy_score(teams[i-1].data_model_dict['Ytrain'], teams[i-1].data_model_dict['Ybtrain'])
+
+
 
 team1.accept_criteria = team1_2_start_threshold
 team2.accept_criteria = team1_2_start_threshold
@@ -189,14 +181,19 @@ team_info.loc[2, 'human accept region train acc'] = metrics.accuracy_score(team2
 team_info.loc[2, 'human reject region train acc'] = metrics.accuracy_score(team2.data_model_dict['Ybtrain'][~team2.data_model_dict['train_accept']],
                                                                            team2.data_model_dict['Ytrain'][~team2.data_model_dict['train_accept']])
 
+
+
 team3.accept_criteria = team3_4_start_threshold
+
 
 team_info.loc[3, 'accept_threshold'] = team3_4_start_threshold
 
 
 
+
 team_info.loc[3, 'human true train accepts'] = (team3.data_model_dict['train_accept']).sum()
 team_info.loc[3, 'human true train rejects'] = (~team3.data_model_dict['train_accept']).sum()
+
 
 print('human accuracy in accept region: {}'.format(metrics.accuracy_score(team3.data_model_dict['Ybtrain'][team3.data_model_dict['train_accept']],
                                                                           team3.data_model_dict['Ytrain'][team3.data_model_dict['train_accept']])))
@@ -210,7 +207,7 @@ team_info.loc[3, 'human reject region train acc'] = metrics.accuracy_score(team3
 
 print(team_info)
 
-folder = 'fico_contradiction_results_learned_len5'
+folder = 'hr_contradiction_results_fair'
 team_info.to_pickle('{}/start_info.pkl'.format(folder))
 
 team1.data_model_dict['Xtrain'].to_pickle('{}/startDataSet.pkl'.format(folder))
@@ -220,13 +217,8 @@ team2_rule_lists = pd.DataFrame(index=range(0, 20), columns=['TR_prules', 'TR_nr
 team3_rule_lists = pd.DataFrame(index=range(0, 20), columns=['TR_prules', 'TR_nrules', 'HyRS_prules', 'HyRS_nrules'])
 
 
-
-
-
 print('Starting Experiments....... \n')
 # Repeat Experiments
-
-validations = 1
 for run in range(0, 10):
 
     team_info = pd.DataFrame(index=[1, 2, 3])
@@ -258,7 +250,7 @@ for run in range(0, 10):
 
     # train aversion and error boundary models
     team1.train_mental_aversion_model('perfect')
-    team1.train_confidence_model('not_perfect', 0.2)
+    team1.train_confidence_model('perfect', 0.2)
     team1.train_mental_error_boundary_model()
     team1.train_ADB_model(0.2)
     team1.set_fA(team1.trained_ADB_model_wrapper)
@@ -274,7 +266,7 @@ for run in range(0, 10):
                                                                          team1.data_model_dict['test_accept'])
 
     team2.train_mental_aversion_model('perfect')
-    team2.train_confidence_model('not_perfect', 0.2)
+    team2.train_confidence_model('perfect', 0.2)
     team2.train_mental_error_boundary_model()
     team2.train_ADB_model(0.2)
     team2.set_fA(team2.trained_ADB_model_wrapper)
@@ -290,7 +282,7 @@ for run in range(0, 10):
                                                                          team2.data_model_dict['test_accept'])
 
     team3.train_mental_aversion_model('perfect')
-    team3.train_confidence_model('not_perfect', 0.2)
+    team3.train_confidence_model('perfect', 0.2)
     team3.train_mental_error_boundary_model()
     team3.train_ADB_model(0.2)
     team3.set_fA(team3.trained_ADB_model_wrapper)
@@ -319,13 +311,11 @@ for run in range(0, 10):
                                   alpha,
                                   beta, iters, fairness_reg, contradiction_reg, fA)
         
-        t = time.time()
         team1.setup_hyrs()
-        print(time.time() - t)
 
         tempval = 100
         tempTeam = deepcopy(team1)
-        for i in range(validations):
+        for i in range(3):
             tempTeam.train_hyrs()
             if tempTeam.hyrs.val_obj < tempval:
                 team1 = tempTeam
@@ -342,7 +332,7 @@ for run in range(0, 10):
 
             tempval = 100
             tempTeam = deepcopy(team1)
-            for i in range(validations):
+            for i in range(3):
                 tempTeam.train_brs()
                 if tempTeam.brs_objective(contradiction_reg, 'val') < tempval:
                     team1 = tempTeam
@@ -357,7 +347,7 @@ for run in range(0, 10):
         team1.setup_tr()
         tempval = 100
         tempTeam = deepcopy(team1)
-        for i in range(validations):
+        for i in range(3):
             tempTeam.train_tr(alt_mods=['hyrs', 'brs'])
             tempTeam.filter_tr_results(mental=True, error=False)
             if tempTeam.full_tr_results_val.iloc[2, :]['objective'] < tempval:
@@ -378,7 +368,7 @@ for run in range(0, 10):
 
         tempval = 100
         tempTeam = deepcopy(team2)
-        for i in range(validations):
+        for i in range(3):
             tempTeam.train_hyrs()
             if tempTeam.hyrs.val_obj < tempval:
                 team2 = tempTeam
@@ -395,7 +385,7 @@ for run in range(0, 10):
 
             tempval = 100
             tempTeam = deepcopy(team2)
-            for i in range(validations):
+            for i in range(3):
                 tempTeam.train_brs()
                 if tempTeam.brs_objective(contradiction_reg, 'val') < tempval:
                     team2 = tempTeam
@@ -410,7 +400,7 @@ for run in range(0, 10):
         team2.setup_tr()
         tempval = 100
         tempTeam = deepcopy(team2)
-        for i in range(validations):
+        for i in range(3):
             tempTeam.train_tr(alt_mods=['hyrs', 'brs'])
             tempTeam.filter_tr_results(mental=True, error=False)
             if tempTeam.full_tr_results_val.iloc[2, :]['objective'] < tempval:
@@ -431,7 +421,7 @@ for run in range(0, 10):
 
         tempval = 100
         tempTeam = deepcopy(team3)
-        for i in range(validations):
+        for i in range(3):
             tempTeam.train_hyrs()
             if tempTeam.hyrs.val_obj < tempval:
                 team3 = tempTeam
@@ -448,7 +438,7 @@ for run in range(0, 10):
 
             tempval = 100
             tempTeam = deepcopy(team3)
-            for i in range(validations):
+            for i in range(3):
                 tempTeam.train_brs()
                 if tempTeam.brs_objective(contradiction_reg, 'val') < tempval:
                     team3 = tempTeam
@@ -463,7 +453,7 @@ for run in range(0, 10):
         team3.setup_tr()
         tempval = 100
         tempTeam = deepcopy(team3)
-        for i in range(validations):
+        for i in range(3):
             tempTeam.train_tr(alt_mods=['hyrs', 'brs'])
             tempTeam.filter_tr_results(mental=True, error=False)
             if tempTeam.full_tr_results_val.iloc[2, :]['objective'] < tempval:
@@ -546,87 +536,8 @@ for run in range(0, 10):
             
         
         
-        '''
-        #forced coverage versions
         
-        team1.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
-                                  alpha,
-                                  beta, iters, fairness_reg, contradiction_reg, fA, force_complete_coverage=True)
-        team1.setup_hyrs()
-        team1.train_hyrs()
-        team1.filter_hyrs_results(mental=True, error=False)
-
-
-        print('training team1 tr model...')
-        team1.setup_tr()
-        team1.train_tr()
-        team1.filter_tr_results(mental=True, error=False)
-
-        team2.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
-                                  alpha,
-                                  beta, iters, fairness_reg, contradiction_reg, fA, force_complete_coverage=True)
-        team2.setup_hyrs()
-        team2.train_hyrs()
-        team2.filter_hyrs_results(mental=True, error=False)
-
-
-        print('training team2 tr model...')
-        team2.setup_tr()
-        team2.train_tr()
-        team2.filter_tr_results(mental=True, error=False)
-
-        team3.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
-                                  alpha,
-                                  beta, iters, fairness_reg, contradiction_reg, fA, force_complete_coverage=True)
-        team3.setup_hyrs()
-        team3.train_hyrs()
-        team3.filter_hyrs_results(mental=True, error=False)
-
-
-        print('training team3 tr model...')
-        team3.setup_tr()
-        team3.train_tr()
-        team3.filter_tr_results(mental=True, error=False)
-
-        # team1
         
-        team1.full_hyrs_results.to_pickle('{}/fc_cost_{}_team1_hyrs_filtered_run{}.pkl'.format(folder, reg, run))
-        team1.full_tr_results.to_pickle('{}/fc_cost_{}_team1_tr_filtered_run{}.pkl'.format(folder, reg, run))
 
-        with open('{}/fc_cost_{}_team1_tr_results_run{}.pkl'.format(folder, reg, run), 'wb') as outp:
-            pickle.dump(team1.tr_results, outp, pickle.HIGHEST_PROTOCOL)
-        outp.close()
-
-        with open('{}/fc_cost_{}_team1_hyrs_results_run{}.pkl'.format(folder, reg, run), 'wb') as outp:
-            pickle.dump(team1.hyrs_results, outp, pickle.HIGHEST_PROTOCOL)
-        outp.close()
-
-        # team2
-        team2.full_hyrs_results.to_pickle('{}/fc_cost_{}_team2_hyrs_filtered_run{}.pkl'.format(folder, reg, run))
-        team2.full_tr_results.to_pickle('{}/fc_cost_{}_team2_tr_filtered_run{}.pkl'.format(folder, reg, run))
-
-        with open('{}/fc_cost_{}_team2_tr_results_run{}.pkl'.format(folder, reg, run), 'wb') as outp:
-            pickle.dump(team2.tr_results, outp, pickle.HIGHEST_PROTOCOL)
-        outp.close()
-
-        with open('{}/fc_cost_{}_team2_hyrs_results_run{}.pkl'.format(folder, reg, run), 'wb') as outp:
-            pickle.dump(team2.hyrs_results, outp, pickle.HIGHEST_PROTOCOL)
-        outp.close()
-
-        # team3
-
-        team3.full_hyrs_results.to_pickle('{}/fc_cost_{}_team3_hyrs_filtered_run{}.pkl'.format(folder, reg, run))
-        team3.full_tr_results.to_pickle('{}/fc_cost_{}_team3_tr_filtered_run{}.pkl'.format(folder, reg, run))
-
-        with open('{}/fc_cost_{}_team3_tr_results_run{}.pkl'.format(folder, reg, run), 'wb') as outp:
-            pickle.dump(team3.tr_results, outp, pickle.HIGHEST_PROTOCOL)
-        outp.close()
-
-        with open('{}/fc_cost_{}_team3_hyrs_results_run{}.pkl'.format(folder, reg, run), 'wb') as outp:
-            pickle.dump(team3.hyrs_results, outp, pickle.HIGHEST_PROTOCOL)
-        outp.close()
-        
-        '''
         
 print('finally done.')
-

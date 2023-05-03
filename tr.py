@@ -32,17 +32,17 @@ class tr(object):
         self.conf_human = pd.Series(conf_human)
 
     
-    def set_parameters(self, alpha = 0, beta = 0, coverage_reg = 0, contradiction_reg = 0, fA=0.5, rejectType = 'all', force_complete_coverage=False, asym_loss = [1,1]):
+    def set_parameters(self, alpha = 0, beta = 0, fairness_reg = 0, contradiction_reg = 0, fA=0.5, force_complete_coverage=False, asym_loss = [1,1], fair_feat=None):
         """
         asym_loss = [loss from False Negatives (ground truth positive), loss from False Positives (ground truth negative)]
         """
         # input al and bl are lists
         self.alpha = alpha
         self.beta = beta
-        self.coverage_reg = coverage_reg
+        self.fairness_reg = fairness_reg
+        self.fairness_feature = fair_feat
         self.contradiction_reg = contradiction_reg
         self.fA = fA
-        self.rejectType = rejectType
         self.force_complete_coverage = force_complete_coverage
         self.asym_loss = asym_loss
 
@@ -207,7 +207,8 @@ class tr(object):
         p = np.sum(self.pRMatrix[:,prs_curr],axis = 1)>0
         n = np.sum(self.nRMatrix[:,nrs_curr],axis = 1)>0
 
-        
+        fairness_curr = 0
+        fairness_new = 0
 
         
         overlap_curr = np.multiply(p,n)
@@ -233,7 +234,20 @@ class tr(object):
         #err_curr = (np.abs(self.Y - Yhat_soft_curr)).sum()
 
         contras_curr = np.sum(self.Yb != rulePreds_curr)
-        obj_curr = (err_curr)/self.N + (self.coverage_reg * (covered_curr.sum()/self.N)) + (self.contradiction_reg*(contras_curr/self.N))+ self.alpha*(int_flag *(len(prs_curr) + len(nrs_curr))+(1-int_flag)*nfeatures)+ self.beta * sum(~covered_curr)/self.N
+
+        if self.fairness_reg > 0:
+            sensitive = self.data_model_dict['Xtrain'][self.fairness_feature] == 1
+            _,TP,FP,TN,FN, _, _ = self.compute_obj(pcovered_curr,ncovered_curr, p_model_conf_curr, n_model_conf_curr, sensitive)
+            accuracy_sensitive = TP + TN / TP + FP + TN + FN
+
+            not_sensitive = self.data_model_dict['Xtrain'][self.fairness_feature] == 0
+            _,TP,FP,TN,FN, _, _ = self.compute_obj(pcovered_curr,ncovered_curr, p_model_conf_curr, n_model_conf_curr, not_sensitive)
+            accuracy_not_sensitive = TP + TN / TP + FP + TN + FN
+        
+        fairness_curr = np.abs(accuracy_sensitive-accuracy_not_sensitive)
+
+
+        obj_curr = (err_curr)/self.N + (self.fairness_reg * (fairness_curr)) + (self.contradiction_reg*(contras_curr/self.N))+ self.alpha*(int_flag *(len(prs_curr) + len(nrs_curr))+(1-int_flag)*nfeatures)+ self.beta * sum(~covered_curr)/self.N
         self.actions = []
         for iter in range(Niteration):
             if iter >0.75 * Niteration:
@@ -259,15 +273,25 @@ class tr(object):
             self.Yhat_curr = Yhat_curr
             Yhat_new,TP,FP,TN,FN, numRejects_new, Yhat_soft_new = self.compute_obj(pcovered_new,ncovered_new, p_model_conf_new, n_model_conf_new)
             err_new = (np.abs(self.Y - Yhat_soft_new) * asymCosts).sum()
+            
+            if self.fairness_reg > 0:
+                sensitive = self.data_model_dict['Xtrain'][self.fairness_feature] == 1
+                _,TP,FP,TN,FN, _, _ = self.compute_obj(pcovered_new,ncovered_new, p_model_conf_new, n_model_conf_new, sensitive)
+                accuracy_sensitive = TP + TN / TP + FP + TN + FN
 
-
+                not_sensitive = self.data_model_dict['Xtrain'][self.fairness_feature] == 0
+                _,TP,FP,TN,FN, _, _ = self.compute_obj(pcovered_new,ncovered_new, p_model_conf_new, n_model_conf_new, not_sensitive)
+                accuracy_not_sensitive = TP + TN / TP + FP + TN + FN
+        
+                fairness_new = np.abs(accuracy_sensitive-accuracy_not_sensitive)
+            
             self.Yhat_new = Yhat_new
             rulePreds_new = self.Yb.copy()
             rulePreds_new[ncovered_new] = 0
             rulePreds_new[pcovered_new] = 1
             contras_new = np.sum(rulePreds_new != self.Yb)
             nfeatures = len(np.unique([con.split('_')[0] for i in prs_new for con in self.prules[i]])) + len(np.unique([con.split('_')[0] for i in nrs_new for con in self.nrules[i]]))
-            obj_new = (err_new)/self.N + (self.coverage_reg * (covered_new.sum()/self.N)) + (self.contradiction_reg*(contras_new/self.N))+self.alpha*(int_flag *(len(prs_new) + len(nrs_new))+(1-int_flag)*nfeatures)+ self.beta * sum(~covered_new)/self.N
+            obj_new = (err_new)/self.N + (self.fairness_reg * (fairness_new)) + (self.contradiction_reg*(contras_new/self.N))+self.alpha*(int_flag *(len(prs_new) + len(nrs_new))+(1-int_flag)*nfeatures)+ self.beta * sum(~covered_new)/self.N
             T = T0**(iter/Niteration)
             alpha = np.exp(float(-obj_new +obj_curr)/T) # minimize
             
@@ -278,13 +302,13 @@ class tr(object):
                 accuracy_min = float(TP+TN)/self.N
                 explainability_min = sum(covered_new)/self.N
                 covered_min = covered_new
-                print('\n**  max at iter = {} ** \n {}(obj) = {}(error) + {}(coverage) + {}(rejection)\n accuracy = {}, explainability = {}, nfeatures = {}\n perror = {}, nerror = {}, oerror = {}, berror = {}\n '.format(iter,round(obj_new,3),(FP+FN)/self.N, (self.coverage_reg * (covered_new.sum()/self.N)), (self.contradiction_reg*(contras_new/self.N)), (TP+TN+0.0)/self.N,sum(covered_new)/self.N,nfeatures,perror,nerror,oerror,berror ))
+                print('\n**  max at iter = {} ** \n {}(obj) = {}(error) + {}(coverage) + {}(rejection)\n accuracy = {}, explainability = {}, nfeatures = {}\n perror = {}, nerror = {}, oerror = {}, berror = {}\n '.format(iter,round(obj_new,3),(FP+FN)/self.N, (self.fairness_reg * (covered_new.sum()/self.N)), (self.contradiction_reg*(contras_new/self.N)), (TP+TN+0.0)/self.N,sum(covered_new)/self.N,nfeatures,perror,nerror,oerror,berror ))
                 self.maps.append([iter,obj_new,prs_new,nrs_new])
             
             if print_message:
                 perror, nerror, oerror, berror = self.diagnose(pcovered_new,ncovered_new^overlap_new,overlap_new,covered_new,Yhat_new)
                 if print_message:
-                    print('\niter = {}, alpha = {}, {}(obj) = {}(error) + {}(coverage) + {}(rejection)\n accuracy = {}, explainability = {}, nfeatures = {}\n perror = {}, nerror = {}, oerror = {}, berror = {}\n '.format(iter,round(alpha,2),round(obj_new,3),(FP+FN)/self.N, (self.coverage_reg * (covered_new.sum()/self.N)), (self.contradiction_reg*(contras_new/self.N)), (TP+TN+0.0)/self.N,sum(covered_new)/self.N, nfeatures,perror,nerror,oerror,berror ))
+                    print('\niter = {}, alpha = {}, {}(obj) = {}(error) + {}(coverage) + {}(rejection)\n accuracy = {}, explainability = {}, nfeatures = {}\n perror = {}, nerror = {}, oerror = {}, berror = {}\n '.format(iter,round(alpha,2),round(obj_new,3),(FP+FN)/self.N, (self.fairness_reg * (covered_new.sum()/self.N)), (self.contradiction_reg*(contras_new/self.N)), (TP+TN+0.0)/self.N,sum(covered_new)/self.N, nfeatures,perror,nerror,oerror,berror ))
                     print('prs = {}, nrs = {}'.format(prs_new, nrs_new))
             if random() <= alpha:
                 #look here maybe
@@ -314,7 +338,7 @@ class tr(object):
         return perror, nerror, oerror, berror
     
 
-    def compute_obj(self,pcovered,ncovered, pconfs, nconfs):
+    def compute_obj(self,pcovered,ncovered, pconfs, nconfs, group=None):
 
         Yhat = self.Yb.copy()  # will cover all cases where model does not have recommendation
         Yhat_rules = self.Yb.copy()
@@ -352,7 +376,13 @@ class tr(object):
         Yhat[pcovered] = Yhat[pcovered].round()
         TP,FP,TN,FN = getConfusion(Yhat,self.Y)
 
-       
+        if group != None:
+            TP,FP,TN,FN = getConfusion(Yhat[group],self.Y[group])
+
+
+
+
+
         return  Yhat,TP,FP,TN,FN, numRejects, Yhat_soft
     
     def propose_rs(self, prs_in,nrs_in,pcovered,ncovered,overlapped, covered,Yhat, Yhat_soft, contras, vt,print_message = False):

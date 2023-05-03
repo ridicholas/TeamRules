@@ -349,8 +349,8 @@ class HAI_team():
         self.asym_loss = [1,1]
 
     def set_training_params(self, Niteration, Nchain, Nlevel, Nrules,
-                            supp, maxlen, protected, budget, sample_ratio, alpha=0, beta=0, iters=1000, coverage_reg=0,
-                            contradiction_reg=0, fA=0.5, rejectType='all', force_complete_coverage=False, asym_loss = [1,1]):
+                            supp, maxlen, protected, budget, sample_ratio, alpha=0, beta=0, iters=1000, fairness_reg=0,
+                            contradiction_reg=0, fA=0.5, force_complete_coverage=False, asym_loss = [1,1], fair_feat=None):
         self.Niteration = Niteration
         self.Nchain = Nchain
         self.Nlevel = Nlevel
@@ -363,13 +363,13 @@ class HAI_team():
         self.alpha = alpha
         self.beta = beta
         self.iters = iters
-        self.coverage_reg = coverage_reg
+        self.fairness_reg = fairness_reg
         self.contradiction_reg = contradiction_reg
         self.fA = fA
         self.fA_true = fA
-        self.rejectType = rejectType
         self.force_complete_coverage = force_complete_coverage
         self.asym_loss = asym_loss
+        self.fairness_feature = fair_feat
     
     def set_true_fA(self, fA):
         self.fA_true = fA
@@ -833,6 +833,22 @@ class HAI_team():
         self.trained_ADB_model.fit(X, y)
         print('Accuracy of ADB Model on Train Data: ' + str(
             self.trained_ADB_model.score(X, y)))
+
+        #AUC on val data
+        val_human_confs = self.data_model_dict['pred_conf_val']
+        val_agreement = ~(self.data_model_dict['pred_human_wrong_val'].astype(bool))
+        val_agreement = bernoulli.rvs(p=0.5, size=len(val_agreement)).astype(bool)
+        val_model_confs = self.data_model_dict['prob_human_wrong_val']
+        val_model_confs[val_agreement] = 1-val_model_confs[val_agreement]
+
+        val_human_responses = self.fA_true(self.data_model_dict['val_conf'], val_model_confs, val_agreement)
+        val_y = bernoulli.rvs(p=val_human_responses, size=len(val_human_responses))
+        val_X = pd.DataFrame({'human_conf': val_human_confs, 'model_confs': val_model_confs, 'agreement': val_agreement})
+
+        print('AUC of ADB Model on val Data: ' + str(
+            metrics.roc_auc_score(val_y, self.trained_ADB_model.predict_proba(val_X)[:, 1])))
+
+
         
         df['pred_0'] = self.trained_ADB_model.predict_proba(X)[:, 0]
         df['pred_1'] = self.trained_ADB_model.predict_proba(X)[:, 1]
@@ -1181,7 +1197,7 @@ class HAI_team():
                     self.data_model_dict['Ybtrain'],
                     self.data_model_dict['train_conf'])
 
-        model.set_parameters(self.alpha, self.beta, self.coverage_reg, self.contradiction_reg, self.fA, self.rejectType, self.force_complete_coverage, self.asym_loss)
+        model.set_parameters(self.alpha, self.beta, self.fairness_reg, self.contradiction_reg, self.fA, self.force_complete_coverage, self.asym_loss)
 
         model.generate_rulespace(self.supp, self.maxlen, self.Nrules, need_negcode=True, method='randomforest',
                                  criteria='precision')
@@ -1392,7 +1408,7 @@ class HAI_team():
         model = hyrs.hyrs(self.data_model_dict['Xtrain'], self.data_model_dict['Ytrain'],
                                     self.data_model_dict['Ybtrain'])
 
-        model.set_parameters(self.alpha, self.beta, self.coverage_reg, self.contradiction_reg, self.force_complete_coverage, self.asym_loss)
+        model.set_parameters(self.alpha, self.beta, self.fairness_reg, self.contradiction_reg, self.force_complete_coverage, self.asym_loss)
         model.generate_rulespace(self.supp, self.maxlen, self.Nrules, need_negcode=True, method='randomforest',
                                  criteria='precision')
         
