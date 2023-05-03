@@ -239,6 +239,7 @@ class tr(object):
 
         contras_curr = np.sum(self.Yb != rulePreds_curr)
 
+
         if self.fairness_reg > 0:
             sensitive = self.data_model_dict['Xtrain'][self.fairness_feature] == 1
             _,TP,FP,TN,FN, _, _ = self.compute_obj(pcovered_curr,ncovered_curr, p_model_conf_curr, n_model_conf_curr, sensitive)
@@ -247,8 +248,14 @@ class tr(object):
             not_sensitive = self.data_model_dict['Xtrain'][self.fairness_feature] == 0
             _,TP,FP,TN,FN, _, _ = self.compute_obj(pcovered_curr,ncovered_curr, p_model_conf_curr, n_model_conf_curr, not_sensitive)
             accuracy_not_sensitive = TP + TN / TP + FP + TN + FN
+
+            fairness_curr = np.abs(accuracy_sensitive-accuracy_not_sensitive)
+        else:
+            fairness_curr = 0
+            fairness_new = 0
+
         
-        fairness_curr = np.abs(accuracy_sensitive-accuracy_not_sensitive)
+        
 
 
         obj_curr = (err_curr)/self.N + (self.fairness_reg * (fairness_curr)) + (self.contradiction_reg*(contras_curr/self.N))+ self.alpha*(int_flag *(len(prs_curr) + len(nrs_curr))+(1-int_flag)*nfeatures)+ self.beta * sum(~covered_curr)/self.N
