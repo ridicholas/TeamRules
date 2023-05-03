@@ -265,7 +265,7 @@ for run in range(0, 10):
     # train aversion and error boundary models
     if 'team1' in whichTeams:
         team1.train_mental_aversion_model('perfect')
-        team1.train_confidence_model('perfect', 0.2)
+        team1.train_confidence_model('not_perfect', 0.2)
         team1.train_mental_error_boundary_model()
         team1.train_ADB_model(0.2)
         team1.set_fA(team1.trained_ADB_model_wrapper)
@@ -282,7 +282,7 @@ for run in range(0, 10):
 
     if 'team2' in whichTeams:
         team2.train_mental_aversion_model('perfect')
-        team2.train_confidence_model('perfect', 0.2)
+        team2.train_confidence_model('not_perfect', 0.2)
         team2.train_mental_error_boundary_model()
         team2.train_ADB_model(0.2)
         team2.set_fA(team2.trained_ADB_model_wrapper)
@@ -299,7 +299,7 @@ for run in range(0, 10):
 
     if 'team3' in whichTeams:
         team3.train_mental_aversion_model('perfect')
-        team3.train_confidence_model('perfect', 0.2)
+        team3.train_confidence_model('not_perfect', 0.2)
         team3.train_mental_error_boundary_model()
         team3.train_ADB_model(0.2)
         team3.set_fA(team3.trained_ADB_model_wrapper)
