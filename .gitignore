@@ -38,8 +38,9 @@ README.md
 *.so
 
 #results folders
-*_results/
+*_results*/
 Plots/
+FINAL_RESULTS/
 
 #data
 *.csv
