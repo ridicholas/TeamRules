@@ -134,10 +134,7 @@ team_info.loc[3, 'human reject region train acc'] = metrics.accuracy_score(
 print(team_info)
 
 folder = 'adult_contradiction_results'
-team_info.to_pickle('{}/start_info.pkl'.format(folder))
 
-
-team1.data_model_dict['Xtrain'].to_pickle('{}/startDataSet.pkl'.format(folder))
 
 team1_rule_lists = pd.DataFrame(index=range(0, 20), columns=['TR_prules', 'TR_nrules', 'HyRS_prules', 'HyRS_nrules'])
 team2_rule_lists = pd.DataFrame(index=range(0, 20), columns=['TR_prules', 'TR_nrules', 'HyRS_prules', 'HyRS_nrules'])

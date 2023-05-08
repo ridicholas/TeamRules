@@ -8,7 +8,7 @@ def run(team1, team2, team3, folder, team_info):
 
     setting_type = 'learned'
 
-    
+
     if setting_type=='learned':
         folder = folder + '_learned'
     elif setting_type=='perfect':
@@ -34,6 +34,10 @@ def run(team1, team2, team3, folder, team_info):
     fairness_reg = 0
 
     folder = folder + f'_len{maxlen}'
+
+    team_info.to_pickle('{}/start_info.pkl'.format(folder))
+
+    team1.data_model_dict['Xtrain'].to_pickle('{}/startDataSet.pkl'.format(folder))
 
     def basic_ADB_func_det(c_human, c_model=None, agreement=None):
     #returns the probability that the human accepts a recommendation given conf of human and conf of model
