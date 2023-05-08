@@ -9,7 +9,7 @@ import math
 
 numRuns = 10 #adjust this depending on how many runs of results were produced
 
-path = 'hr_contradiction_results_learned/'
+path = 'adult_contradiction_results_learned/'
 
 asym_loss = [1,1]
 data = path.split('_')[0]
@@ -17,7 +17,7 @@ costs = [0, 0.01, 0.05, 0.1, 0.2,
                      0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
 
 
-
+#costs = [0, 0.01, 0.05]
 tr_conf = 0.5
 hyrs_conf = 0
 
@@ -93,7 +93,9 @@ teams = []
 for t in start_info.sort_values(by='human accept region train acc').index:
     teams.append('team{}'.format(t))
 
+#teams = ['team2']
 settings = ['Rational', 'Neutral', 'Irrational']
+#settings = ['Neutral']
 for whichTeam in range(len(settings)):
     fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(8, 2), dpi=200)
     fig.subplots_adjust(bottom=0.15, wspace=.4)
@@ -243,7 +245,7 @@ for whichTeam in range(len(settings)):
     z = list(zip(*[i for n, i in enumerate(l) if i not in l[:n]]))
     BRS_loss = np.array(z[0])
     BRS_con = np.array(z[1])
-    fig.suptitle('{} {} Setting'.format(data, setting), fontsize=16)
+    #fig.suptitle('{} {} Setting'.format(data, setting), fontsize=16)
     i=0
     for row in ax:
         if i==0:
@@ -297,7 +299,7 @@ for whichTeam in range(len(settings)):
         
         i+=1
     #fig.savefig('Plots/asym_2_1_{}_{}.png'.format(data,setting), bbox_inches='tight')
-    fig.savefig('Plots/learned_{}_{}.png'.format(data,setting), bbox_inches='tight')
+    fig.savefig('Plots/learned_len3_{}_{}.png'.format(data,setting), bbox_inches='tight')
 
 
     
