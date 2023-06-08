@@ -6,7 +6,7 @@ import pickle
 # Repeat Experiments
 def run(team1, team2, team3, folder, team_info):
 
-    setting_type = 'learned'
+    setting_type = 'perfect'
 
 
     if setting_type=='learned':
@@ -33,7 +33,7 @@ def run(team1, team2, team3, folder, team_info):
     contradiction_reg = 0
     fairness_reg = 0
 
-    folder = folder + f'_len{maxlen}'
+    folder = folder + f'_len{maxlen}' 
 
     team_info.to_pickle('{}/start_info.pkl'.format(folder))
 

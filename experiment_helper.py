@@ -38,12 +38,12 @@ def make_gaussians(numExamples=5000, numFeats=20):
     #humanGood make
     startDict['Xtrain']['humangood'] = 0
     pdfs = norm.pdf(np.sum(startDict['Xtrain'], axis=1))
-    startDict['Xtrain']['humangood'][pdfs > np.median(pdfs)] = 1
+    startDict['Xtrain']['humangood'][pdfs > np.quantile(pdfs,q=0.75)] = 1
 
     #accept make
     startDict['Xtrain']['accept'] = 0
     sums = np.sum(startDict['Xtrain'], axis=1)
-    startDict['Xtrain']['accept'][sums < -0.5] = 1
+    startDict['Xtrain']['accept'][sums < 1] = 1
 
     #makeLabels
     startDict['Ytrain'] = np.zeros(numExamples)

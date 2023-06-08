@@ -9,7 +9,7 @@ import math
 
 numRuns = 10 #adjust this depending on how many runs of results were produced
 
-path = 'adult_contradiction_results_learned/'
+path = 'fico_contradiction_results_learned_len5/'
 
 asym_loss = [1,1]
 data = path.split('_')[0]
@@ -299,7 +299,7 @@ for whichTeam in range(len(settings)):
         
         i+=1
     #fig.savefig('Plots/asym_2_1_{}_{}.png'.format(data,setting), bbox_inches='tight')
-    fig.savefig('Plots/learned_len3_{}_{}.png'.format(data,setting), bbox_inches='tight')
+    fig.savefig('Plots/learned_len5_{}_{}.png'.format(data,setting), bbox_inches='tight')
 
 
     
