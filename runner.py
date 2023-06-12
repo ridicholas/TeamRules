@@ -95,6 +95,7 @@ def run(team1, team2, team3, folder, team_info):
 
     validations = 1
     whichTeams = ['team1', 'team2', 'team3']
+
     teams = [team1, team2, team3]
     for run in range(0, 10):
 
@@ -267,6 +268,10 @@ def run(team1, team2, team3, folder, team_info):
             
                 team1.full_tr_results.to_pickle('{}/cost_{}_team1_tr_filtered_run{}.pkl'.format(folder, reg, run))
 
+                team1.full_hyrs_results_val.to_pickle('{}/val_cost_{}_team1_hyrs_filtered_run{}.pkl'.format(folder, reg, run))
+            
+                team1.full_tr_results_val.to_pickle('{}/val_cost_{}_team1_tr_filtered_run{}.pkl'.format(folder, reg, run))
+
                 with open('{}/cost_{}_team1_tr_results_run{}.pkl'.format(folder, reg, run), 'wb') as outp:
                     pickle.dump(team1.tr_results, outp, pickle.HIGHEST_PROTOCOL)
                 outp.close()
@@ -336,6 +341,8 @@ def run(team1, team2, team3, folder, team_info):
 
                 team2.full_hyrs_results.to_pickle('{}/cost_{}_team2_hyrs_filtered_run{}.pkl'.format(folder, reg, run))
                 team2.full_tr_results.to_pickle('{}/cost_{}_team2_tr_filtered_run{}.pkl'.format(folder, reg, run))
+                team2.full_hyrs_results_val.to_pickle('{}/val_cost_{}_team2_hyrs_filtered_run{}.pkl'.format(folder, reg, run))
+                team2.full_tr_results_val.to_pickle('{}/val_cost_{}_team2_tr_filtered_run{}.pkl'.format(folder, reg, run))
 
                 with open('{}/cost_{}_team2_tr_results_run{}.pkl'.format(folder, reg, run), 'wb') as outp:
                     pickle.dump(team2.tr_results, outp, pickle.HIGHEST_PROTOCOL)
@@ -406,6 +413,9 @@ def run(team1, team2, team3, folder, team_info):
 
                 team3.full_hyrs_results.to_pickle('{}/cost_{}_team3_hyrs_filtered_run{}.pkl'.format(folder, reg, run))
                 team3.full_tr_results.to_pickle('{}/cost_{}_team3_tr_filtered_run{}.pkl'.format(folder, reg, run))
+
+                team3.full_hyrs_results_val.to_pickle('{}/val_cost_{}_team3_hyrs_filtered_run{}.pkl'.format(folder, reg, run))
+                team3.full_tr_results_val.to_pickle('{}/val_cost_{}_team3_tr_filtered_run{}.pkl'.format(folder, reg, run))
 
                 with open('{}/cost_{}_team3_tr_results_run{}.pkl'.format(folder, reg, run), 'wb') as outp:
                     pickle.dump(team3.tr_results, outp, pickle.HIGHEST_PROTOCOL)

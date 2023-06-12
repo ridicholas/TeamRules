@@ -9,7 +9,10 @@ import math
 
 numRuns = 10 #adjust this depending on how many runs of results were produced
 
-path = 'fico_contradiction_results_learned_len5/'
+rule_len = 5
+setting_type = 'perfect'
+dataset = 'hr'
+path = f'{dataset}_contradiction_results_{setting_type}_len{rule_len}/'
 
 asym_loss = [1,1]
 data = path.split('_')[0]
@@ -299,7 +302,7 @@ for whichTeam in range(len(settings)):
         
         i+=1
     #fig.savefig('Plots/asym_2_1_{}_{}.png'.format(data,setting), bbox_inches='tight')
-    fig.savefig('Plots/learned_len5_{}_{}.png'.format(data,setting), bbox_inches='tight')
+    fig.savefig(f'Plots/{setting_type}_len{rule_len}_{data}_{setting}.png', bbox_inches='tight')
 
 
     
