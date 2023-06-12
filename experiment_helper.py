@@ -1133,7 +1133,7 @@ class HAI_team():
 
         contradictions = (self.data_model_dict[f'Yb{on}'] != modelonly_preds).sum()
 
-        error = np.abs(self.data_model_dict[f'Y{on}'].values - team_preds.values).sum()/len(team_preds)
+        error = np.abs(self.data_model_dict[f'Y{on}'].values - team_preds).sum()/len(team_preds)
 
         return error + ((rejection_cost * contradictions)/len(paccept))
 
@@ -1222,7 +1222,7 @@ class HAI_team():
         val_preds = paccept*modelonly_val_preds + (1-paccept)*self.data_model_dict['Ybval']
 
         asymCosts = self.data_model_dict['Yval'].replace({0: self.asym_loss[1], 1: self.asym_loss[0]})
-        val_error = (np.abs(self.data_model_dict['Yval'].values - val_preds.values) * asymCosts.values).sum()/len(val_preds)
+        val_error = (np.abs(self.data_model_dict['Yval'].values - val_preds) * asymCosts.values).sum()/len(val_preds)
         
         tr_val_obj = val_error + ((self.tr.contradiction_reg * tr_val_contradictions)/len(val_preds))
         
