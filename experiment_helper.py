@@ -1498,7 +1498,7 @@ class HAI_team():
 
         asymCosts = self.data_model_dict['Yval'].replace({0: self.asym_loss[1], 1: self.asym_loss[0]})
         
-        val_error_soft = (np.abs(self.data_model_dict['Yval'].values - val_preds_soft.values) * asymCosts.values).sum()/len(val_preds_soft)
+        val_error_soft = (np.abs(self.data_model_dict['Yval'].values - val_preds_soft) * asymCosts.values).sum()/len(val_preds_soft)
         
         self.hyrs.val_obj = val_error_soft + (self.contradiction_reg * val_contradictions)/len(val_preds)
 
