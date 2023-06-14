@@ -7,7 +7,7 @@ from scipy.stats import ttest_ind
 from statistics import mean, stdev
 import math
 
-numRuns = 10 #adjust this depending on how many runs of results were produced
+numRuns = 3 #adjust this depending on how many runs of results were produced
 
 rule_len = 5
 setting_type = 'perfect'
@@ -21,7 +21,7 @@ costs = [0, 0.01, 0.05, 0.1, 0.2,
 
 
 #costs = [0, 0.01, 0.05]
-tr_conf = 0.5
+tr_conf = 0
 hyrs_conf = 0
 
 teams = ['team1', 'team2', 'team3']
@@ -29,18 +29,24 @@ teams = ['team1', 'team2', 'team3']
 team_infos = []
 datasets = []
 tr_results_filtered = {}
+val_tr_results_filtered = {}
 hyrs_results_filtered = {}
+val_hyrs_results_filtered = {}
 brs_results = {'team1': [], 'team2': [], 'team3': []}
 
 for team in teams:
     
     tr_results_filtered[team] = {}
     hyrs_results_filtered[team] = {}
+    val_tr_results_filtered[team] = {}
+    val_hyrs_results_filtered[team] = {}
 
 for team in teams:
     for cost in costs:
         tr_results_filtered[team][str(cost)] = []
         hyrs_results_filtered[team][str(cost)] = []
+        val_tr_results_filtered[team][str(cost)] = []
+        val_hyrs_results_filtered[team][str(cost)] = []
         
 
 start_info = pd.read_pickle(path + 'start_info.pkl')
@@ -55,12 +61,21 @@ for i in range(0, numRuns):
             tr_results_filtered[team][cost][-1] = tr_results_filtered[team][cost][-1][tr_results_filtered[team][cost][-1]['mental_conf'] == tr_conf].reset_index()
             tr_results_filtered[team][cost]
 
+            #tr filtered validation
+            val_tr_results_filtered[team][cost].append(pd.read_pickle(path + 'val_cost_{}_'.format(cost) + team + '_tr_filtered_run{}.pkl'.format(i)).sort_values(by='val_error'))
+            val_tr_results_filtered[team][cost][-1] = val_tr_results_filtered[team][cost][-1][val_tr_results_filtered[team][cost][-1]['mental_conf'] == tr_conf].reset_index()
+            val_tr_results_filtered[team][cost]
+
             #hyrs filtered
             hyrs_results_filtered[team][cost].append(pd.read_pickle(path + 'cost_{}_'.format('0')+ team + '_hyrs_filtered_run{}.pkl'.format(i)).sort_values(by='test_error'))
             hyrs_results_filtered[team][cost][-1] = hyrs_results_filtered[team][cost][-1][hyrs_results_filtered[team][cost][-1]['mental_conf'] == hyrs_conf].reset_index()
+
+            #hyrs filtered validation
+            val_hyrs_results_filtered[team][cost].append(pd.read_pickle(path + 'val_cost_{}_'.format('0')+ team + '_hyrs_filtered_run{}.pkl'.format(i)).sort_values(by='val_error'))
+            val_hyrs_results_filtered[team][cost][-1] = val_hyrs_results_filtered[team][cost][-1][val_hyrs_results_filtered[team][cost][-1]['mental_conf'] == hyrs_conf].reset_index()
         
-            if cost == '0':
-                brs_results[team].append(pd.read_pickle(path + team + '_brs_run{}.pkl'.format(i)).sort_values(by='test_error_brs'))
+            #if cost == '0':
+            #    brs_results[team].append(pd.read_pickle(path + team + '_brs_run{}.pkl'.format(i)).sort_values(by='test_error_brs'))
 
 for run in range(numRuns):
     for team in teams:

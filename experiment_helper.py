@@ -947,6 +947,9 @@ class HAI_team():
         full_result = {}
         full_preds, _, _ = method.predict(self.data_model_dict[f'X{on}'],
                                                         self.data_model_dict[f'Yb{on}'])
+        soft_preds = self.data_model_dict[f'paccept_{on}']*full_preds + (1-self.data_model_dict[f'paccept_{on}'])*self.data_model_dict[f'Yb{on}']
+
+
         full_result[f'{on}_rejects'] = sum((self.data_model_dict[f'Yb{on}'] != full_preds)[
                                                         (self.data_model_dict[f'paccept_{on}'] >= mental_conf) & ~
                                                         self.data_model_dict[f'{on}_accept'] &
@@ -956,6 +959,11 @@ class HAI_team():
         #reset modelonly results from filtering
         full_result[f'modelonly_{on}_preds'][self.data_model_dict[f'paccept_{on}'] < mental_conf] = self.data_model_dict[f'Yb{on}'][
                 self.data_model_dict[f'paccept_{on}'] < mental_conf]
+
+        soft_preds[self.data_model_dict[f'paccept_{on}'] < mental_conf] = self.data_model_dict[f'Yb{on}'][
+                self.data_model_dict[f'paccept_{on}'] < mental_conf]
+        
+        
 
         full_result[f'{on}_rejectsINC'] = sum(((self.data_model_dict[f'Yb{on}'] != full_preds)[
             (self.data_model_dict[f'paccept_{on}'] >= mental_conf) & ~
@@ -1005,6 +1013,11 @@ class HAI_team():
         full_result[f'{on}_coverage'] = (full_covered == 1).sum()
 
         asymCosts = self.data_model_dict[f'Y{on}'].replace({0: self.asym_loss[1], 1: self.asym_loss[0]})
+
+        error_soft = (np.abs(self.data_model_dict[f'Y{on}'].values - soft_preds) * asymCosts.values).sum()/len(soft_preds)
+        
+        
+
         full_result[f'{on}_error'] = (np.abs(self.data_model_dict[f'Y{on}'] - full_preds) * asymCosts).sum()/len(full_preds)
         full_result[f'mental_conf'] = mental_conf
         full_result[f'error_conf'] = error_conf
@@ -1012,7 +1025,12 @@ class HAI_team():
         full_result[f'humanified_{on}_preds'] = full_preds
 
         full_result['contradicts'] = contradicts
-        full_result['objective'] = full_result[f'{on}_error'] + (self.contradiction_reg*full_result['contradicts']/len(full_preds))
+
+        #if on=='val':
+        full_result['objective'] = error_soft + (self.contradiction_reg*full_result['contradicts']/len(full_preds))
+        #else:
+        #    full_result['objective'] = full_result[f'{on}_error'] + (self.contradiction_reg*full_result['contradicts']/len(full_preds))
+        
 
         return full_result
     
@@ -1127,8 +1145,11 @@ class HAI_team():
         conf_model = np.zeros(len(self.data_model_dict[f'Y{on}']))
         conf_model[:] = acc
         agreement = self.data_model_dict[f'Yb{on}'] == modelonly_preds
-        paccept = self.fA(self.data_model_dict[f'pred_conf_{on}'], conf_model, agreement)
-        accept = (pd.Series(bernoulli.rvs(p=paccept, size=len(paccept))).astype(bool))
+        if on=='val':
+            paccept = self.fA(self.data_model_dict[f'pred_conf_{on}'], conf_model, agreement)
+        elif on=='test':
+            paccept = self.fA_true(self.data_model_dict[f'{on}_conf'], conf_model, agreement)
+        
         team_preds = paccept*modelonly_preds + (1-paccept)*self.data_model_dict[f'Yb{on}']
 
         contradictions = (self.data_model_dict[f'Yb{on}'] != modelonly_preds).sum()
@@ -1165,7 +1186,7 @@ class HAI_team():
         #given model, what is probability of accept behavior
         self.data_model_dict['paccept_train'] = self.fA(self.data_model_dict['pred_conf_train'], conf_model_train, agreement_train)
         self.data_model_dict['paccept_val'] = self.fA(self.data_model_dict['pred_conf_val'], conf_model_val, agreement_val)
-        self.data_model_dict['paccept_test'] = self.fA(self.data_model_dict['pred_conf_test'], conf_model_test, agreement_test)
+        self.data_model_dict['paccept_test'] = self.fA_true(self.data_model_dict['test_conf'], conf_model_test, agreement_test)
 
         #given model, what is realized accept behavior
         self.data_model_dict['train_accept'] = (pd.Series(bernoulli.rvs(p=self.data_model_dict['paccept_train'], size=len(self.data_model_dict['paccept_train']))).astype(bool))
@@ -1178,8 +1199,10 @@ class HAI_team():
         team_val_preds[self.data_model_dict['val_accept'] == False] = self.data_model_dict['Ybval'][self.data_model_dict['val_accept'] == False]
         team_train_preds[self.data_model_dict['train_accept'] == False] = self.data_model_dict['Ybtrain'][self.data_model_dict['train_accept'] == False]
 
+        
 
         self.brs_results = pd.DataFrame({'test_error_brs': 1 - metrics.accuracy_score(self.data_model_dict['Ytest'],team_test_preds),
+                                         'test_contradicts': len(modelonly_test_preds) - agreement_test.sum(),
                                          'test_error_modelonly': 1 - metrics.accuracy_score(self.data_model_dict['Ytest'], modelonly_test_preds),
                                          'val_error_brs': 1 - metrics.accuracy_score(self.data_model_dict['Yval'],team_val_preds),
                                          'val_error_modelonly': 1 - metrics.accuracy_score(self.data_model_dict['Yval'], modelonly_val_preds),
@@ -1188,7 +1211,10 @@ class HAI_team():
                                          'team_val_preds':[team_val_preds],
 
                                          'test_rejects':sum((modelonly_test_preds != self.data_model_dict['Ybtest']) &
-                                                            (self.data_model_dict['test_accept']==False))})
+                                                            (self.data_model_dict['test_accept']==False)),
+                                         'test_objective': self.brs_objective(self.contradiction_reg, 'test'),
+                                         'val_objective': self.brs_objective(self.contradiction_reg, 'val'),
+                                         'val_contradicts': len(modelonly_val_preds) - agreement_val.sum()})
 
 
 
@@ -1317,7 +1343,7 @@ class HAI_team():
         #given model, what is probability of accept behavior
         self.data_model_dict['paccept_train'] = self.fA(self.data_model_dict['pred_conf_train'], conf_model_train, agreement_train)
         self.data_model_dict['paccept_val'] = self.fA(self.data_model_dict['pred_conf_val'], conf_model_val, agreement_val)
-        self.data_model_dict['paccept_test'] = self.fA(self.data_model_dict['pred_conf_test'], conf_model_test, agreement_test)
+        self.data_model_dict['paccept_test'] = self.fA_true(self.data_model_dict['test_conf'], conf_model_test, agreement_test)
 
 
         #given model, what is realized accept behavior
@@ -1435,7 +1461,7 @@ class HAI_team():
         #given model, what is probability of accept behavior
         self.data_model_dict['paccept_train'] = self.fA(self.data_model_dict['pred_conf_train'], conf_model_train, agreement_train)
         self.data_model_dict['paccept_val'] = self.fA(self.data_model_dict['pred_conf_val'], conf_model_val, agreement_val)
-        self.data_model_dict['paccept_test'] = self.fA(self.data_model_dict['pred_conf_test'], conf_model_test, agreement_test)
+        self.data_model_dict['paccept_test'] = self.fA_true(self.data_model_dict['test_conf'], conf_model_test, agreement_test)
 
         #given model, what is realized accept behavior
         self.data_model_dict['train_accept'] = (pd.Series(bernoulli.rvs(p=self.data_model_dict['paccept_train'], size=len(self.data_model_dict['paccept_train']))).astype(bool))
