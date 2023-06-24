@@ -18,12 +18,12 @@ def run(team1, team2, team3, folder, team_info):
     team3_4_start_threshold = 0.5
 
     #initial hyperparams
-    Niteration = 500
+    Niteration = 1000
     Nchain = 1
     Nlevel = 1
     Nrules = 10000
     supp = 5
-    maxlen = 1
+    maxlen = 4
     protected = 'NA'
     budget = 1
     sample_ratio = 1
@@ -32,6 +32,7 @@ def run(team1, team2, team3, folder, team_info):
     iters = Niteration
     contradiction_reg = 0
     fairness_reg = 0
+    numRuns = 15
 
     folder = folder + f'_len{maxlen}' 
 
@@ -97,7 +98,7 @@ def run(team1, team2, team3, folder, team_info):
     whichTeams = ['team1', 'team2', 'team3']
 
     teams = [team1, team2, team3]
-    for run in range(0, 10):
+    for run in range(0, numRuns):
 
         team_info = pd.DataFrame(index=[1, 2, 3])
         contradiction_regs = [0, 0.01, 0.05, 0.1, 0.2,

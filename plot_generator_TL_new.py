@@ -23,6 +23,7 @@ costs = [0, 0.01, 0.05, 0.1, 0.2,
 #costs = [0, 0.01, 0.05]
 tr_conf = 0
 hyrs_conf = 0
+tr_optimizer = True
 
 teams = ['team1', 'team2', 'team3']
 #teams = ['team2']
@@ -56,15 +57,19 @@ for i in range(0, numRuns):
         for cost in costs:
             
             cost = str(cost)
+
+            if tr_optimizer:
+                #tr filtered validation
+                val_tr_results_filtered[team][cost].append(pd.read_pickle(path + 'val_cost_{}_'.format(cost) + team + '_tr_filtered_run{}.pkl'.format(i)).sort_values(by=['objective', 'contradicts']))
+                tr_conf = val_tr_results_filtered[team][cost][-1].reset_index().loc[0, 'mental_conf']
+                
+
             #tr filtered
             tr_results_filtered[team][cost].append(pd.read_pickle(path + 'cost_{}_'.format(cost) + team + '_tr_filtered_run{}.pkl'.format(i)).sort_values(by='test_error'))
             tr_results_filtered[team][cost][-1] = tr_results_filtered[team][cost][-1][tr_results_filtered[team][cost][-1]['mental_conf'] == tr_conf].reset_index()
             tr_results_filtered[team][cost]
 
-            #tr filtered validation
-            val_tr_results_filtered[team][cost].append(pd.read_pickle(path + 'val_cost_{}_'.format(cost) + team + '_tr_filtered_run{}.pkl'.format(i)).sort_values(by='val_error'))
-            val_tr_results_filtered[team][cost][-1] = val_tr_results_filtered[team][cost][-1][val_tr_results_filtered[team][cost][-1]['mental_conf'] == tr_conf].reset_index()
-            val_tr_results_filtered[team][cost]
+            
 
             #hyrs filtered
             hyrs_results_filtered[team][cost].append(pd.read_pickle(path + 'cost_{}_'.format('0')+ team + '_hyrs_filtered_run{}.pkl'.format(i)).sort_values(by='test_error'))
@@ -77,34 +82,7 @@ for i in range(0, numRuns):
             if cost == '0':
                 brs_results[team].append(pd.read_pickle(path + team + '_brs_run{}.pkl'.format(i)).sort_values(by='test_error_brs'))
 
-for run in range(numRuns):
-    for team in teams:
-            
-        for cost in costs:
-            cost = str(cost)
-            if cost == '0':
-                brs_results[team][run].loc[0,'error_rate_acceptRegion'] = 1-metrics.accuracy_score(datasets[run][team+'_Ytest'][datasets[run][team+'TestConf'] < 0.5], brs_results[team][run].loc[0,'team_test_preds'][datasets[run][team+'TestConf'] < 0.5])
-            
-            
-                
-                
-            
-            tr_results_filtered[team][cost][run].loc[0,'error_rate_acceptRegion'] = 1-metrics.accuracy_score(datasets[run][team+'_Ytest'][datasets[run][team+'TestConf'] < 0.5], tr_results_filtered[team][cost][run].loc[0,'humanified_test_preds'][datasets[run][team+'TestConf'] < 0.5])
-            
-            
-            tr_results_filtered[team][cost][run].loc[0,'error_rate_ModelOnlyAcceptRegion'] = 1-metrics.accuracy_score(datasets[run][team+'_Ytest'][(datasets[run][team+'TestConf'] < 0.5) & (tr_results_filtered[team][cost][run].loc[0,'test_covereds'])], 
-                                                                                                                    tr_results_filtered[team][cost][run].loc[0,'modelonly_test_preds'][(datasets[run][team+'TestConf'] < 0.5) & (tr_results_filtered[team][cost][run].loc[0,'test_covereds'])])
 
-            tr_results_filtered[team][cost][run].loc[0, 'contradictions'] = (tr_results_filtered[team][cost][run].loc[0, 'modelonly_test_preds'] != datasets[run][team+'_Ybtest']).sum()
-            hyrs_results_filtered[team][cost][run].loc[0,'error_rate_acceptRegion'] = 1-metrics.accuracy_score(datasets[run][team+'_Ytest'][datasets[run][team+'TestConf'] < 0.5], hyrs_results_filtered[team][cost][run].loc[0,'humanified_test_preds'][datasets[run][team+'TestConf'] < 0.5])
-            hyrs_results_filtered[team][cost][run].loc[0,'error_rate_ModelOnlyAcceptRegion'] = 1-metrics.accuracy_score(datasets[run][team+'_Ytest'][(datasets[run][team+'TestConf'] < 0.5) & (hyrs_results_filtered[team][cost][run].loc[0,'test_covereds'])], 
-                                                                                                                    hyrs_results_filtered[team][cost][run].loc[0,'modelonly_test_preds'][(datasets[run][team+'TestConf'] < 0.5) & (hyrs_results_filtered[team][cost][run].loc[0,'test_covereds'])])
-            hyrs_results_filtered[team][cost][run].loc[0, 'contradictions'] = (hyrs_results_filtered[team][cost][run].loc[0, 'modelonly_test_preds'] != datasets[run][team+'_Ybtest']).sum()
-            tr_results_filtered[team][cost][run].loc[0,'total_acceptRegion'] = sum(datasets[run][team+'TestConf'] < 0.5)
-
-            hyrs_results_filtered[team][cost][run].loc[0,'total_acceptRegion'] = sum(datasets[run][team+'TestConf'] < 0.5)
-
-            brs_results[team][run].loc[0, 'contradictions'] = (brs_results[team][run].loc[0, 'modelonly_test_preds'] != datasets[run][team+'_Ybtest']).sum()
 
 
 teams = []
@@ -121,19 +99,12 @@ for whichTeam in range(len(settings)):
     setting = settings[whichTeam]
     costFrame = pd.DataFrame(index=[str(x) for x in costs], data={'Costs': [str(x) for x in costs], 
                                   'TeamRulesTeamLoss': np.zeros(len(costs)), 
-                                  'HyRSTeamLoss': np.zeros(len(costs)),
-                                  'TeamRulesCov': np.zeros(len(costs)),
-                                  'HyRSCov': np.zeros(len(costs)),
-                                  'TeamRulesModelOnlyAcceptLoss': np.zeros(len(costs)), 
-                                  'HyRSModelOnlyAcceptLoss': np.zeros(len(costs)),
-                                  'TeamRulesRejects': np.zeros(len(costs)), 
-                                  'HyRSRejects': np.zeros(len(costs)), 
+                                  'HyRSTeamLoss': np.zeros(len(costs)),                      
                                   'TR_Contradictions': np.zeros(len(costs)), 
                                   'HyRS_Contradictions': np.zeros(len(costs)),
                                   'TR_Objectives': np.zeros(len(costs)),
                                   'HyRS_Objectives': np.zeros(len(costs)),
                                   'BRSTeamLoss': np.zeros(len(costs)), 
-                                  'BRSCov': np.zeros(len(costs)), 
                                   'BRS_Contradictions': np.zeros(len(costs)),
                                   'BRS_Objectives': np.zeros(len(costs))})
 
@@ -157,51 +128,32 @@ for whichTeam in range(len(settings)):
         BRSContradicts = []
         BRSLoss = []
         BRSCov = []
+        Human = []
         for run in range(numRuns):
 
             
-            newTRLoss = asym_loss[0] * (datasets[run][team+'_Ytest'][datasets[run][team+'_Ytest'] == 0] != tr_results_filtered[team][cost][run].loc[0,'humanified_test_preds'][datasets[run][team+'_Ytest'] == 0]).sum()
-            newTRLoss += asym_loss[1] * (datasets[run][team+'_Ytest'][datasets[run][team+'_Ytest'] != 0] != tr_results_filtered[team][cost][run].loc[0,'humanified_test_preds'][datasets[run][team+'_Ytest'] != 0]).sum()
-            newTRLoss = newTRLoss/len(datasets[run][team+'_Ytest'])
-            TeamRulesLoss.append(newTRLoss)
-            TeamRules_modelonly_Loss.append(tr_results_filtered[team][cost][run].loc[0,'error_rate_ModelOnlyAcceptRegion'])
-            TeamRulesRejects.append(tr_results_filtered[team][cost][run].loc[0,'test_rejects'])
-            TeamRulesCov.append(tr_results_filtered[team][cost][run].loc[0,'test_coverage'])
-            TRContradicts.append(tr_results_filtered[team][cost][run].loc[0,'contradictions'])
-            TR_Objectives.append((TeamRulesLoss[-1]) + (float(cost)*TRContradicts[-1])/(datasets[run].shape[0]))
+            TeamRulesLoss.append(tr_results_filtered[team][cost][run].loc[0,'test_error'])
+            TRContradicts.append(tr_results_filtered[team][cost][run].loc[0,'contradicts'])
+            TR_Objectives.append(tr_results_filtered[team][cost][run].loc[0,'objective'])
 
 
-            newHYRSLoss = asym_loss[0] * (datasets[run][team+'_Ytest'][datasets[run][team+'_Ytest'] == 0] != hyrs_results_filtered[team][cost][run].loc[0,'humanified_test_preds'][datasets[run][team+'_Ytest'] == 0]).sum()
-            newHYRSLoss += asym_loss[1] * (datasets[run][team+'_Ytest'][datasets[run][team+'_Ytest'] != 0] != hyrs_results_filtered[team][cost][run].loc[0,'humanified_test_preds'][datasets[run][team+'_Ytest'] != 0]).sum()
-            newHYRSLoss = newHYRSLoss/len(datasets[run][team+'_Ytest'])
-            HyRSLoss.append(newHYRSLoss)
-            HyRS_modelonly_Loss.append(hyrs_results_filtered[team][cost][run].loc[0,'error_rate_ModelOnlyAcceptRegion'])
-            HyRSRejects.append(hyrs_results_filtered[team][cost][run].loc[0,'test_rejects'])
-            HyRSCov.append(hyrs_results_filtered[team][cost][run].loc[0,'test_coverage'])
-            HyRSContradicts.append(hyrs_results_filtered[team][cost][run].loc[0,'contradictions'])
-            HyRS_Objectives.append((HyRSLoss[-1]) + (float(cost)*HyRSContradicts[-1])/(datasets[run].shape[0]))
-            BRSLoss.append((datasets[run][team+'_Ytest'] != brs_results[team][run].loc[0, 'team_test_preds']).sum()/len(datasets[run][team+'_Ytest']))
-            BRSContradicts.append(brs_results[team][run].loc[0,'contradictions'])
-            BRS_Objectives.append((BRSLoss[-1]) + (float(cost)*BRSContradicts[-1])/(datasets[run].shape[0]))
+            
+            HyRSLoss.append(hyrs_results_filtered[team][cost][run].loc[0,'test_error'])
+            HyRSContradicts.append(hyrs_results_filtered[team][cost][run].loc[0,'contradicts'])
+            HyRS_Objectives.append(hyrs_results_filtered[team][cost][run].loc[0,'objective'] + (float(cost)*HyRSContradicts[-1])/(datasets[run].shape[0]))
+
+            BRSLoss.append(brs_results[team][run].loc[0,'test_error_brs'])
+            BRSContradicts.append(brs_results[team][run].loc[0,'test_contradicts'])
+            BRS_Objectives.append(brs_results[team][run].loc[0,'test_objective'] + (float(cost)*BRSContradicts[-1])/(datasets[run].shape[0]))
+
+            Human.append(1-metrics.accuracy_score(datasets[run][f'{team}_Ybtest'], datasets[run][f'{team}_Ytest']))
             
 
-        frame = pd.DataFrame({'TeamRulesLoss': TeamRulesLoss,
-                             'HyRSLoss': HyRSLoss,
-                             'TeamRulesCov': TeamRulesCov,
-                             'HyRSCov': HyRSCov,
-                             'TRRej': TeamRulesRejects,
-                             'HyRSRej': HyRSRejects}),
-                             #'BRSLoss': BRSLoss})
+        
         costFrame.loc[cost, 'TeamRulesTeamLoss'] = mean(TeamRulesLoss)
         costFrame.loc[cost, 'TeamRulesTeamLoss_std'] = stdev(TeamRulesLoss)
         costFrame.loc[cost, 'HyRSTeamLoss'] = mean(HyRSLoss)
         costFrame.loc[cost, 'HyRSTeamLoss_std'] = stdev(HyRSLoss)
-        costFrame.loc[cost, 'TeamRulesCov'] = mean(TeamRulesCov)
-        costFrame.loc[cost, 'TeamRulesRejects'] = mean(TeamRulesRejects)
-        costFrame.loc[cost, 'HyRSRejects'] = mean(HyRSRejects)
-        costFrame.loc[cost, 'HyRSCov'] = mean(HyRSCov)
-        costFrame.loc[cost, 'TeamRulesModelOnlyAcceptLoss'] = mean(TeamRules_modelonly_Loss)
-        costFrame.loc[cost, 'HyRSModelOnlyAcceptLoss'] = mean(HyRS_modelonly_Loss)
         costFrame.loc[cost, 'TR_Contradictions'] = mean(TRContradicts)
         costFrame.loc[cost, 'TR_Contradictions_std'] = stdev(TRContradicts)
         costFrame.loc[cost, 'HyRS_Contradictions'] = mean(HyRSContradicts)
@@ -215,10 +167,11 @@ for whichTeam in range(len(settings)):
         costFrame.loc[cost, 'BRS_Contradictions'] = mean(BRSContradicts)
         costFrame.loc[cost, 'BRS_Objective'] = mean(BRS_Objectives)
         costFrame.loc[cost, 'BRS_Objective_SE'] = stdev(BRS_Objectives)/math.sqrt(numRuns)
+        costFrame.loc[cost, 'Human Only'] = mean(Human)
 
     
 
-
+    '''
     TR_loss = []
     TR_con = []
     HyRS_loss = []
@@ -241,12 +194,14 @@ for whichTeam in range(len(settings)):
             HyRS_con.append(hyrs_results_filtered[team][cost][run].loc[0,'contradictions'])
             BRS_loss.append((datasets[run][team+'_Ytest'] != brs_results[team][run].loc[0, 'team_test_preds']).sum()/len(datasets[run][team+'_Ytest']))
             BRS_con.append(brs_results[team][run].loc[0,'contradictions'])
-    TR_loss = np.array(TR_loss)
-    TR_con = np.array(TR_con)
-    HyRS_loss = np.array(HyRS_loss)
-    HyRS_con = np.array(HyRS_con)
-    BRS_loss = np.array(BRS_loss)
-    BRS_con = np.array(BRS_con)
+    '''
+    
+    TR_loss = np.array(TeamRulesLoss)
+    TR_con = np.array(TRContradicts)
+    HyRS_loss = np.array(HyRSLoss)
+    HyRS_con = np.array(HyRSContradicts)
+    BRS_loss = np.array(BRSLoss)
+    BRS_con = np.array(BRSContradicts)
 
     #dedup TRs for scatter
     l = list(zip(TR_loss, TR_con))
@@ -273,6 +228,7 @@ for whichTeam in range(len(settings)):
             row.plot(costFrame['Costs'], costFrame['HyRS_Objective'], c='red', marker='v', label = 'HyRS', markersize=1)
             row.plot(costFrame['Costs'], costFrame['TR_Objective'], c='blue', marker='.', label='TeamRules', markersize=1)
             row.plot(costFrame['Costs'], costFrame['BRS_Objective'], c='gray', marker='x', label='BRS', markersize=1)
+            row.axhline(costFrame['Human Only'][0], c = 'black', markersize=1, label='human_alone', ls='--', alpha=0.2)
             row.fill_between(costFrame['Costs'], 
                        costFrame['HyRS_Objective']-(costFrame['HyRS_Objective_SE']),
                        costFrame['HyRS_Objective']+(costFrame['HyRS_Objective_SE']) ,
@@ -288,7 +244,7 @@ for whichTeam in range(len(settings)):
             row.set_xlabel('Reconciliation Cost', fontsize=14)
             row.set_ylabel('Team Loss', fontsize=14)
             row.tick_params(labelrotation=45, labelsize=10)
-            #row.set_title('{} Setting'.format(setting), fontsize=15)
+            row.set_title('{} Setting'.format(setting), fontsize=15)
             row.legend(prop={'size': 6})
 
         else:
@@ -317,7 +273,7 @@ for whichTeam in range(len(settings)):
         
         i+=1
     #fig.savefig('Plots/asym_2_1_{}_{}.png'.format(data,setting), bbox_inches='tight')
-    fig.savefig(f'Plots/old_{setting_type}_len{rule_len}_{data}_{setting}.png', bbox_inches='tight')
+    fig.savefig(f'Plots/{setting_type}_len{rule_len}_{data}_{setting}.png', bbox_inches='tight')
 
 
     

@@ -132,12 +132,50 @@ class hyrs(object):
         precision_matrix = np.array(np.multiply(Z[:,ind], p1[ind]))
         return rules, RMatrix, supp, p1[ind], FP[ind], precision_matrix
     
+
+    def get_rule_training_precision(self, the_rule, pos, prules):
+        dfn = 1-self.df #df has negative associations
+        dfn.columns = [name.strip() + 'neg' for name in self.df.columns]
+        df_test = pd.concat([self.df,dfn],axis = 1)
+
+        if len(prules):
+            p = [[] for rule in prules]
+            
+            
+            for i,rule in enumerate(prules):
+                p[i] = (np.sum(df_test[list(rule)],axis=1)==len(rule)).astype(int)
+                
+
+            p = (np.sum(p,axis=0)>0).astype(int)   
+        else:
+            p = np.zeros(len(self.Yb))
+
+        
+        p = p.astype(bool)
+
+        
+        
+        covered = (np.sum(df_test[list(the_rule)],axis=1)==len(the_rule)).astype(bool)
+        
+        if pos:
+            precision = (self.Y[covered] == 1).sum()/sum(covered)
+        else:
+            if sum(covered & ~p) == 0:
+                precision = 0
+            else:
+                precision = (self.Y[covered & ~p] == 0).sum()/sum(covered & ~p)
+        
+        return precision
+
+
     def get_model_conf_agreement(self, df, Yb):
         #get max confidence of each rule 
         prules = [self.prules[i] for i in self.prs_min]
         nrules = [self.nrules[i] for i in self.nrs_min]
-        pprecisions = [self.pprecision[i] for i in self.prs_min]
-        nprecisions = [self.nprecision[i] for i in self.nrs_min]
+
+
+        pprecisions = [self.get_rule_training_precision(i, pos=True, prules=prules) for i in prules]
+        nprecisions = [self.get_rule_training_precision(i, pos=False, prules=prules) for i in nrules]
         # if isinstance(self.df, scipy.sparse.csc.csc_matrix)==False:
         dfn = 1-df #df has negative associations
         dfn.columns = [name.strip() + 'neg' for name in df.columns]
@@ -168,7 +206,7 @@ class hyrs(object):
             nconfs = n.copy()
         pind = list(np.where(p)[0])
         nind = list(np.where(n)[0])
-        confs = nconfs
+        confs = nconfs.astype(float)
         confs[pind] = pconfs[pind]
         rulePreds = Yb.copy()
         rulePreds[nind] = 0

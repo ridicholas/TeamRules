@@ -136,12 +136,69 @@ class tr(object):
 
         return rules, RMatrix, supp, p1[ind], FP[ind], precision_matrix
     
-    def get_model_conf_agreement(self, df, Yb):
+
+    def get_rule_training_precision(self, the_rule, pos, prules, nrules):
+        dfn = 1-self.df #df has negative associations
+        dfn.columns = [name.strip() + 'neg' for name in self.df.columns]
+        df_test = pd.concat([self.df,dfn],axis = 1)
+
+        if len(prules):
+            p = [[] for rule in prules]
+            
+            
+            for i,rule in enumerate(prules):
+                p[i] = (np.sum(df_test[list(rule)],axis=1)==len(rule)).astype(int)
+                
+
+            p = (np.sum(p,axis=0)>0).astype(int)   
+        else:
+            p = np.zeros(len(self.Yb))
+
+        if len(nrules):
+            n = [[] for rule in nrules]
+            
+            
+            for i,rule in enumerate(nrules):
+                n[i] = (np.sum(df_test[list(rule)],axis=1)==len(rule)).astype(int)
+                
+
+            n = (np.sum(n,axis=0)>0).astype(int)   
+        else:
+            n = np.zeros(len(self.Yb))
+        
+
+        n = n.astype(bool)
+        p = p.astype(bool)
+
+        
+        
+        covered = (np.sum(df_test[list(the_rule)],axis=1)==len(the_rule)).astype(bool)
+        
+        if pos:
+            precision = (self.Y[covered] == 1).sum()/sum(covered)
+        else:
+            if (sum(covered) == len(covered)) & len(nrules)==2: #means the negative ruleset is default coverage of everything not positive from brs
+                precision = (self.Y[~p] == 0)/sum(~p)
+            elif sum(covered & ~p) == 0 :
+                precision = 0
+            else:
+                precision = (self.Y[covered & ~p] == 0).sum()/sum(covered & ~p)
+        
+        return precision
+
+    def get_model_conf_agreement(self, df, Yb, prs_min=None, nrs_min=None):
+        if prs_min == None:
+            prs_min = self.prs_min
+        if nrs_min == None:
+            nrs_min = self.nrs_min
         #get max confidence of each rule 
-        prules = [self.prules[i] for i in self.prs_min]
-        nrules = [self.nrules[i] for i in self.nrs_min]
-        pprecisions = [self.pprecision[i] for i in self.prs_min]
-        nprecisions = [self.nprecision[i] for i in self.nrs_min]
+        prules = [self.prules[i] for i in prs_min]
+        nrules = [self.nrules[i] for i in nrs_min]
+        
+        
+            
+        pprecisions = [self.get_rule_training_precision(i, pos=True, prules=prules, nrules=nrules) for i in prules]
+        nprecisions = [self.get_rule_training_precision(i, pos=False, prules=prules, nrules=nrules) for i in nrules]
         # if isinstance(self.df, scipy.sparse.csc.csc_matrix)==False:
         dfn = 1-df #df has negative associations
         dfn.columns = [name.strip() + 'neg' for name in df.columns]
@@ -172,7 +229,7 @@ class tr(object):
             nconfs = n.copy()
         pind = list(np.where(p)[0])
         nind = list(np.where(n)[0])
-        confs = nconfs
+        confs = nconfs.astype(float)
         confs[pind] = pconfs[pind]
         rulePreds = Yb.copy()
         rulePreds[nind] = 0
@@ -219,15 +276,17 @@ class tr(object):
         pcovered_curr = p
         ncovered_curr = n ^ overlap_curr
         covered_curr = np.logical_xor(p,n) + overlap_curr
-        if len(prs_curr) > 0:
-            p_model_conf_curr = np.max(self.p_precision_matrix[:,prs_curr],axis = 1)
-        else: 
-            p_model_conf_curr = np.zeros(len(pcovered_curr))
-        if len(nrs_curr) > 0:
-            n_model_conf_curr = np.max(self.n_precision_matrix[:,nrs_curr],axis = 1)
-        else:
-            n_model_conf_curr = np.zeros(len(ncovered_curr))
-        Yhat_curr,TP,FP,TN,FN, numRejects_curr, Yhat_soft_curr  = self.compute_obj(pcovered_curr,ncovered_curr, p_model_conf_curr, n_model_conf_curr)
+        #if len(prs_curr) > 0:
+        #    p_model_conf_curr = np.max(self.p_precision_matrix[:,prs_curr],axis = 1)
+        #else: 
+        #    p_model_conf_curr = np.zeros(len(pcovered_curr))
+        #if len(nrs_curr) > 0:
+        #    n_model_conf_curr = np.max(self.n_precision_matrix[:,nrs_curr],axis = 1)
+        #else:
+        #    n_model_conf_curr = np.zeros(len(ncovered_curr))
+        
+        model_conf_curr, _ = self.get_model_conf_agreement(self.df, self.Yb, prs_min=prs_curr, nrs_min=nrs_curr)
+        Yhat_curr,TP,FP,TN,FN, numRejects_curr, Yhat_soft_curr  = self.compute_obj(pcovered_curr,ncovered_curr, model_conf_curr)
         rulePreds_curr = self.Yb.copy()
         rulePreds_curr[ncovered_curr] = 0
         rulePreds_curr[pcovered_curr] = 1
@@ -242,11 +301,11 @@ class tr(object):
 
         if self.fairness_reg > 0:
             sensitive = self.data_model_dict['Xtrain'][self.fairness_feature] == 1
-            _,TP,FP,TN,FN, _, _ = self.compute_obj(pcovered_curr,ncovered_curr, p_model_conf_curr, n_model_conf_curr, sensitive)
+            _,TP,FP,TN,FN, _, _ = self.compute_obj(pcovered_curr,ncovered_curr, model_conf_curr, sensitive)
             accuracy_sensitive = TP + TN / TP + FP + TN + FN
 
             not_sensitive = self.data_model_dict['Xtrain'][self.fairness_feature] == 0
-            _,TP,FP,TN,FN, _, _ = self.compute_obj(pcovered_curr,ncovered_curr, p_model_conf_curr, n_model_conf_curr, not_sensitive)
+            _,TP,FP,TN,FN, _, _ = self.compute_obj(pcovered_curr,ncovered_curr, model_conf_curr, not_sensitive)
             accuracy_not_sensitive = TP + TN / TP + FP + TN + FN
 
             fairness_curr = np.abs(accuracy_sensitive-accuracy_not_sensitive)
@@ -282,16 +341,17 @@ class tr(object):
 
             self.covered1 = covered_new[:]
             self.Yhat_curr = Yhat_curr
-            Yhat_new,TP,FP,TN,FN, numRejects_new, Yhat_soft_new = self.compute_obj(pcovered_new,ncovered_new, p_model_conf_new, n_model_conf_new)
+            model_conf_new, _ = self.get_model_conf_agreement(self.df, self.Yb, prs_min=prs_new, nrs_min=nrs_new)
+            Yhat_new,TP,FP,TN,FN, numRejects_new, Yhat_soft_new = self.compute_obj(pcovered_new,ncovered_new, model_conf_new)
             err_new = (np.abs(self.Y - Yhat_soft_new) * asymCosts).sum()
             
             if self.fairness_reg > 0:
                 sensitive = self.data_model_dict['Xtrain'][self.fairness_feature] == 1
-                _,TP,FP,TN,FN, _, _ = self.compute_obj(pcovered_new,ncovered_new, p_model_conf_new, n_model_conf_new, sensitive)
+                _,TP,FP,TN,FN, _, _ = self.compute_obj(pcovered_new,ncovered_new, model_conf_new, sensitive)
                 accuracy_sensitive = TP + TN / TP + FP + TN + FN
 
                 not_sensitive = self.data_model_dict['Xtrain'][self.fairness_feature] == 0
-                _,TP,FP,TN,FN, _, _ = self.compute_obj(pcovered_new,ncovered_new, p_model_conf_new, n_model_conf_new, not_sensitive)
+                _,TP,FP,TN,FN, _, _ = self.compute_obj(pcovered_new,ncovered_new, model_conf_new, not_sensitive)
                 accuracy_not_sensitive = TP + TN / TP + FP + TN + FN
         
                 fairness_new = np.abs(accuracy_sensitive-accuracy_not_sensitive)
@@ -313,7 +373,8 @@ class tr(object):
                 accuracy_min = float(TP+TN)/self.N
                 explainability_min = sum(covered_new)/self.N
                 covered_min = covered_new
-                print('\n**  max at iter = {} ** \n {}(obj) = {}(error) + {}(coverage) + {}(rejection)\n accuracy = {}, explainability = {}, nfeatures = {}\n perror = {}, nerror = {}, oerror = {}, berror = {}\n '.format(iter,round(obj_new,3), err_new, (self.fairness_reg * (covered_new.sum()/self.N)), (self.contradiction_reg*(contras_new/self.N)), (TP+TN+0.0)/self.N,sum(covered_new)/self.N,nfeatures,perror,nerror,oerror,berror ))
+                
+                print('\n**  max at iter = {} ** \n {}(obj) = {}(error) + {}(coverage) + {}(rejection)\n accuracy = {}, explainability = {}, nfeatures = {}\n perror = {}, nerror = {}, oerror = {}, berror = {}\n '.format(iter,round(obj_new,3), err_new/self.N, (self.fairness_reg * (covered_new.sum()/self.N)), (self.contradiction_reg*(contras_new/self.N)), (TP+TN+0.0)/self.N,sum(covered_new)/self.N,nfeatures,perror,nerror,oerror,berror ))
                 self.maps.append([iter,obj_new,prs_new,nrs_new])
             
             if print_message:
@@ -349,7 +410,7 @@ class tr(object):
         return perror, nerror, oerror, berror
     
 
-    def compute_obj(self,pcovered,ncovered, pconfs, nconfs, group=None):
+    def compute_obj(self,pcovered,ncovered, confs, group=None):
 
         Yhat = self.Yb.copy()  # will cover all cases where model does not have recommendation
         Yhat_rules = self.Yb.copy()
@@ -357,8 +418,7 @@ class tr(object):
         Yhat_rules[pcovered] = 1
         Yhat = Yhat.astype(float)
 
-        conf_model = nconfs
-        conf_model[pcovered] = pconfs[pcovered]
+        conf_model = confs
         agreement = (Yhat_rules == self.Yb)
         self.Paccept = self.fA(self.conf_human, conf_model, agreement)
         rejection = self.Paccept <= 0.5

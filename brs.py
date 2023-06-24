@@ -323,3 +323,5 @@ class brs(object):
         for rule_index in rules_max:
             print(self.rules[rule_index])
 
+    
+

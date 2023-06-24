@@ -1140,10 +1140,11 @@ class HAI_team():
 
     def brs_objective(self, rejection_cost, on='val'):
         modelonly_preds = brs_predict(self.brs_rules, self.data_model_dict[f'X{on}'])
+        conf_model = brs_predict_conf(self.brs_rules, self.data_model_dict[f'X{on}'], self.brs_model)
         team_preds = modelonly_preds.copy()
-        acc = metrics.accuracy_score(self.data_model_dict['Ytrain'], brs_predict(self.brs_rules, self.data_model_dict['Xtrain']))
-        conf_model = np.zeros(len(self.data_model_dict[f'Y{on}']))
-        conf_model[:] = acc
+        #acc = metrics.accuracy_score(self.data_model_dict['Ytrain'], brs_predict(self.brs_rules, self.data_model_dict['Xtrain']))
+        #conf_model = np.zeros(len(self.data_model_dict[f'Y{on}']))
+        #conf_model[:] = acc
         agreement = self.data_model_dict[f'Yb{on}'] == modelonly_preds
         if on=='val':
             paccept = self.fA(self.data_model_dict[f'pred_conf_{on}'], conf_model, agreement)
@@ -1321,9 +1322,9 @@ class HAI_team():
                     
                 for rule in self.brs_rules:
                     self.tr.prs_min.append(self.tr.prules.index(rule))
-                self.tr.nrs_min.append(self.tr.nrules.index(first_rule))
+                
         
-        return tr_prs_min, tr_nrs_min, tr_pcovered_opt, tr_ncovered_opt
+        return self.tr.prs_min, self.tr.nrs_min, tr_pcovered_opt, tr_ncovered_opt
 
 
     def train_tr(self, alt_mods=[], resume=False, resume_with=None):

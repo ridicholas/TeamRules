@@ -77,6 +77,22 @@ def brs_predict(rules,df):
     Yhat = (np.sum(Z,axis=0)>0).astype(int)
     return Yhat
 
+def brs_predict_conf(rules, df, brs_model):
+    Z = [[] for rule in rules]
+    dfn = 1-df #df has negative associations
+    dfn.columns = [name.strip() + 'neg' for name in df.columns]
+    df = pd.concat([df,dfn],axis = 1)
+    for i,rule in enumerate(rules):
+        rule_index = brs_model.rules.index(rule)
+        rule_conf = brs_model.p_precision_matrix[:, rule_index].max()
+        Z[i] = (np.sum(df[list(rule)],axis=1)==len(rule)).astype(int) * rule_conf
+    neg_conf = (brs_predict(rules, brs_model.df)[brs_predict(rules, brs_model.df) == 0] == brs_model.Y[brs_predict(rules, brs_model.df) == 0]).sum()/(brs_predict(rules, brs_model.df) == 0).sum()
+    Yhat_conf = (np.max(Z,axis=0))
+    Yhat_conf[Yhat_conf == 0] = neg_conf
+    return Yhat_conf
+
+
+
 def extract_rules(tree, feature_names):
     left      = tree.tree_.children_left
     right     = tree.tree_.children_right
