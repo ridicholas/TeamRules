@@ -23,7 +23,7 @@ def run(team1, team2, team3, folder, team_info):
     Nlevel = 1
     Nrules = 10000
     supp = 5
-    maxlen = 4
+    maxlen = 1
     protected = 'NA'
     budget = 1
     sample_ratio = 1
