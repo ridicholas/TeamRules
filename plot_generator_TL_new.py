@@ -7,7 +7,7 @@ from scipy.stats import ttest_ind
 from statistics import mean, stdev
 import math
 
-numRuns = 10 #adjust this depending on how many runs of results were produced
+numRuns = 15 #adjust this depending on how many runs of results were produced
 
 rule_len = 1
 setting_type = 'perfect'
@@ -21,7 +21,7 @@ costs = [0, 0.01, 0.05, 0.1, 0.2,
 
 
 #costs = [0, 0.01, 0.05]
-tr_conf = 0
+tr_conf = 'opt'
 hyrs_conf = 0
 tr_optimizer = True
 
