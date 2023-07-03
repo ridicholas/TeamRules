@@ -21,6 +21,8 @@ from sklearn import cluster, datasets
 from scipy.io import arff
 from sklearn.utils import shuffle
 from scipy.stats import norm
+from pandas.api.types import is_string_dtype
+from pandas.api.types import is_numeric_dtype
 
 xgb.set_config(verbosity=0)
 
@@ -288,46 +290,146 @@ def make_Adult_data():
 
     return startDict
 
-def make_med_data():
+def make_med_ckd_data(numQs=5):
     startDict = {}
     # train
-    startDict['Xtrain'] = pd.read_csv('adult_train1.csv')
-    startDict['Ytrain'] = startDict['Xtrain']['Y']
+    startDict['Xtrain'] = pd.read_csv('kidney_disease.csv')
+    startDict['Ytrain'] = startDict['Xtrain']['classification']
+    startDict['Ytrain'] = startDict['Ytrain'].replace('ckd\t', 'ckd')
+    startDict['Ytrain'] = startDict['Ytrain'].replace({"ckd": 1, "notckd":0})
+   
+    startDict['Xtrain'].drop(columns='classification', inplace=True)
+    startDict['Xtrain'].drop(columns='id', inplace=True)
 
-    startDict['Xtrain'] = pd.concat([startDict['Xtrain'],
-                                     pd.get_dummies(startDict['Xtrain'].age, prefix='age')], axis=1)
-    startDict['Xtrain'] = pd.concat([startDict['Xtrain'],
-                                     pd.get_dummies(startDict['Xtrain'].educationnum, prefix='educationnum')], axis=1)
-    startDict['Xtrain'] = pd.concat([startDict['Xtrain'],
-                                     pd.get_dummies(startDict['Xtrain'].hoursperweek, prefix='hoursperweek')], axis=1)
-    startDict['Xtrain'] = startDict['Xtrain'].drop(
-        columns=['age', 'fnlwgt', 'educationnum', 'capitalgain', 'capitalloss',
-                 'hoursperweek', 'Y', 'workclass_?'])
-    # test
-    startDict['Xtest'] = pd.read_csv('adult_test1.csv')
-    # startDict['Xtest'] = startDict['Xtest'].sample(frac=1)
-    startDict['Ytest'] = startDict['Xtest']['Y']
+    for col in startDict['Xtrain'].columns:
+        startDict['Xtrain'][col] = startDict['Xtrain'][col].replace('nan', float('NaN'))
+        startDict['Xtrain'][col] = startDict['Xtrain'][col].replace('NaN', float('NaN'))
+        startDict['Xtrain'][col] = startDict['Xtrain'][col].replace('\t?', float('NaN'))
+        if startDict['Xtrain'][col].dtype == object:
+            if startDict['Xtrain'][col].str.isnumeric().sum() > 0:
+                print(col)
+                startDict['Xtrain'][col] = startDict['Xtrain'][col].astype(float)
+            else:
+                
+                startDict['Xtrain'][col] = startDict['Xtrain'][col].astype(str)
+                startDict['Xtrain'][col] = startDict['Xtrain'][col].str.replace('\t', '')
+                startDict['Xtrain'][col] = startDict['Xtrain'][col].str.replace(' ', '')
+    
 
-    startDict['Xtest'] = pd.concat([startDict['Xtest'], pd.get_dummies(startDict['Xtest'].age, prefix='age')], axis=1)
-    startDict['Xtest'] = pd.concat(
-        [startDict['Xtest'], pd.get_dummies(startDict['Xtest'].educationnum, prefix='educationnum')], axis=1)
-    startDict['Xtest'] = pd.concat(
-        [startDict['Xtest'], pd.get_dummies(startDict['Xtest'].hoursperweek, prefix='hoursperweek')], axis=1)
+    startDict['Xtrain_non_binarized'] = startDict['Xtrain'].copy()
+    string_cols = []
+    for col in startDict['Xtrain'].columns:
+        
+        print(f'{col}_{startDict["Xtrain"][col].dtype}')
+        if startDict['Xtrain'][col].dtype == float or startDict['Xtrain'][col].dtype == int:
+            for q in range(1,numQs):
+                quantile = round((1/(numQs+1))*q,2)
+                quantVal = round(np.quantile(startDict['Xtrain'][col].dropna(), q=quantile),2)
+                startDict['Xtrain'][col+'{}'.format(quantVal)] = (startDict['Xtrain'][col] > quantVal).astype(int)
+            if startDict['Xtrain'][col].isna().sum() > 0:
+                startDict['Xtrain'][col+'{}'.format('_nan')] = startDict['Xtrain'][col].isna().astype(int)
 
-    startDict['Xtest'] = startDict['Xtest'].drop(columns=['age', 'fnlwgt', 'educationnum', 'capitalgain', 'capitalloss',
-                                                          'hoursperweek', 'Y', 'workclass_?'])
+            startDict['Xtrain'] = startDict['Xtrain'].drop(columns=[col])
+        elif col!='classification':
+            string_cols.append(col)
 
-    # test data did not have some values that training data had, just add these columns with all 0
-    for item in np.setdiff1d(startDict['Xtrain'].columns, startDict['Xtest'].columns):
-        startDict['Xtest'][item] = np.zeros(startDict['Xtest'].shape[0])
 
-    startDict['Xtest'] = startDict['Xtest'][startDict['Xtrain'].columns]
 
-    # split into val and test sets
-    startDict['Xval'] = startDict['Xtest'].iloc[0:3000, :]
-    startDict['Xtest'] = startDict['Xtest'].iloc[3000:, :]
-    startDict['Yval'] = startDict['Ytest'].iloc[0:3000]
-    startDict['Ytest'] = startDict['Ytest'].iloc[3000:]
+
+    #startDict['Xtrain']['sensitive'] = bernoulli.rvs(p=0.5, size=len(startDict['Ytrain']))
+    #startDict['Xtrain']['acc'] = 0
+    #startDict['Xtrain']['acc'][startDict['Xtrain']['sensitive'] == 1] = bernoulli.rvs(p=0.6, size=(startDict['Xtrain']['sensitive'] == 1).sum())
+    #startDict['Xtrain']['acc'][startDict['Xtrain']['sensitive'] == 0]= bernoulli.rvs(p=0.9, size=(startDict['Xtrain']['sensitive'] == 0).sum())
+    startDict['Xtrain'] = pd.get_dummies(startDict['Xtrain'], columns=string_cols)
+    startDict['Xtrain_non_binarized'] = pd.get_dummies(startDict['Xtrain_non_binarized'], columns=string_cols)
+    
+    
+
+    #make test
+
+    startDict['Xtrain'], startDict['Xtest'], startDict['Ytrain'], \
+                startDict['Ytest'], startDict['Xtrain_non_binarized'], startDict['Xtest_non_binarized'] = split(startDict['Xtrain'],
+                                                      startDict['Ytrain'], 
+                                                      startDict['Xtrain_non_binarized'],
+                                                      test_size=0.4,
+                                                      stratify=startDict['Ytrain'],
+                                                      random_state=2)
+    
+    
+    
+   
+    #startDict['Xtest'] = startDict['Xtrain'].iloc[-500:,:]
+    #startDict['Xtrain'] = startDict['Xtrain'].iloc[:-500,:]
+    #startDict['Ytest'] = startDict['Ytrain'][-500:]
+    #startDict['Ytrain'] = startDict['Ytrain'][:-500]
+    startDict['Xval'] = startDict['Xtest'].copy()
+    startDict['Yval'] = startDict['Ytest'].copy()
+
+def make_heart_data(numQs=5):
+    startDict = {}
+    # train
+    startDict['Xtrain'] = pd.read_csv('heart_disease_uci.csv')
+    startDict['Ytrain'] = startDict['Xtrain']['num']
+    startDict['Ytrain'] = startDict['Ytrain'].replace({2:1, 3:1, 4:1})
+    
+   
+    startDict['Xtrain'].drop(columns=['num', 'id', 'dataset'], inplace=True)
+    
+    
+
+    startDict['Xtrain_non_binarized'] = startDict['Xtrain'].copy()
+    string_cols = []
+    for col in startDict['Xtrain'].columns:
+        if startDict['Xtrain'][col].dtype == float or startDict['Xtrain'][col].dtype == int:
+            for q in range(1,numQs):
+                quantile = round((1/(numQs+1))*q,2)
+                quantVal = round(np.quantile(startDict['Xtrain'][col].dropna(), q=quantile),2)
+                startDict['Xtrain'][col+'{}'.format(quantVal)] = (startDict['Xtrain'][col] > quantVal).astype(int)
+            if startDict['Xtrain'][col].isna().sum() > 0:
+                startDict['Xtrain'][col+'{}'.format('_nan')] = startDict['Xtrain'][col].isna().astype(int)
+
+            startDict['Xtrain'] = startDict['Xtrain'].drop(columns=[col])
+        elif col!='classification':
+            string_cols.append(col)
+
+
+
+
+    #startDict['Xtrain']['sensitive'] = bernoulli.rvs(p=0.5, size=len(startDict['Ytrain']))
+    #startDict['Xtrain']['acc'] = 0
+    #startDict['Xtrain']['acc'][startDict['Xtrain']['sensitive'] == 1] = bernoulli.rvs(p=0.6, size=(startDict['Xtrain']['sensitive'] == 1).sum())
+    #startDict['Xtrain']['acc'][startDict['Xtrain']['sensitive'] == 0]= bernoulli.rvs(p=0.9, size=(startDict['Xtrain']['sensitive'] == 0).sum())
+    startDict['Xtrain'] = pd.get_dummies(startDict['Xtrain'], columns=string_cols, drop_first=True)
+    startDict['Xtrain_non_binarized'] = pd.get_dummies(startDict['Xtrain_non_binarized'], columns=string_cols, drop_first=True)
+    
+    
+    
+    #make test
+    startDict['Xtrain'], startDict['Xtest'], startDict['Ytrain'], \
+                startDict['Ytest'], startDict['Xtrain_non_binarized'], startDict['Xtest_non_binarized'] = split(startDict['Xtrain'],
+                                                      startDict['Ytrain'], 
+                                                      startDict['Xtrain_non_binarized'],
+                                                      test_size=0.1,
+                                                      stratify=startDict['Ytrain'],
+                                                      random_state=2)
+    
+    
+    
+    #model = tree.DecisionTreeClassifier(max_depth=4).fit(startDict['Xtrain'], startDict['Ytrain'])
+    #mod = tree.DecisionTreeClassifier(max_depth=4).fit(startDict['Xtrain'][(startDict['Xtrain']['age54.0'] == 1) & (startDict['Xtrain']['sex_Male'] == 1)], 
+                                 # startDict['Ytrain'][(startDict['Xtrain']['age54.0'] == 1) & (startDict['Xtrain']['sex_Male'] == 1)])
+    
+   # mod = tree.DecisionTreeClassifier().fit(startDict['Xtrain_non_binarized'][(startDict['Xtrain_non_binarized']['sex_Male'] == 0)], 
+   #                               startDict['Ytrain'][(startDict['Xtrain_non_binarized']['sex_Male'] == 0)])
+    
+   # mod.score(startDict['Xtest'][(startDict['Xtest']['age54.0'] == 1) & (startDict['Xtest']['sex_Male'] == 1)], 
+   #                               startDict['Ytest'][(startDict['Xtest']['age54.0'] == 1) & (startDict['Xtest']['sex_Male'] == 1)])
+   # model.score(startDict['Xtest_non_binarized'][(startDict['Xtrain_non_binarized']['age'] > 54) & (startDict['Xtrain_non_binarized']['sex_Male'] == 0)], startDict['Ytest'][(startDict['Xtrain_non_binarized']['age'] > 54) & (startDict['Xtrain_non_binarized']['sex_Male'] == 0)])
+    startDict['Xval'] = startDict['Xtest'].copy()
+    startDict['Yval'] = startDict['Ytest'].copy()
+
+    return startDict
+
 
 
 class HAI_team():

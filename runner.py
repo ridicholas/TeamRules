@@ -2,11 +2,59 @@ from experiment_helper import *
 from util import *
 from sklearn.preprocessing import MinMaxScaler
 import pickle
+import gc
+
+def basic_ADB_func_det(c_human, c_model=None, agreement=None):
+    #returns the probability that the human accepts a recommendation given conf of human and conf of model
+    return c_human <= 0.5
+
+def basic_ADB_func_prob(c_human, c_model=None, agreement=None):
+    #returns the probability that the human accepts a recommendation given conf of human and conf of model
+    return 1-c_human
+
+def basic_ADB_predicted_accept(paccept):
+    #returns back the passed in probability that the human accepts a recommendation given feature values
+    return paccept
+
+def complex_ADB(c_human, c_model, agreement, delta=5, beta=0.05, k=0.63, gamma=0.95):
+    #from will you accept the AI recommendation
+    def w(p, k):
+        return (p**k)/((p**k)+(1-p)**k)
+    
+
+    
+    c_human_new = c_human.copy()
+    c_human_new[c_human_new <= 0] = 0.0000001
+    c_human_new[c_human_new >= 1] = 0.9999999
+
+    if c_model.min() >= 0.5:
+        scaler = MinMaxScaler((0,1))
+        scaler.fit(np.array(c_model).reshape(-1,1))
+        c_model_new = scaler.transform(np.array(c_model).reshape(-1,1)).flatten()
+    else:
+        c_model_new = c_model.copy()
+    c_model_new[c_model_new <= 0] = 0.0000001
+    c_model_new[c_model_new >= 1] = 0.9999999
+    
+    c_human_new[~agreement] = 1-c_human_new[~agreement]
+    a = (c_model_new**gamma)/((c_model_new**gamma)+((1-c_model_new)**gamma))
+    b = (c_human_new**gamma)/((c_human_new**gamma)+((1-c_human_new)**gamma))
+    
+    conf = 1/(1+(((1-a)*(1-b))/(a*b)))
+    
+    util_accept = (1+beta)*w(conf,k)-beta
+    util_reject = 1-(1+beta)*w(conf,k)
+
+
+    prob = np.exp(delta*util_accept)/(np.exp(delta*util_accept)+np.exp(delta*util_reject))
+    df = pd.DataFrame({'c_human': c_human, 'c_human_new' : c_human_new, 'conf' : conf, 'c_model':c_model, 'agreement':agreement, 'prob': prob})
+
+    return prob
 
 # Repeat Experiments
 def run(team1, team2, team3, folder, team_info):
 
-    setting_type = 'learned'
+    setting_type = 'perfect'
 
 
     if setting_type=='learned':
@@ -23,7 +71,7 @@ def run(team1, team2, team3, folder, team_info):
     Nlevel = 1
     Nrules = 10000
     supp = 5
-    maxlen = 1
+    maxlen = 4
     protected = 'NA'
     budget = 1
     sample_ratio = 1
@@ -40,52 +88,7 @@ def run(team1, team2, team3, folder, team_info):
 
     team1.data_model_dict['Xtrain'].to_pickle('{}/startDataSet.pkl'.format(folder))
 
-    def basic_ADB_func_det(c_human, c_model=None, agreement=None):
-    #returns the probability that the human accepts a recommendation given conf of human and conf of model
-        return c_human <= 0.5
-
-    def basic_ADB_func_prob(c_human, c_model=None, agreement=None):
-        #returns the probability that the human accepts a recommendation given conf of human and conf of model
-        return 1-c_human
-
-    def basic_ADB_predicted_accept(paccept):
-        #returns back the passed in probability that the human accepts a recommendation given feature values
-        return paccept
-
-    def complex_ADB(c_human, c_model, agreement, delta=5, beta=0.05, k=0.63, gamma=0.95):
-        #from will you accept the AI recommendation
-        def w(p, k):
-            return (p**k)/((p**k)+(1-p)**k)
-        
-
-        
-        c_human_new = c_human.copy()
-        c_human_new[c_human_new <= 0] = 0.0000001
-        c_human_new[c_human_new >= 1] = 0.9999999
-
-        if c_model.min() >= 0.5:
-            scaler = MinMaxScaler((0,1))
-            scaler.fit(np.array(c_model).reshape(-1,1))
-            c_model_new = scaler.transform(np.array(c_model).reshape(-1,1)).flatten()
-        else:
-            c_model_new = c_model.copy()
-        c_model_new[c_model_new <= 0] = 0.0000001
-        c_model_new[c_model_new >= 1] = 0.9999999
-        
-        c_human_new[~agreement] = 1-c_human_new[~agreement]
-        a = (c_model_new**gamma)/((c_model_new**gamma)+((1-c_model_new)**gamma))
-        b = (c_human_new**gamma)/((c_human_new**gamma)+((1-c_human_new)**gamma))
-        
-        conf = 1/(1+(((1-a)*(1-b))/(a*b)))
-        
-        util_accept = (1+beta)*w(conf,k)-beta
-        util_reject = 1-(1+beta)*w(conf,k)
-
-
-        prob = np.exp(delta*util_accept)/(np.exp(delta*util_accept)+np.exp(delta*util_reject))
-        df = pd.DataFrame({'c_human': c_human, 'c_human_new' : c_human_new, 'conf' : conf, 'c_model':c_model, 'agreement':agreement, 'prob': prob})
-
-        return prob
+    
 
 
     fA=complex_ADB
@@ -109,6 +112,29 @@ def run(team1, team2, team3, folder, team_info):
         
         
         contradiction_reg = 0
+
+
+        try:
+            team1
+        except:
+            with open(f'{folder}/team1.pkl', 'rb') as inp:
+                team1 = pickle.load(inp)
+            inp.close()
+        
+        try:
+            team2
+        except:
+            with open(f'{folder}/team2.pkl', 'rb') as inp:
+                team2 = pickle.load(inp)
+            inp.close()
+        
+        try:
+            team3
+        except:
+            with open(f'{folder}/team3.pkl', 'rb') as inp:
+                team3 = pickle.load(inp)
+            inp.close()
+
         # split training and test randomly
         team1.makeAdditionalTestSplit(testPercent=0.2, replaceExisting=True, random_state=run, others=[team2, team3])
 
@@ -152,6 +178,14 @@ def run(team1, team2, team3, folder, team_info):
                 team1.data_model_dict['Ytest'][~team1.data_model_dict['test_accept']])
             team_info.loc[1, 'aversion model test acc'] = metrics.accuracy_score(team1.data_model_dict['paccept_test'] > 0.5,
                                                                                 team1.data_model_dict['test_accept'])
+            
+            with open('{}/team1.pkl'.format(folder), 'wb') as outp:
+                pickle.dump(team1, outp, pickle.HIGHEST_PROTOCOL)
+            outp.close()
+
+            del team1
+
+            gc.collect()
 
         if 'team2' in whichTeams:
             team2.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
@@ -174,6 +208,14 @@ def run(team1, team2, team3, folder, team_info):
                 team2.data_model_dict['Ytest'][~team2.data_model_dict['test_accept']])
             team_info.loc[2, 'aversion model test acc'] = metrics.accuracy_score(team2.data_model_dict['paccept_test'] > 0.5,
                                                                                 team2.data_model_dict['test_accept'])
+            
+            with open('{}/team2.pkl'.format(folder), 'wb') as outp:
+                pickle.dump(team2, outp, pickle.HIGHEST_PROTOCOL)
+            outp.close()
+
+            del team2
+
+            gc.collect()
 
         if 'team3' in whichTeams:
             team3.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
@@ -196,6 +238,14 @@ def run(team1, team2, team3, folder, team_info):
                 team3.data_model_dict['Ytest'][~team3.data_model_dict['test_accept']])
             team_info.loc[3, 'aversion model test acc'] = metrics.accuracy_score(team3.data_model_dict['paccept_test'] > 0.5,
                                                                                 team3.data_model_dict['test_accept'])
+            
+            with open('{}/team3.pkl'.format(folder), 'wb') as outp:
+                pickle.dump(team3, outp, pickle.HIGHEST_PROTOCOL)
+            outp.close()
+
+            del team3     
+
+            gc.collect()    
 
         team_info.to_pickle('{}/team_info_run{}.pkl'.format(folder, run))
 
@@ -205,8 +255,17 @@ def run(team1, team2, team3, folder, team_info):
             
             print('training team1 hyrs model...')
             # train hyrs baseline
+
+            
             
             if 'team1' in whichTeams:
+                try:
+                    team1
+                except:
+                    with open(f'{folder}/team1.pkl', 'rb') as inp:
+                        team1 = pickle.load(inp)
+                    inp.close()
+
                 team1.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                         alpha,
                                         beta, iters, fairness_reg, contradiction_reg, fA)
@@ -281,10 +340,25 @@ def run(team1, team2, team3, folder, team_info):
                     pickle.dump(team1.hyrs_results, outp, pickle.HIGHEST_PROTOCOL)
                 outp.close()
 
+                with open('{}/team1.pkl'.format(folder), 'wb') as outp:
+                    pickle.dump(team1, outp, pickle.HIGHEST_PROTOCOL)
+                outp.close()
+
+                del team1
+                gc.collect()
+
             
             
             if 'team2' in whichTeams:
                 print('training team2 hyrs model...')
+
+                try:
+                    team2
+                except:
+                    with open(f'{folder}/team2.pkl', 'rb') as inp:
+                        team2 = pickle.load(inp)
+                    inp.close()
+
                 team2.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                         alpha,
                                         beta, iters, fairness_reg, contradiction_reg, fA)
@@ -353,8 +427,23 @@ def run(team1, team2, team3, folder, team_info):
                     pickle.dump(team2.hyrs_results, outp, pickle.HIGHEST_PROTOCOL)
                 outp.close() 
 
+                with open('{}/team2.pkl'.format(folder), 'wb') as outp:
+                    pickle.dump(team2, outp, pickle.HIGHEST_PROTOCOL)
+                outp.close()
+
+                del team2
+                gc.collect()
+
             
             if 'team3' in whichTeams:
+
+                try:
+                    team3
+                except:
+                    with open(f'{folder}/team3.pkl', 'rb') as inp:
+                        team3 = pickle.load(inp)
+                    inp.close()
+
                 print('training team3 hyrs model...')
                 team3.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                         alpha,
@@ -425,6 +514,13 @@ def run(team1, team2, team3, folder, team_info):
                 with open('{}/cost_{}_team3_hyrs_results_run{}.pkl'.format(folder, reg, run), 'wb') as outp:
                     pickle.dump(team3.hyrs_results, outp, pickle.HIGHEST_PROTOCOL)
                 outp.close()
+
+                with open('{}/team3.pkl'.format(folder), 'wb') as outp:
+                    pickle.dump(team3, outp, pickle.HIGHEST_PROTOCOL)
+                outp.close()
+
+                del team3
+                gc.collect()
             
             
             

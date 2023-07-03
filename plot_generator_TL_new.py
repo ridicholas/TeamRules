@@ -72,7 +72,7 @@ for i in range(0, numRuns):
             
 
             #hyrs filtered
-            hyrs_results_filtered[team][cost].append(pd.read_pickle(path + 'cost_{}_'.format('0')+ team + '_hyrs_filtered_run{}.pkl'.format(i)).sort_values(by='test_error'))
+            hyrs_results_filtered[team][cost].append(pd.read_pickle(path + 'cost_{}_'.format(cost)+ team + '_hyrs_filtered_run{}.pkl'.format(i)).sort_values(by='test_error'))
             hyrs_results_filtered[team][cost][-1] = hyrs_results_filtered[team][cost][-1][hyrs_results_filtered[team][cost][-1]['mental_conf'] == hyrs_conf].reset_index()
 
             #hyrs filtered validation
@@ -140,7 +140,8 @@ for whichTeam in range(len(settings)):
             
             HyRSLoss.append(hyrs_results_filtered[team][cost][run].loc[0,'test_error'])
             HyRSContradicts.append(hyrs_results_filtered[team][cost][run].loc[0,'contradicts'])
-            HyRS_Objectives.append(hyrs_results_filtered[team][cost][run].loc[0,'objective'] + (float(cost)*HyRSContradicts[-1])/(datasets[run].shape[0]))
+            HyRS_Objectives.append(hyrs_results_filtered[team][cost][run].loc[0,'objective'])
+            #HyRS_Objectives.append(hyrs_results_filtered[team][cost][run].loc[0,'objective'] + (float(cost)*HyRSContradicts[-1])/(datasets[run].shape[0]))
 
             BRSLoss.append(brs_results[team][run].loc[0,'test_error_brs'])
             BRSContradicts.append(brs_results[team][run].loc[0,'test_contradicts'])
