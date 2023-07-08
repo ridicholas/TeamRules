@@ -166,7 +166,7 @@ team3_rule_lists = pd.DataFrame(index=range(0, 20), columns=['TR_prules', 'TR_nr
 
 print('Starting Experiments....... \n')
 
-disc_errors = [0.01, 0.05, 0.25, 0.5, 0.8, 1]
+disc_errors = [0.001, 0.01, 0.05, 0.1, 0.2, 0.4, 0.8, 1]
 # Repeat Experiments
 for disc_error in disc_errors:
 

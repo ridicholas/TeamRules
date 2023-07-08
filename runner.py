@@ -62,6 +62,8 @@ def run(team1, team2, team3, folder, team_info):
     elif setting_type=='perfect':
         folder = folder + '_perfect'
 
+
+
     team1_2_start_threshold = 0.5
     team3_4_start_threshold = 0.5
 
@@ -81,6 +83,10 @@ def run(team1, team2, team3, folder, team_info):
     contradiction_reg = 0
     fairness_reg = 0
     numRuns = 15
+    asym_loss = [1,1]
+
+    if asym_loss != [1,1]:
+        folder += '_asym' + str(asym_loss)
 
     folder = folder + f'_len{maxlen}' 
 
@@ -161,7 +167,7 @@ def run(team1, team2, team3, folder, team_info):
         if 'team1' in whichTeams:
             team1.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                         alpha,
-                                        beta, iters, fairness_reg, contradiction_reg, fA)
+                                        beta, iters, fairness_reg, contradiction_reg, fA, force_complete_coverage=False, asym_loss = asym_loss, fair_feat=None)
             team1.train_mental_aversion_model('perfect')
             team1.train_confidence_model(setting_type, 0.2)
             team1.train_mental_error_boundary_model()
@@ -190,7 +196,7 @@ def run(team1, team2, team3, folder, team_info):
         if 'team2' in whichTeams:
             team2.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                         alpha,
-                                        beta, iters, fairness_reg, contradiction_reg, fA)
+                                        beta, iters, fairness_reg, contradiction_reg, fA, force_complete_coverage=False, asym_loss = asym_loss, fair_feat=None)
             team2.train_mental_aversion_model('perfect')
             team2.train_confidence_model(setting_type, 0.2)
             
@@ -220,7 +226,7 @@ def run(team1, team2, team3, folder, team_info):
         if 'team3' in whichTeams:
             team3.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                         alpha,
-                                        beta, iters, fairness_reg, contradiction_reg, fA)
+                                        beta, iters, fairness_reg, contradiction_reg, fA, force_complete_coverage=False, asym_loss = asym_loss, fair_feat=None)
             team3.train_mental_aversion_model('perfect')
             team3.train_confidence_model(setting_type, 0.2)
             

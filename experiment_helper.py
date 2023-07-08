@@ -452,7 +452,7 @@ class HAI_team():
 
     def set_training_params(self, Niteration, Nchain, Nlevel, Nrules,
                             supp, maxlen, protected, budget, sample_ratio, alpha=0, beta=0, iters=1000, fairness_reg=0,
-                            contradiction_reg=0, fA=0.5, force_complete_coverage=False, asym_loss = [1,1], fair_feat=None):
+                            contradiction_reg=0, fA=None, force_complete_coverage=False, asym_loss = [1,1], fair_feat=None):
         self.Niteration = Niteration
         self.Nchain = Nchain
         self.Nlevel = Nlevel
@@ -914,7 +914,7 @@ class HAI_team():
 
         numItems = int(len(self.data_model_dict['train_accept'])*data_to_use)
         self.trained_ADB_model = xgb.XGBClassifier()
-        human_confs = self.data_model_dict['train_conf'][0:numItems]
+        human_confs = self.data_model_dict['pred_conf_train'][0:numItems]
         agreement = ~(self.data_model_dict['pred_human_wrong_train'].astype(bool))[0:numItems]
         agreement = bernoulli.rvs(p=0.5, size=numItems).astype(bool)
         model_confs = self.data_model_dict['prob_human_wrong_train'][0:numItems]
