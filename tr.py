@@ -262,6 +262,7 @@ class tr(object):
         if start_rules != None:
             prs_curr = start_rules['prs']
             nrs_curr = start_rules['nrs']
+        
         obj_curr = 1000000000
         obj_min = obj_curr
         self.maps.append([-1,obj_curr,prs_curr,nrs_curr,[]])
@@ -318,6 +319,8 @@ class tr(object):
 
 
         obj_curr = (err_curr)/self.N + (self.fairness_reg * (fairness_curr)) + (self.contradiction_reg*(contras_curr/self.N))+ self.alpha*(int_flag *(len(prs_curr) + len(nrs_curr))+(1-int_flag)*nfeatures)+ self.beta * sum(~covered_curr)/self.N
+        
+        
         self.actions = []
         for iter in range(Niteration):
             if iter >0.75 * Niteration:
@@ -325,8 +328,17 @@ class tr(object):
             #print("currp: {}, currn: {}, curr_err: {}, curr_covered: {}, curr_contras: {}, curr_obj: {}".format(prs_curr, nrs_curr, err_curr, covered_curr.sum(), contras_curr, err_curr + (contras_curr * self.contradiction_reg)))
             
             
-            
-            prs_new,nrs_new , pcovered_new,ncovered_new,overlap_new,covered_new= self.propose_rs(prs_curr,nrs_curr,pcovered_curr,ncovered_curr,overlap_curr,covered_curr, Yhat_curr, Yhat_soft_curr, contras_curr, obj_min,print_message)
+            if (iter == 0) and (start_rules != None):
+                prs_new = start_rules['prs']
+                nrs_new = start_rules['nrs']
+                p = np.sum(self.pRMatrix[:,prs_curr],axis = 1)>0
+                n = np.sum(self.nRMatrix[:,nrs_curr],axis = 1)>0
+                overlap_new = np.multiply(p,n)
+                pcovered_new = p
+                ncovered_new = n ^ overlap_new
+                covered_new = np.logical_xor(p,n) + overlap_new
+            else:
+                prs_new,nrs_new , pcovered_new,ncovered_new,overlap_new,covered_new= self.propose_rs(prs_curr,nrs_curr,pcovered_curr,ncovered_curr,overlap_curr,covered_curr, Yhat_curr, Yhat_soft_curr, contras_curr, obj_min,print_message)
 
 
             if len(prs_new) > 0:
@@ -376,6 +388,7 @@ class tr(object):
                 
                 print('\n**  max at iter = {} ** \n {}(obj) = {}(error) + {}(coverage) + {}(rejection)\n accuracy = {}, explainability = {}, nfeatures = {}\n perror = {}, nerror = {}, oerror = {}, berror = {}\n '.format(iter,round(obj_new,3), err_new/self.N, (self.fairness_reg * (covered_new.sum()/self.N)), (self.contradiction_reg*(contras_new/self.N)), (TP+TN+0.0)/self.N,sum(covered_new)/self.N,nfeatures,perror,nerror,oerror,berror ))
                 self.maps.append([iter,obj_new,prs_new,nrs_new])
+            
             
             if print_message:
                 perror, nerror, oerror, berror = self.diagnose(pcovered_new,ncovered_new^overlap_new,overlap_new,covered_new,Yhat_new)

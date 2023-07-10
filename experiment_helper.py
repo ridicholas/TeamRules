@@ -905,9 +905,9 @@ class HAI_team():
             self.data_model_dict['pred_conf_test'] = self.data_model_dict['test_conf']
             
             
-        print('Accuracy of Conf Model on Train Data: ' + str(
+        print('MSE of Conf Model on Train Data: ' + str(
             metrics.mean_squared_error(self.data_model_dict['pred_conf_train'], self.data_model_dict['train_conf'])))
-        print('Accuracy of Mental Aversion Model on Val Data: ' + str(
+        print('MSE of Conf Model on Val Data: ' + str(
             metrics.mean_squared_error(self.data_model_dict['pred_conf_val'], self.data_model_dict['val_conf'])))
         
     def train_ADB_model(self, data_to_use=1):
@@ -1324,7 +1324,7 @@ class HAI_team():
     def setup_tr(self):
         model = tr(self.data_model_dict['Xtrain'], self.data_model_dict['Ytrain'],
                     self.data_model_dict['Ybtrain'],
-                    self.data_model_dict['train_conf'])
+                    self.data_model_dict['pred_conf_train'])
 
         model.set_parameters(self.alpha, self.beta, self.fairness_reg, self.contradiction_reg, self.fA, self.force_complete_coverage, self.asym_loss)
 
@@ -1456,7 +1456,7 @@ class HAI_team():
 
         train_preds, train_covered, train_Yb = self.tr.predictHumanInLoop(self.data_model_dict['Xtrain'],
                                                                               self.data_model_dict['Ybtrain'],
-                                                                              self.data_model_dict['train_conf'],
+                                                                              self.data_model_dict['pred_conf_train'],
                                                                               self.fA)
 
         modelonly_train_preds, _, _ = self.tr.predict(self.data_model_dict['Xtrain'],
@@ -1486,7 +1486,7 @@ class HAI_team():
 
         soft_train_preds, soft_train_covered, soft_train_Yb = self.tr.predictSoft(self.data_model_dict['Xtrain'],
                                                                                       self.data_model_dict['Ybtrain'],
-                                                                                      self.data_model_dict['train_conf'],
+                                                                                      self.data_model_dict['pred_conf_train'],
                                                                                           self.fA)
 
         train_soft_error = 1 - metrics.accuracy_score(self.data_model_dict['Ytrain'],

@@ -7,11 +7,11 @@ from scipy.stats import ttest_ind
 from statistics import mean, stdev
 import math
 
-numRuns = 4 #adjust this depending on how many runs of results were produced
+numRuns = 3 #adjust this depending on how many runs of results were produced
 
 rule_len = 4
-setting_type = 'perfect'
-dataset = 'fico'
+setting_type = 'learned'
+dataset = 'gaussian'
 path = f'{dataset}_contradiction_results_{setting_type}_len{rule_len}/'
 
 asym_loss = [1,1]
@@ -287,7 +287,7 @@ for whichTeam in range(len(settings)):
     plt.xlabel('Reconciliation Cost', fontsize=12)
     plt.ylabel('Total Team Loss', fontsize=12)
     plt.tick_params(labelrotation=45, labelsize=10)
-    #plt.title('{} Setting'.format(setting), fontsize=15)
+    plt.title('{} Setting'.format(setting), fontsize=15)
     plt.legend(prop={'size': 5})
     plt.grid('on', linestyle='dotted', linewidth=0.2, color='black')
 

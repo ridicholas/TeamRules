@@ -4,6 +4,7 @@ from sklearn.preprocessing import MinMaxScaler
 import pickle
 import gc
 
+
 def basic_ADB_func_det(c_human, c_model=None, agreement=None):
     #returns the probability that the human accepts a recommendation given conf of human and conf of model
     return c_human <= 0.5
@@ -112,6 +113,8 @@ def run(team1, team2, team3, folder, team_info):
         team_info = pd.DataFrame(index=[1, 2, 3])
         contradiction_regs = [0, 0.01, 0.05, 0.1, 0.2,
                         0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
+        
+        
         
         
         
@@ -274,7 +277,7 @@ def run(team1, team2, team3, folder, team_info):
 
                 team1.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                         alpha,
-                                        beta, iters, fairness_reg, contradiction_reg, fA)
+                                        beta, iters, fairness_reg, contradiction_reg, fA, force_complete_coverage=False, asym_loss = asym_loss, fair_feat=None)
                 
                 t = time.time()
                 team1.setup_hyrs()
@@ -322,13 +325,12 @@ def run(team1, team2, team3, folder, team_info):
                     if tempTeam.full_tr_results_val.iloc[2, :]['objective'] < tempval:
                         team1 = tempTeam
                         tempval = tempTeam.full_tr_results_val.iloc[2, :]['objective']
-                #team1.train_tr(alt_mods=['hyrs', 'brs'])
+                
+                #team1.train_tr(resume=True, resume_with = {'prs': team1.tr.prs_min, 'nrs': team1.tr.nrs_min})
                 #team1.filter_tr_results(mental=True, error=False)
+                
 
-                #team1_rule_lists.loc[run, 'TR_prules'] = team1.tr.prs_min
-                #team1_rule_lists.loc[run, 'TR_nrules'] = team1.tr.nrs_min
-                #team1_rule_lists.loc[run, 'HyRS_prules'] = team1.hyrs.prs_min
-                #team1_rule_lists.loc[run, 'HyRS_nrules'] = team1.hyrs.nrs_min
+                
 
                 team1.full_hyrs_results.to_pickle('{}/cost_{}_team1_hyrs_filtered_run{}.pkl'.format(folder, reg, run))
             
@@ -367,7 +369,7 @@ def run(team1, team2, team3, folder, team_info):
 
                 team2.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                         alpha,
-                                        beta, iters, fairness_reg, contradiction_reg, fA)
+                                        beta, iters, fairness_reg, contradiction_reg, fA, force_complete_coverage=False, asym_loss = asym_loss, fair_feat=None)
                 
                 team2.setup_hyrs()
 
@@ -413,12 +415,7 @@ def run(team1, team2, team3, folder, team_info):
                     if tempTeam.full_tr_results_val.iloc[2, :]['objective'] < tempval:
                         team2 = tempTeam
                         tempval = tempTeam.full_tr_results_val.iloc[2, :]['objective']
-                #team2.train_tr(alt_mods=['hyrs', 'brs'])
-                #team2.filter_tr_results(mental=True, error=False)
-                #team2_rule_lists.loc[run, 'TR_prules'] = team2.tr.prs_min
-                #team2_rule_lists.loc[run, 'TR_nrules'] = team2.tr.nrs_min
-                #team2_rule_lists.loc[run, 'HyRS_prules'] = team2.hyrs.prs_min
-                #team2_rule_lists.loc[run, 'HyRS_nrules'] = team2.hyrs.nrs_min     
+                
 
                 team2.full_hyrs_results.to_pickle('{}/cost_{}_team2_hyrs_filtered_run{}.pkl'.format(folder, reg, run))
                 team2.full_tr_results.to_pickle('{}/cost_{}_team2_tr_filtered_run{}.pkl'.format(folder, reg, run))
@@ -453,7 +450,7 @@ def run(team1, team2, team3, folder, team_info):
                 print('training team3 hyrs model...')
                 team3.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                         alpha,
-                                        beta, iters, fairness_reg, contradiction_reg, fA)
+                                        beta, iters, fairness_reg, contradiction_reg, fA, force_complete_coverage=False, asym_loss = asym_loss, fair_feat=None)
                 
                 team3.setup_hyrs()
 
@@ -498,14 +495,9 @@ def run(team1, team2, team3, folder, team_info):
                     if tempTeam.full_tr_results_val.iloc[2, :]['objective'] < tempval:
                         team3 = tempTeam
                         tempval = tempTeam.full_tr_results_val.iloc[2, :]['objective']
-                #team3.train_tr(alt_mods=['hyrs', 'brs'])
-                #team3.filter_tr_results(mental=True, error=False)
-            
+                
         
-                #team3_rule_lists.loc[run, 'TR_prules'] = team3.tr.prs_min
-                #team3_rule_lists.loc[run, 'TR_nrules'] = team3.tr.nrs_min
-                #team3_rule_lists.loc[run, 'HyRS_prules'] = team3.hyrs.prs_min
-                #team3_rule_lists.loc[run, 'HyRS_nrules'] = team3.hyrs.nrs_min
+               
 
                 team3.full_hyrs_results.to_pickle('{}/cost_{}_team3_hyrs_filtered_run{}.pkl'.format(folder, reg, run))
                 team3.full_tr_results.to_pickle('{}/cost_{}_team3_tr_filtered_run{}.pkl'.format(folder, reg, run))
