@@ -29,11 +29,11 @@ team1.make_human_model(type='logistic',
                        numColsToUse=0,
                        biasFactor=0,
                        alterations={'goodRange': [0, 0.3],
-                                    'goodProb': 0.8,
+                                    'goodProb': 0.95,
                                     'badProb': 0.5,
                                     'badRange': [0.3, 1],
                                     'Rational': True,
-                                    'adder': 0.5})
+                                    'adder': 0.6})
 
 team3.make_human_model(type='logistic',
                        acceptThreshold=accept_criteria,
@@ -41,11 +41,11 @@ team3.make_human_model(type='logistic',
                        numColsToUse=0,
                        biasFactor=0,
                        alterations={'goodRange': [0, 0.3],
-                                    'goodProb': 0.8,
+                                    'goodProb': 0.95,
                                     'badProb': 0.5,
                                     'badRange': [0.3, 1],
                                     'Rational': False,
-                                    'adder': 0.5})
+                                    'adder': 0.6})
 
 
 
@@ -57,12 +57,12 @@ val_conf2 = team2.data_model_dict['val_conf']
 test_conf2 = team2.data_model_dict['test_conf']
 
 train_conf2[np.where((team2.data_model_dict['Xtrain']['RelationshipSatisfaction3.0'] == 0) & (team2.data_model_dict['Xtrain']['StockOptionLevel0.0'] == 0))] = 0.2
-train_conf2[np.where((team2.data_model_dict['Xtrain']['RelationshipSatisfaction3.0'] == 1) | (team2.data_model_dict['Xtrain']['StockOptionLevel0.0'] == 1))] = 0.8
+train_conf2[np.where((team2.data_model_dict['Xtrain']['RelationshipSatisfaction3.0'] == 1) | (team2.data_model_dict['Xtrain']['StockOptionLevel0.0'] == 1))] = 0.95
 val_conf2[np.where((team2.data_model_dict['Xval']['RelationshipSatisfaction3.0'] == 0) & (team2.data_model_dict['Xval']['StockOptionLevel0.0'] == 0))] = 0.2
-val_conf2[np.where((team2.data_model_dict['Xval']['RelationshipSatisfaction3.0'] == 1) | (team2.data_model_dict['Xval']['StockOptionLevel0.0'] == 1))] = 0.8
+val_conf2[np.where((team2.data_model_dict['Xval']['RelationshipSatisfaction3.0'] == 1) | (team2.data_model_dict['Xval']['StockOptionLevel0.0'] == 1))] = 0.95
 
 test_conf2[np.where((team2.data_model_dict['Xtest']['RelationshipSatisfaction3.0'] == 0) & (team2.data_model_dict['Xtest']['StockOptionLevel0.0'] == 0))] = 0.2
-test_conf2[np.where((team2.data_model_dict['Xtest']['RelationshipSatisfaction3.0'] == 1) | (team2.data_model_dict['Xtest']['StockOptionLevel0.0'] == 1))] = 0.8
+test_conf2[np.where((team2.data_model_dict['Xtest']['RelationshipSatisfaction3.0'] == 1) | (team2.data_model_dict['Xtest']['StockOptionLevel0.0'] == 1))] = 0.95
 
 
 

@@ -746,47 +746,47 @@ class HAI_team():
     
     def adjustConfidences(self, where_col=None, where_val=None, comp=None):
         # make all conf high (greater than 0.5)
-        self.data_model_dict['train_conf'] = uniform.rvs(0.5, 0.45, size=len(
+        self.data_model_dict['train_conf'] = uniform.rvs(0.85, 0.14, size=len(
             self.data_model_dict['train_conf']))
 
-        self.data_model_dict['val_conf'] = uniform.rvs(0.5, 0.45, size=len(
+        self.data_model_dict['val_conf'] = uniform.rvs(0.85, 0.14, size=len(
             self.data_model_dict['val_conf']))
 
-        self.data_model_dict['test_conf'] = uniform.rvs(0.5, 0.45, size=len(
+        self.data_model_dict['test_conf'] = uniform.rvs(0.85, 0.14, size=len(
             self.data_model_dict['test_conf']))
 
 
         if comp=='negate':
             # make desired region low conf (less than 0.5)
             self.data_model_dict['train_conf'][np.where(self.data_model_dict['Xtrain'][where_col] <= where_val)[0]] = \
-                uniform.rvs(0, 0.49, size=len(
+                uniform.rvs(0, 0.39, size=len(
                     self.data_model_dict['train_conf'][
                         np.where(self.data_model_dict['Xtrain'][where_col] <= where_val)[0]]))
 
             self.data_model_dict['val_conf'][np.where(self.data_model_dict['Xval'][where_col] <= where_val)[0]] = \
-                uniform.rvs(0, 0.49, size=len(
+                uniform.rvs(0, 0.39, size=len(
                     self.data_model_dict['val_conf'][
                         np.where(self.data_model_dict['Xval'][where_col] <= where_val)[0]]))
 
             self.data_model_dict['test_conf'][np.where(self.data_model_dict['Xtest'][where_col] <= where_val)[0]] = \
-                uniform.rvs(0, 0.49, size=len(
+                uniform.rvs(0, 0.39, size=len(
                     self.data_model_dict['test_conf'][
                         np.where(self.data_model_dict['Xtest'][where_col] <= where_val)[0]]))
             
         else:
             # make desired region low conf (less than 0.5)
             self.data_model_dict['train_conf'][np.where(self.data_model_dict['Xtrain'][where_col] >= where_val)[0]] = \
-                uniform.rvs(0, 0.49, size=len(
+                uniform.rvs(0, 0.39, size=len(
                     self.data_model_dict['train_conf'][
                         np.where(self.data_model_dict['Xtrain'][where_col] >= where_val)[0]]))
 
             self.data_model_dict['val_conf'][np.where(self.data_model_dict['Xval'][where_col] >= where_val)[0]] = \
-                uniform.rvs(0, 0.49, size=len(
+                uniform.rvs(0, 0.39, size=len(
                     self.data_model_dict['val_conf'][
                         np.where(self.data_model_dict['Xval'][where_col] >= where_val)[0]]))
 
             self.data_model_dict['test_conf'][np.where(self.data_model_dict['Xtest'][where_col] >= where_val)[0]] = \
-                uniform.rvs(0, 0.49, size=len(
+                uniform.rvs(0, 0.39, size=len(
                     self.data_model_dict['test_conf'][
                         np.where(self.data_model_dict['Xtest'][where_col] >= where_val)[0]]))
 

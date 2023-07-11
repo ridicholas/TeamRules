@@ -114,6 +114,7 @@ def run(team1, team2, team3, folder, team_info):
         contradiction_regs = [0, 0.01, 0.05, 0.1, 0.2,
                         0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
         
+        #contradiction_regs = [0.3]
         
         
         
@@ -328,6 +329,10 @@ def run(team1, team2, team3, folder, team_info):
                 
                 #team1.train_tr(resume=True, resume_with = {'prs': team1.tr.prs_min, 'nrs': team1.tr.nrs_min})
                 #team1.filter_tr_results(mental=True, error=False)
+
+                
+
+
                 
 
                 
