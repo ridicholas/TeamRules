@@ -248,6 +248,7 @@ class tr(object):
     def train(self, Niteration = 500, print_message=False, interpretability = 'size', T0 = 0.01, start_rules=None):
         self.maps = []
         fA = self.fA
+        use_paccept=True
         int_flag = int(interpretability =='size')
         T0 = T0
         #find passed in rules in self rules
@@ -287,7 +288,7 @@ class tr(object):
         #    n_model_conf_curr = np.zeros(len(ncovered_curr))
         
         model_conf_curr, _ = self.get_model_conf_agreement(self.df, self.Yb, prs_min=prs_curr, nrs_min=nrs_curr)
-        Yhat_curr,TP,FP,TN,FN, numRejects_curr, Yhat_soft_curr  = self.compute_obj(pcovered_curr,ncovered_curr, model_conf_curr)
+        Yhat_curr,TP,FP,TN,FN, numRejects_curr, Yhat_soft_curr  = self.compute_obj(pcovered_curr,ncovered_curr, model_conf_curr, use_paccept=use_paccept)
         rulePreds_curr = self.Yb.copy()
         rulePreds_curr[ncovered_curr] = 0
         rulePreds_curr[pcovered_curr] = 1
@@ -302,11 +303,11 @@ class tr(object):
 
         if self.fairness_reg > 0:
             sensitive = self.data_model_dict['Xtrain'][self.fairness_feature] == 1
-            _,TP,FP,TN,FN, _, _ = self.compute_obj(pcovered_curr,ncovered_curr, model_conf_curr, sensitive)
+            _,TP,FP,TN,FN, _, _ = self.compute_obj(pcovered_curr,ncovered_curr, model_conf_curr, sensitive, use_paccept=use_paccept)
             accuracy_sensitive = TP + TN / TP + FP + TN + FN
 
             not_sensitive = self.data_model_dict['Xtrain'][self.fairness_feature] == 0
-            _,TP,FP,TN,FN, _, _ = self.compute_obj(pcovered_curr,ncovered_curr, model_conf_curr, not_sensitive)
+            _,TP,FP,TN,FN, _, _ = self.compute_obj(pcovered_curr,ncovered_curr, model_conf_curr, not_sensitive, use_paccept=use_paccept)
             accuracy_not_sensitive = TP + TN / TP + FP + TN + FN
 
             fairness_curr = np.abs(accuracy_sensitive-accuracy_not_sensitive)
@@ -326,7 +327,21 @@ class tr(object):
             if iter >0.75 * Niteration:
                 prs_curr,nrs_curr,pcovered_curr,ncovered_curr,overlap_curr,covered_curr, Yhat_curr = prs_opt[:],nrs_opt[:],pcovered_opt[:],ncovered_opt[:],overlap_opt[:],covered_opt[:], Yhat_opt[:]
             #print("currp: {}, currn: {}, curr_err: {}, curr_covered: {}, curr_contras: {}, curr_obj: {}".format(prs_curr, nrs_curr, err_curr, covered_curr.sum(), contras_curr, err_curr + (contras_curr * self.contradiction_reg)))
-            
+            if iter < -100:
+                use_paccept = False
+            elif iter == -100:
+                print('switching objective to use paccept')
+                use_paccept = True
+                Yhat_new,TP,FP,TN,FN, numRejects_new, Yhat_soft_new = self.compute_obj(pcovered_new,ncovered_new, model_conf_new, use_paccept=use_paccept)
+                err_new = (np.abs(self.Y - Yhat_soft_new) * asymCosts).sum()
+                self.Yhat_new = Yhat_new
+                rulePreds_new = self.Yb.copy()
+                rulePreds_new[ncovered_new] = 0
+                rulePreds_new[pcovered_new] = 1
+                contras_new = np.sum(rulePreds_new != self.Yb)
+                nfeatures = len(np.unique([con.split('_')[0] for i in prs_new for con in self.prules[i]])) + len(np.unique([con.split('_')[0] for i in nrs_new for con in self.nrules[i]]))
+                obj_new = (err_new)/self.N + (self.fairness_reg * (fairness_new)) + (self.contradiction_reg*(contras_new/self.N))+self.alpha*(int_flag *(len(prs_new) + len(nrs_new))+(1-int_flag)*nfeatures)+ self.beta * sum(~covered_new)/self.N
+                self.maps.append([iter,obj_new,prs_new,nrs_new])
             
             if (iter == 0) and (start_rules != None):
                 prs_new = start_rules['prs']
@@ -338,7 +353,7 @@ class tr(object):
                 ncovered_new = n ^ overlap_new
                 covered_new = np.logical_xor(p,n) + overlap_new
             else:
-                prs_new,nrs_new , pcovered_new,ncovered_new,overlap_new,covered_new= self.propose_rs(prs_curr,nrs_curr,pcovered_curr,ncovered_curr,overlap_curr,covered_curr, Yhat_curr, Yhat_soft_curr, contras_curr, obj_min,print_message)
+                prs_new,nrs_new , pcovered_new,ncovered_new,overlap_new,covered_new= self.propose_rs(prs_curr,nrs_curr,pcovered_curr,ncovered_curr,overlap_curr,covered_curr, Yhat_curr, Yhat_soft_curr, contras_curr, obj_min,print_message, use_paccept)
 
 
             if len(prs_new) > 0:
@@ -354,16 +369,16 @@ class tr(object):
             self.covered1 = covered_new[:]
             self.Yhat_curr = Yhat_curr
             model_conf_new, _ = self.get_model_conf_agreement(self.df, self.Yb, prs_min=prs_new, nrs_min=nrs_new)
-            Yhat_new,TP,FP,TN,FN, numRejects_new, Yhat_soft_new = self.compute_obj(pcovered_new,ncovered_new, model_conf_new)
+            Yhat_new,TP,FP,TN,FN, numRejects_new, Yhat_soft_new = self.compute_obj(pcovered_new,ncovered_new, model_conf_new, use_paccept=use_paccept)
             err_new = (np.abs(self.Y - Yhat_soft_new) * asymCosts).sum()
             
             if self.fairness_reg > 0:
                 sensitive = self.data_model_dict['Xtrain'][self.fairness_feature] == 1
-                _,TP,FP,TN,FN, _, _ = self.compute_obj(pcovered_new,ncovered_new, model_conf_new, sensitive)
+                _,TP,FP,TN,FN, _, _ = self.compute_obj(pcovered_new,ncovered_new, model_conf_new, sensitive, use_paccept=use_paccept)
                 accuracy_sensitive = TP + TN / TP + FP + TN + FN
 
                 not_sensitive = self.data_model_dict['Xtrain'][self.fairness_feature] == 0
-                _,TP,FP,TN,FN, _, _ = self.compute_obj(pcovered_new,ncovered_new, model_conf_new, not_sensitive)
+                _,TP,FP,TN,FN, _, _ = self.compute_obj(pcovered_new,ncovered_new, model_conf_new, not_sensitive, use_paccept=use_paccept)
                 accuracy_not_sensitive = TP + TN / TP + FP + TN + FN
         
                 fairness_new = np.abs(accuracy_sensitive-accuracy_not_sensitive)
@@ -423,7 +438,7 @@ class tr(object):
         return perror, nerror, oerror, berror
     
 
-    def compute_obj(self,pcovered,ncovered, confs, group=None):
+    def compute_obj(self,pcovered,ncovered, confs, group=None, use_paccept=True):
 
         Yhat = self.Yb.copy()  # will cover all cases where model does not have recommendation
         Yhat_rules = self.Yb.copy()
@@ -433,7 +448,10 @@ class tr(object):
 
         conf_model = confs
         agreement = (Yhat_rules == self.Yb)
-        self.Paccept = self.fA(self.conf_human, conf_model, agreement)
+        if use_paccept:
+            self.Paccept = self.fA(self.conf_human, conf_model, agreement)
+        else:
+            self.Paccept = np.ones(len(Yhat))
         rejection = self.Paccept <= 0.5
         numRejects = 0
         incorrectRejects = 0
@@ -469,7 +487,7 @@ class tr(object):
 
         return  Yhat,TP,FP,TN,FN, numRejects, Yhat_soft
     
-    def propose_rs(self, prs_in,nrs_in,pcovered,ncovered,overlapped, covered,Yhat, Yhat_soft, contras, vt,print_message = False):
+    def propose_rs(self, prs_in,nrs_in,pcovered,ncovered,overlapped, covered,Yhat, Yhat_soft, contras, vt,print_message = False, use_paccept=True):
         prs = prs_in.copy()
         nrs = nrs_in.copy()
         Yhat = pd.Series(Yhat)
@@ -490,7 +508,10 @@ class tr(object):
         rulePreds[pcovered] = 1
         asymCosts = self.Y.replace({0: self.asym_loss[1], 1: self.asym_loss[0]})
         agreement = (rulePreds == self.Yb)
-        self.Paccept = self.fA(self.conf_human, conf_model, agreement)
+        if use_paccept:
+            self.Paccept = self.fA(self.conf_human, conf_model, agreement)
+        else:
+            self.Paccept = np.ones(len(self.Y))
         err = np.abs(self.Y - Yhat) * self.Paccept * asymCosts
         contras = np.where((rulePreds != self.Yb) & covered)[0]
         err[contras] += self.contradiction_reg
@@ -755,11 +776,10 @@ class tr(object):
         conf_model, agreement = self.get_model_conf_agreement(df, Yb)
         
         paccept = fA(conf_human, conf_model, agreement)
+        
         Yhat[nind] = Yhat[nind] * (1 - paccept[nind]) + (paccept[nind]) * 0  # covers cases where model predicts negative
         Yhat[pind] = (Yb.copy()[pind] * (1 - paccept[pind])) + ((paccept[pind]) * 1)  # covers cases where model predicts positive
         # binarize the soft result
-        Yhat[nind] = Yhat[nind].round()
-        Yhat[pind] = Yhat[pind].round()
         return Yhat,covered,Yb
 
     def predictHumanInLoop(self, df, Yb, conf_human, fA):

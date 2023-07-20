@@ -12,7 +12,8 @@ import random
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import confusion_matrix
 import time
-from runner import run
+from case_runner import run
+from scipy.stats import bernoulli, uniform
 
 accept_criteria = 0.5
 
@@ -50,6 +51,15 @@ team3.make_human_model(type='logistic',
                                     'Rational': False,
                                     'adder': 0.6})
 
+'''
+team1.data_model_dict['Ybtrain'] = bernoulli.rvs(p=0.5, size=len(team1.data_model_dict['Ytrain']))
+team1.data_model_dict['Ybval'] = bernoulli.rvs(p=0.5, size=len(team1.data_model_dict['Yval']))
+team1.data_model_dict['Ybtest'] = bernoulli.rvs(p=0.5, size=len(team1.data_model_dict['Ytest']))
+
+team1.data_model_dict['Ybtrain'][np.where((team1.data_model_dict['Xtrain']['age54.0'] == 1) & (team1.data_model_dict['Xtrain']['sex_Male'] == 1))[0]] = team1.data_model_dict['Ytrain'][np.where((team1.data_model_dict['Xtrain']['age54.0'] == 1) & (team1.data_model_dict['Xtrain']['sex_Male'] == 1))[0]]
+team1.data_model_dict['Ybval'][np.where((team1.data_model_dict['Xval']['age54.0'] == 1) & (team1.data_model_dict['Xval']['sex_Male'] == 1))[0]] = team1.data_model_dict['Ybval'][np.where((team1.data_model_dict['Xval']['age54.0'] == 1) & (team1.data_model_dict['Xval']['sex_Male'] == 1))[0]]
+team1.data_model_dict['Ybtest'][np.where((team1.data_model_dict['Xtest']['age54.0'] == 1) & (team1.data_model_dict['Xtest']['sex_Male'] == 1))[0]] = team1.data_model_dict['Ybtest'][np.where((team1.data_model_dict['Xtest']['age54.0'] == 1) & (team1.data_model_dict['Xtest']['sex_Male'] == 1))[0]]
+'''
 
 
 team2 = deepcopy(team1)
@@ -60,14 +70,29 @@ train_conf2 = team2.data_model_dict['train_conf']
 val_conf2 = team2.data_model_dict['val_conf']
 test_conf2 = team2.data_model_dict['test_conf']
 
-train_conf2[np.where((team2.data_model_dict['Xtrain']['age54.0'] == 0) | (team2.data_model_dict['Xtrain']['sex_Male'] == 0))] = 0.95
-train_conf2[np.where((team2.data_model_dict['Xtrain']['age54.0'] == 1) & (team2.data_model_dict['Xtrain']['sex_Male'] == 1))] = 0.2
-val_conf2[np.where((team2.data_model_dict['Xval']['age54.0'] == 0) | (team2.data_model_dict['Xval']['sex_Male'] == 0))] = 0.95
-val_conf2[np.where((team2.data_model_dict['Xval']['age54.0'] == 1) & (team2.data_model_dict['Xval']['sex_Male'] == 1))] = 0.2
+'''
+train_conf1 = team1.data_model_dict['train_conf']
+val_conf1 = team1.data_model_dict['val_conf']
+test_conf1 = team1.data_model_dict['test_conf']
+'''
 
-test_conf2[np.where((team2.data_model_dict['Xtest']['age54.0'] == 0) | (team2.data_model_dict['Xtest']['sex_Male'] == 0))] = 0.95
-test_conf2[np.where((team2.data_model_dict['Xtest']['age54.0'] == 1) & (team2.data_model_dict['Xtest']['sex_Male'] == 1))] = 0.2
+train_conf2[np.where((team2.data_model_dict['Xtrain']['age54.0'] == 0) | (team2.data_model_dict['Xtrain']['sex_Male'] == 0))] = np.random.randint(97,105,len(train_conf2[np.where((team2.data_model_dict['Xtrain']['age54.0'] == 0) | (team2.data_model_dict['Xtrain']['sex_Male'] == 0))]))/100
+train_conf2[np.where((team2.data_model_dict['Xtrain']['age54.0'] == 1) & (team2.data_model_dict['Xtrain']['sex_Male'] == 1))] = np.random.normal(30,20,len(train_conf2[np.where((team2.data_model_dict['Xtrain']['age54.0'] == 1) & (team2.data_model_dict['Xtrain']['sex_Male'] == 1))]))/100
+val_conf2[np.where((team2.data_model_dict['Xval']['age54.0'] == 0) | (team2.data_model_dict['Xval']['sex_Male'] == 0))] = np.random.randint(97,105,len(val_conf2[np.where((team2.data_model_dict['Xval']['age54.0'] == 0) | (team2.data_model_dict['Xval']['sex_Male'] == 0))]))/100
+val_conf2[np.where((team2.data_model_dict['Xval']['age54.0'] == 1) & (team2.data_model_dict['Xval']['sex_Male'] == 1))] = np.random.normal(30,20,len(val_conf2[np.where((team2.data_model_dict['Xval']['age54.0'] == 1) & (team2.data_model_dict['Xval']['sex_Male'] == 1))]))/100
 
+test_conf2[np.where((team2.data_model_dict['Xtest']['age54.0'] == 0) | (team2.data_model_dict['Xtest']['sex_Male'] == 0))] = np.random.randint(97,105,len(test_conf2[np.where((team2.data_model_dict['Xtest']['age54.0'] == 0) | (team2.data_model_dict['Xtest']['sex_Male'] == 0))]))/100
+test_conf2[np.where((team2.data_model_dict['Xtest']['age54.0'] == 1) & (team2.data_model_dict['Xtest']['sex_Male'] == 1))] = np.random.normal(30,20,len(test_conf2[np.where((team2.data_model_dict['Xtest']['age54.0'] == 1) & (team2.data_model_dict['Xtest']['sex_Male'] == 1))]))/100
+
+'''
+train_conf1[np.where((team1.data_model_dict['Xtrain']['age54.0'] == 1) & (team1.data_model_dict['Xtrain']['sex_Male'] == 1))] = np.random.randint(97,105,len(train_conf1[np.where((team1.data_model_dict['Xtrain']['age54.0'] == 1) & (team1.data_model_dict['Xtrain']['sex_Male'] == 1))]))/100
+train_conf1[np.where((team1.data_model_dict['Xtrain']['age54.0'] == 0) | (team1.data_model_dict['Xtrain']['sex_Male'] == 0))] = np.random.normal(30,20,len(train_conf1[np.where((team1.data_model_dict['Xtrain']['age54.0'] == 0) | (team1.data_model_dict['Xtrain']['sex_Male'] == 0))]))/100
+val_conf1[np.where((team1.data_model_dict['Xval']['age54.0'] == 1) & (team1.data_model_dict['Xval']['sex_Male'] == 1))] = np.random.randint(97,105,len(val_conf1[np.where((team1.data_model_dict['Xval']['age54.0'] == 1) & (team1.data_model_dict['Xval']['sex_Male'] == 1))]))/100
+val_conf1[np.where((team1.data_model_dict['Xval']['age54.0'] == 0) | (team1.data_model_dict['Xval']['sex_Male'] == 0))] = np.random.normal(30,20,len(val_conf1[np.where((team1.data_model_dict['Xval']['age54.0'] == 0) | (team1.data_model_dict['Xval']['sex_Male'] == 0))]))/100
+
+test_conf1[np.where((team1.data_model_dict['Xtest']['age54.0'] == 1) & (team1.data_model_dict['Xtest']['sex_Male'] == 1))] = np.random.randint(97,105,len(test_conf1[np.where((team1.data_model_dict['Xtest']['age54.0'] == 1) & (team1.data_model_dict['Xtest']['sex_Male'] == 1))]))/100
+test_conf1[np.where((team1.data_model_dict['Xtest']['age54.0'] == 0) | (team1.data_model_dict['Xtest']['sex_Male'] == 0))] = np.random.normal(30,20,len(test_conf1[np.where((team1.data_model_dict['Xtest']['age54.0'] == 0) | (team1.data_model_dict['Xtest']['sex_Male'] == 0))]))/100
+'''
 
 
 
@@ -80,9 +105,12 @@ team2.set_custom_confidence(team2.data_model_dict['train_conf'],
                             'deterministic')
 
 
-
-
-
+'''
+team1.set_custom_confidence(team1.data_model_dict['train_conf'],
+                            team1.data_model_dict['val_conf'],
+                            team1.data_model_dict['test_conf'],
+                            'deterministic')
+'''
 
 teams = [team1, team2, team3]
 

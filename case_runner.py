@@ -55,7 +55,7 @@ def complex_ADB(c_human, c_model, agreement, delta=5, beta=0.05, k=0.63, gamma=0
 # Repeat Experiments
 def run(team1, team2, team3, folder, team_info):
 
-    setting_type = 'perfect'
+    setting_type = 'learned'
 
 
     if setting_type=='learned':
@@ -83,7 +83,7 @@ def run(team1, team2, team3, folder, team_info):
     iters = Niteration
     contradiction_reg = 0
     fairness_reg = 0
-    numRuns = 10
+    numRuns = 15
     asym_loss = [1,1]
 
     if asym_loss != [1,1]:
@@ -105,7 +105,7 @@ def run(team1, team2, team3, folder, team_info):
 
 
     validations = 1
-    whichTeams = ['team1', 'team2', 'team3']
+    whichTeams = ['team1', 'team2']
 
     teams = [team1, team2, team3]
     for run in range(0, numRuns):
@@ -113,6 +113,8 @@ def run(team1, team2, team3, folder, team_info):
         team_info = pd.DataFrame(index=[1, 2, 3])
         contradiction_regs = [0, 0.01, 0.05, 0.1, 0.2,
                         0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
+        
+        contradiction_regs = [0.2]
         
         
         
@@ -146,7 +148,7 @@ def run(team1, team2, team3, folder, team_info):
             inp.close()
 
         # split training and test randomly
-        team1.makeAdditionalTestSplit(testPercent=0.2, replaceExisting=True, random_state=run, others=[team2, team3])
+        team1.makeAdditionalTestSplit(testPercent=0.3, replaceExisting=True, random_state=run, others=[team2, team3])
 
         startData = pd.DataFrame({'team1_Ytest': team1.data_model_dict['Ytest'],
                                 'team1_Ybtest': team1.data_model_dict['Ybtest'],
@@ -172,22 +174,22 @@ def run(team1, team2, team3, folder, team_info):
             team1.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                         alpha,
                                         beta, iters, fairness_reg, contradiction_reg, fA, force_complete_coverage=False, asym_loss = asym_loss, fair_feat=None)
-            team1.train_mental_aversion_model('perfect')
+            #team1.train_mental_aversion_model('perfect')
             team1.train_confidence_model(setting_type, 0.2)
             team1.train_mental_error_boundary_model()
             if setting_type=='learned':
                 team1.train_ADB_model(0.2)
                 team1.set_fA(team1.trained_ADB_model_wrapper)
-            team_info.loc[1, 'human true accepts'] = (team1.data_model_dict['test_conf'] < team1_2_start_threshold).sum()
-            team_info.loc[1, 'human true rejects'] = (team1.data_model_dict['test_conf'] >= team1_2_start_threshold).sum()
-            team_info.loc[1, 'human accept region test acc'] = metrics.accuracy_score(
-                team1.data_model_dict['Ybtest'][team1.data_model_dict['test_accept']],
-                team1.data_model_dict['Ytest'][team1.data_model_dict['test_accept']])
-            team_info.loc[1, 'human reject region test acc'] = metrics.accuracy_score(
-                team1.data_model_dict['Ybtest'][~team1.data_model_dict['test_accept']],
-                team1.data_model_dict['Ytest'][~team1.data_model_dict['test_accept']])
-            team_info.loc[1, 'aversion model test acc'] = metrics.accuracy_score(team1.data_model_dict['paccept_test'] > 0.5,
-                                                                                team1.data_model_dict['test_accept'])
+            #team_info.loc[1, 'human true accepts'] = (team1.data_model_dict['test_conf'] < team1_2_start_threshold).sum()
+            #team_info.loc[1, 'human true rejects'] = (team1.data_model_dict['test_conf'] >= team1_2_start_threshold).sum()
+            #team_info.loc[1, 'human accept region test acc'] = metrics.accuracy_score(
+            #    team1.data_model_dict['Ybtest'][team1.data_model_dict['test_accept']],
+            #    team1.data_model_dict['Ytest'][team1.data_model_dict['test_accept']])
+            #team_info.loc[1, 'human reject region test acc'] = metrics.accuracy_score(
+            #    team1.data_model_dict['Ybtest'][~team1.data_model_dict['test_accept']],
+            #    team1.data_model_dict['Ytest'][~team1.data_model_dict['test_accept']])
+            #team_info.loc[1, 'aversion model test acc'] = metrics.accuracy_score(team1.data_model_dict['paccept_test'] > 0.5,
+            #                                                                    team1.data_model_dict['test_accept'])
             
             with open('{}/team1.pkl'.format(folder), 'wb') as outp:
                 pickle.dump(team1, outp, pickle.HIGHEST_PROTOCOL)
@@ -201,23 +203,23 @@ def run(team1, team2, team3, folder, team_info):
             team2.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                         alpha,
                                         beta, iters, fairness_reg, contradiction_reg, fA, force_complete_coverage=False, asym_loss = asym_loss, fair_feat=None)
-            team2.train_mental_aversion_model('perfect')
+            #team2.train_mental_aversion_model('perfect')
             team2.train_confidence_model(setting_type, 0.2)
             
             team2.train_mental_error_boundary_model()
             if setting_type=='learned':
                 team2.train_ADB_model(0.2)
                 team2.set_fA(team2.trained_ADB_model_wrapper)
-            team_info.loc[2, 'human true accepts'] = (team2.data_model_dict['test_conf'] < team1_2_start_threshold).sum()
-            team_info.loc[2, 'human true rejects'] = (team2.data_model_dict['test_conf'] >= team1_2_start_threshold).sum()
-            team_info.loc[2, 'human accept region test acc'] = metrics.accuracy_score(
-                team2.data_model_dict['Ybtest'][team2.data_model_dict['test_accept']],
-                team2.data_model_dict['Ytest'][team2.data_model_dict['test_accept']])
-            team_info.loc[2, 'human reject region test acc'] = metrics.accuracy_score(
-                team2.data_model_dict['Ybtest'][~team2.data_model_dict['test_accept']],
-                team2.data_model_dict['Ytest'][~team2.data_model_dict['test_accept']])
-            team_info.loc[2, 'aversion model test acc'] = metrics.accuracy_score(team2.data_model_dict['paccept_test'] > 0.5,
-                                                                                team2.data_model_dict['test_accept'])
+            #team_info.loc[2, 'human true accepts'] = (team2.data_model_dict['test_conf'] < team1_2_start_threshold).sum()
+            #team_info.loc[2, 'human true rejects'] = (team2.data_model_dict['test_conf'] >= team1_2_start_threshold).sum()
+            #team_info.loc[2, 'human accept region test acc'] = metrics.accuracy_score(
+            #    team2.data_model_dict['Ybtest'][team2.data_model_dict['test_accept']],
+            #    team2.data_model_dict['Ytest'][team2.data_model_dict['test_accept']])
+            #team_info.loc[2, 'human reject region test acc'] = metrics.accuracy_score(
+            #    team2.data_model_dict['Ybtest'][~team2.data_model_dict['test_accept']],
+            #    team2.data_model_dict['Ytest'][~team2.data_model_dict['test_accept']])
+            #team_info.loc[2, 'aversion model test acc'] = metrics.accuracy_score(team2.data_model_dict['paccept_test'] > 0.5,
+            #                                                                    team2.data_model_dict['test_accept'])
             
             with open('{}/team2.pkl'.format(folder), 'wb') as outp:
                 pickle.dump(team2, outp, pickle.HIGHEST_PROTOCOL)
@@ -238,16 +240,16 @@ def run(team1, team2, team3, folder, team_info):
             if setting_type=='learned':
                 team3.train_ADB_model(0.2)
                 team3.set_fA(team3.trained_ADB_model_wrapper)
-            team_info.loc[3, 'human true accepts'] = (team3.data_model_dict['test_conf'] < team3_4_start_threshold).sum()
-            team_info.loc[3, 'human true rejects'] = (team3.data_model_dict['test_conf'] >= team3_4_start_threshold).sum()
-            team_info.loc[3, 'human accept region test acc'] = metrics.accuracy_score(
-                team3.data_model_dict['Ybtest'][team3.data_model_dict['test_accept']],
-                team3.data_model_dict['Ytest'][team3.data_model_dict['test_accept']])
-            team_info.loc[3, 'human reject region test acc'] = metrics.accuracy_score(
-                team3.data_model_dict['Ybtest'][~team3.data_model_dict['test_accept']],
-                team3.data_model_dict['Ytest'][~team3.data_model_dict['test_accept']])
-            team_info.loc[3, 'aversion model test acc'] = metrics.accuracy_score(team3.data_model_dict['paccept_test'] > 0.5,
-                                                                                team3.data_model_dict['test_accept'])
+            #team_info.loc[3, 'human true accepts'] = (team3.data_model_dict['test_conf'] < team3_4_start_threshold).sum()
+            #team_info.loc[3, 'human true rejects'] = (team3.data_model_dict['test_conf'] >= team3_4_start_threshold).sum()
+            #team_info.loc[3, 'human accept region test acc'] = metrics.accuracy_score(
+            #    team3.data_model_dict['Ybtest'][team3.data_model_dict['test_accept']],
+            #    team3.data_model_dict['Ytest'][team3.data_model_dict['test_accept']])
+            #team_info.loc[3, 'human reject region test acc'] = metrics.accuracy_score(
+            #    team3.data_model_dict['Ybtest'][~team3.data_model_dict['test_accept']],
+            #    team3.data_model_dict['Ytest'][~team3.data_model_dict['test_accept']])
+            #team_info.loc[3, 'aversion model test acc'] = metrics.accuracy_score(team3.data_model_dict['paccept_test'] > 0.5,
+            #                                                                    team3.data_model_dict['test_accept'])
             
             with open('{}/team3.pkl'.format(folder), 'wb') as outp:
                 pickle.dump(team3, outp, pickle.HIGHEST_PROTOCOL)
@@ -294,6 +296,7 @@ def run(team1, team2, team3, folder, team_info):
                         team1 = tempTeam
                         tempval = tempTeam.hyrs.val_obj
                 del tempTeam
+                #team1.train_hyrs()
                 team1.filter_hyrs_results(mental=True, error=False)
                 
             
@@ -314,12 +317,15 @@ def run(team1, team2, team3, folder, team_info):
                     
 
                 
+                    #team1.train_brs()
+                    # print(team1.brs_results['test_error_modelonly'])
+                
                 print('training team1 tr model...')
                 team1.setup_tr()
                 tempval = 100
                 tempTeam = deepcopy(team1)
                 for i in range(validations):
-                    tempTeam.train_tr(alt_mods=['hyrs', 'brs'])
+                    tempTeam.train_tr()
                     tempTeam.filter_tr_results(mental=True, error=False)
                     if tempTeam.full_tr_results_val.iloc[2, :]['objective'] < tempval:
                         team1 = tempTeam
@@ -355,7 +361,7 @@ def run(team1, team2, team3, folder, team_info):
                     pickle.dump(team1, outp, pickle.HIGHEST_PROTOCOL)
                 outp.close()
 
-                del team1
+                #del team1
                 gc.collect()
 
             
@@ -414,7 +420,7 @@ def run(team1, team2, team3, folder, team_info):
                 tempval = 100
                 tempTeam = deepcopy(team2)
                 for i in range(validations):
-                    tempTeam.train_tr(alt_mods=['hyrs', 'brs'])
+                    tempTeam.train_tr()
                     tempTeam.filter_tr_results(mental=True, error=False)
                     if tempTeam.full_tr_results_val.iloc[2, :]['objective'] < tempval:
                         team2 = tempTeam
@@ -438,7 +444,7 @@ def run(team1, team2, team3, folder, team_info):
                     pickle.dump(team2, outp, pickle.HIGHEST_PROTOCOL)
                 outp.close()
 
-                del team2
+                #del team2
                 gc.collect()
             
             
@@ -495,7 +501,7 @@ def run(team1, team2, team3, folder, team_info):
                 tempval = 100
                 tempTeam = deepcopy(team3)
                 for i in range(validations):
-                    tempTeam.train_tr(alt_mods=['hyrs', 'brs'])
+                    tempTeam.train_tr()
                     tempTeam.filter_tr_results(mental=True, error=False)
                     if tempTeam.full_tr_results_val.iloc[2, :]['objective'] < tempval:
                         team3 = tempTeam
@@ -526,6 +532,119 @@ def run(team1, team2, team3, folder, team_info):
                 gc.collect()
             
             
+            opt_dex = {'team1': team1.full_tr_results_val.loc[:, 'objective'].astype(float).idxmin(),
+                       'team2': team2.full_tr_results_val.loc[:, 'objective'].astype(float).idxmin()}
+            
+
+            corrects = {'team1': team1.data_model_dict['Ytest'] == team1.full_tr_results.iloc[opt_dex['team1']]['modelonly_test_preds'],
+                        'team2': team2.data_model_dict['Ytest'] == team2.full_tr_results.iloc[opt_dex['team2']]['modelonly_test_preds']}
+            
+            accepteds = {'team1': team1.full_tr_results.iloc[opt_dex['team1']]['humanified_test_preds'] == team1.full_tr_results.iloc[opt_dex['team1']]['modelonly_test_preds'],
+                        'team2': team2.full_tr_results.iloc[opt_dex['team2']]['humanified_test_preds'] == team2.full_tr_results.iloc[opt_dex['team2']]['modelonly_test_preds']}
+    
+
+            covereds = {'team1': team1.full_tr_results.iloc[opt_dex['team1']]['test_covereds'],
+                        'team2': team2.full_tr_results.iloc[opt_dex['team2']]['test_covereds']}
+
+            contradicts = {'team1': team1.full_tr_results.iloc[opt_dex['team1']]['modelonly_test_preds'] != team1.data_model_dict['Ybtest'],
+                           'team2': team2.full_tr_results.iloc[opt_dex['team2']]['modelonly_test_preds'] != team2.data_model_dict['Ybtest']}            
+            
+            correct_covereds = {'team1': corrects['team1'] & covereds['team1'],
+                                'team2': corrects['team2'] & covereds['team2']}
+            
+            accepted_covereds = {'team1': accepteds['team1'] & covereds['team1'],
+                                'team2': accepteds['team2'] & covereds['team2']}
+            
+            minority = {'team1': (team1.data_model_dict['Xtest']['age54.0'] == 0) | (team1.data_model_dict['Xtest']['sex_Male'] == 0),
+                        'team2': team2.full_tr_results.iloc[opt_dex['team2']]['test_covereds']}
+            
+
+            curr_team = team2
+            curr_team_str = 'team2'
+
+            dataset_team1 = pd.DataFrame({'Human Correct': pd.Series(team1.data_model_dict['Ytest'] == team1.data_model_dict['Ybtest']).astype(bool),
+                                          'Human Incorrect': pd.Series(team1.data_model_dict['Ytest'] != team1.data_model_dict['Ybtest']).astype(bool),
+                                    'High Confidence': ((team1.data_model_dict['Xtest']['age54.0'] == 1) & (team1.data_model_dict['Xtest']['sex_Male'] == 1)).astype(bool),
+                                    'CorrectCovereds': correct_covereds['team1'], 
+                                    'Accepted Covereds': accepted_covereds['team1'],
+                                    'Covereds': covereds['team1'],
+                                     'Contradicts': contradicts['team1'], 
+                                     'Team Correct': pd.Series(team1.data_model_dict['Ytest'] == team1.full_tr_results.iloc[opt_dex['team1']]['humanified_test_preds']).astype(bool),
+                                     'Team Incorrect': pd.Series(team1.data_model_dict['Ytest'] != team1.full_tr_results.iloc[opt_dex['team1']]['humanified_test_preds']).astype(bool)})
+            
+            dataset_team2 = pd.DataFrame({'Human Correct': pd.Series(team2.data_model_dict['Ytest'] == team2.data_model_dict['Ybtest']).astype(bool),
+                                          'Human Incorrect': pd.Series(team2.data_model_dict['Ytest'] != team2.data_model_dict['Ybtest']).astype(bool),
+                                    'High Confidence': ((team2.data_model_dict['Xtest']['age54.0'] == 0) | (team2.data_model_dict['Xtest']['sex_Male'] == 0)).astype(bool),
+                                    'CorrectCovereds': correct_covereds['team2'], 
+                                    'Accepted Covereds': accepted_covereds['team2'],
+                                    'Covereds': covereds['team2'],
+                                     'Contradicts': contradicts['team2'], 
+                                     'Team Correct': pd.Series(team2.data_model_dict['Ytest'] == team2.full_tr_results.iloc[opt_dex['team2']]['humanified_test_preds']).astype(bool),
+                                     'Team Incorrect': pd.Series(team2.data_model_dict['Ytest'] != team2.full_tr_results.iloc[opt_dex['team2']]['humanified_test_preds']).astype(bool)})
+            
+
+            #same but for hyrs
+
+            corrects = {'team1': team1.data_model_dict['Ytest'] == team1.full_hyrs_results.iloc[0]['modelonly_test_preds'],
+                        'team2': team2.data_model_dict['Ytest'] == team2.full_hyrs_results.iloc[0]['modelonly_test_preds']}
+            
+            accepteds = {'team1': team1.full_hyrs_results.iloc[0]['humanified_test_preds'] == team1.full_hyrs_results.iloc[0]['modelonly_test_preds'],
+                        'team2': team2.full_hyrs_results.iloc[0]['humanified_test_preds'] == team2.full_hyrs_results.iloc[0]['modelonly_test_preds']}
+    
+
+            covereds = {'team1': team1.full_hyrs_results.iloc[0]['test_covereds'],
+                        'team2': team2.full_hyrs_results.iloc[0]['test_covereds']}
+
+            contradicts = {'team1': team1.full_hyrs_results.iloc[0]['modelonly_test_preds'] != team1.data_model_dict['Ybtest'],
+                           'team2': team2.full_hyrs_results.iloc[0]['modelonly_test_preds'] != team2.data_model_dict['Ybtest']}            
+            
+            correct_covereds = {'team1': corrects['team1'] & covereds['team1'],
+                                'team2': corrects['team2'] & covereds['team2']}
+            
+            accepted_covereds = {'team1': accepteds['team1'] & covereds['team1'],
+                                'team2': accepteds['team2'] & covereds['team2']}
+            
+            minority = {'team1': (team1.data_model_dict['Xtest']['age54.0'] == 0) | (team1.data_model_dict['Xtest']['sex_Male'] == 0),
+                        'team2': team2.full_hyrs_results.iloc[0]['test_covereds']}
+            
+
+            curr_team = team2
+            curr_team_str = 'team2'
+
+            dataset_team1_hyrs = pd.DataFrame({'Human Correct': pd.Series(team1.data_model_dict['Ytest'] == team1.data_model_dict['Ybtest']).astype(bool),
+                                          'Human Incorrect': pd.Series(team1.data_model_dict['Ytest'] != team1.data_model_dict['Ybtest']).astype(bool),
+                                    'High Confidence': ((team1.data_model_dict['Xtest']['age54.0'] == 1) & (team1.data_model_dict['Xtest']['sex_Male'] == 1)).astype(bool),
+                                    'CorrectCovereds': correct_covereds['team1'], 
+                                    'Accepted Covereds': accepted_covereds['team1'],
+                                    'Covereds': covereds['team1'],
+                                     'Contradicts': contradicts['team1'], 
+                                     'Team Correct': pd.Series(team1.data_model_dict['Ytest'] == team1.full_hyrs_results.iloc[0]['humanified_test_preds']).astype(bool),
+                                     'Team Incorrect': pd.Series(team1.data_model_dict['Ytest'] != team1.full_hyrs_results.iloc[0]['humanified_test_preds']).astype(bool)})
+            
+            dataset_team2_hyrs = pd.DataFrame({'Human Correct': pd.Series(team2.data_model_dict['Ytest'] == team2.data_model_dict['Ybtest']).astype(bool),
+                                          'Human Incorrect': pd.Series(team2.data_model_dict['Ytest'] != team2.data_model_dict['Ybtest']).astype(bool),
+                                    'High Confidence': ((team2.data_model_dict['Xtest']['age54.0'] == 0) | (team2.data_model_dict['Xtest']['sex_Male'] == 0)).astype(bool),
+                                    'CorrectCovereds': correct_covereds['team2'], 
+                                    'Accepted Covereds': accepted_covereds['team2'],
+                                    'Covereds': covereds['team2'],
+                                     'Contradicts': contradicts['team2'], 
+                                     'Team Correct': pd.Series(team2.data_model_dict['Ytest'] == team2.full_hyrs_results.iloc[0]['humanified_test_preds']).astype(bool),
+                                     'Team Incorrect': pd.Series(team2.data_model_dict['Ytest'] != team2.full_hyrs_results.iloc[0]['humanified_test_preds']).astype(bool)})
+
+            import seaborn as sns
+
+            def normalize(x): 
+                return (x-np.min(x))/(np.max(x)-np.min(x))
+
+            plt.scatter(normalize(curr_team.data_model_dict['test_conf'])[corrects[curr_team_str] & covereds[curr_team_str] ], 
+                        pd.Series(curr_team.data_model_dict['Ytest'][corrects[curr_team_str] & covereds[curr_team_str] ] == curr_team.data_model_dict['Ybtest'][corrects[curr_team_str] & covereds[curr_team_str] ]).replace({True: 'Human Correct', False: 'Human Incorrect'}), color='green', marker="*", s=100)
+            
+            plt.scatter(normalize(curr_team.data_model_dict['test_conf'])[~corrects[curr_team_str] & covereds[curr_team_str] ], 
+                        pd.Series(curr_team.data_model_dict['Ytest'][~corrects[curr_team_str] & covereds[curr_team_str] ] == curr_team.data_model_dict['Ybtest'][~corrects[curr_team_str] & covereds[curr_team_str] ]).replace({True: 'Human Correct', False: 'Human Incorrect'}), color='red', marker="x", s=100)
+        
+            plt.scatter(normalize(curr_team.data_model_dict['test_conf'])[~covereds[curr_team_str] ], 
+                        pd.Series(curr_team.data_model_dict['Ytest'][~covereds[curr_team_str] ] == curr_team.data_model_dict['Ybtest'][~covereds[curr_team_str] ]).replace({True: 'Human Correct', False: 'Human Incorrect'}), color='black', marker=".", alpha=0.5)
+
 
             '''
             #forced coverage versions
