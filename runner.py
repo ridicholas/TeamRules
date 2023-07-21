@@ -55,7 +55,7 @@ def complex_ADB(c_human, c_model, agreement, delta=5, beta=0.05, k=0.63, gamma=0
 # Repeat Experiments
 def run(team1, team2, team3, folder, team_info):
 
-    setting_type = 'perfect'
+    setting_type = 'learned'
 
 
     if setting_type=='learned':
