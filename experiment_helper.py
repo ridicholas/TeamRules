@@ -1326,20 +1326,20 @@ class HAI_team():
         agreement_test = self.data_model_dict['Ybtest'] == modelonly_test_preds
 
         #given model, what is probability of accept behavior
-        self.brs.paccept_train = self.fA(self.data_model_dict['pred_conf_train'], conf_model_train, agreement_train)
-        self.brs.paccept_val = self.fA(self.data_model_dict['pred_conf_val'], conf_model_val, agreement_val)
-        self.brs.paccept_test = self.fA_true(self.data_model_dict['test_conf'], conf_model_test, agreement_test)
+        self.brs_paccept_train = self.fA(self.data_model_dict['pred_conf_train'], conf_model_train, agreement_train)
+        self.brs_paccept_val = self.fA(self.data_model_dict['pred_conf_val'], conf_model_val, agreement_val)
+        self.brs_paccept_test = self.fA_true(self.data_model_dict['test_conf'], conf_model_test, agreement_test)
 
         #given model, what is realized accept behavior
-        self.brs.train_accept = (pd.Series(bernoulli.rvs(p=self.brs.paccept_train, size=len(self.brs.paccept_train))).astype(bool))
-        self.brs.val_accept = (pd.Series(bernoulli.rvs(p=self.brs.paccept_val, size=len(self.brs.paccept_val))).astype(bool))
-        self.brs.test_accept = (pd.Series(bernoulli.rvs(p=self.brs.paccept_test, size=len(self.brs.paccept_test))).astype(bool))
+        self.brs_train_accept = (pd.Series(bernoulli.rvs(p=self.brs_paccept_train, size=len(self.brs_paccept_train))).astype(bool))
+        self.brs_val_accept = (pd.Series(bernoulli.rvs(p=self.brs_paccept_val, size=len(self.brs_paccept_val))).astype(bool))
+        self.brs_test_accept = (pd.Series(bernoulli.rvs(p=self.brs_paccept_test, size=len(self.brs_paccept_test))).astype(bool))
 
 
         
-        team_test_preds[self.brs.test_accept == False] = self.data_model_dict['Ybtest'][self.brs.test_accept == False]
-        team_val_preds[self.brs.val_accept == False] = self.data_model_dict['Ybval'][self.brs.val_accept == False]
-        team_train_preds[self.brs.train_accept == False] = self.data_model_dict['Ybtrain'][self.brs.train_accept == False]
+        team_test_preds[self.brs_test_accept == False] = self.data_model_dict['Ybtest'][self.brs_test_accept == False]
+        team_val_preds[self.brs_val_accept == False] = self.data_model_dict['Ybval'][self.brs_val_accept == False]
+        team_train_preds[self.brs_train_accept == False] = self.data_model_dict['Ybtrain'][self.brs_train_accept == False]
 
         
 

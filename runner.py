@@ -74,7 +74,7 @@ def run(team1, team2, team3, folder, team_info):
     Nlevel = 1
     Nrules = 10000
     supp = 5
-    maxlen = 1
+    maxlen = 4
     protected = 'NA'
     budget = 1
     sample_ratio = 1
@@ -172,22 +172,22 @@ def run(team1, team2, team3, folder, team_info):
             team1.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                         alpha,
                                         beta, iters, fairness_reg, contradiction_reg, fA, force_complete_coverage=False, asym_loss = asym_loss, fair_feat=None)
-            team1.train_mental_aversion_model('perfect')
+            #team1.train_mental_aversion_model('perfect')
             team1.train_confidence_model(setting_type, 0.2)
             team1.train_mental_error_boundary_model()
             if setting_type=='learned':
                 team1.train_ADB_model(0.2)
                 team1.set_fA(team1.trained_ADB_model_wrapper)
-            team_info.loc[1, 'human true accepts'] = (team1.data_model_dict['test_conf'] < team1_2_start_threshold).sum()
-            team_info.loc[1, 'human true rejects'] = (team1.data_model_dict['test_conf'] >= team1_2_start_threshold).sum()
-            team_info.loc[1, 'human accept region test acc'] = metrics.accuracy_score(
-                team1.data_model_dict['Ybtest'][team1.data_model_dict['test_accept']],
-                team1.data_model_dict['Ytest'][team1.data_model_dict['test_accept']])
-            team_info.loc[1, 'human reject region test acc'] = metrics.accuracy_score(
-                team1.data_model_dict['Ybtest'][~team1.data_model_dict['test_accept']],
-                team1.data_model_dict['Ytest'][~team1.data_model_dict['test_accept']])
-            team_info.loc[1, 'aversion model test acc'] = metrics.accuracy_score(team1.data_model_dict['paccept_test'] > 0.5,
-                                                                                team1.data_model_dict['test_accept'])
+            #team_info.loc[1, 'human true accepts'] = (team1.data_model_dict['test_conf'] < team1_2_start_threshold).sum()
+            #team_info.loc[1, 'human true rejects'] = (team1.data_model_dict['test_conf'] >= team1_2_start_threshold).sum()
+            #team_info.loc[1, 'human accept region test acc'] = metrics.accuracy_score(
+            #    team1.data_model_dict['Ybtest'][team1.data_model_dict['test_accept']],
+            #    team1.data_model_dict['Ytest'][team1.data_model_dict['test_accept']])
+            #team_info.loc[1, 'human reject region test acc'] = metrics.accuracy_score(
+            #    team1.data_model_dict['Ybtest'][~team1.data_model_dict['test_accept']],
+            #    team1.data_model_dict['Ytest'][~team1.data_model_dict['test_accept']])
+            #team_info.loc[1, 'aversion model test acc'] = metrics.accuracy_score(team1.data_model_dict['paccept_test'] > 0.5,
+            #                                                                    team1.data_model_dict['test_accept'])
             
             with open('{}/team1.pkl'.format(folder), 'wb') as outp:
                 pickle.dump(team1, outp, pickle.HIGHEST_PROTOCOL)
@@ -201,23 +201,23 @@ def run(team1, team2, team3, folder, team_info):
             team2.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                         alpha,
                                         beta, iters, fairness_reg, contradiction_reg, fA, force_complete_coverage=False, asym_loss = asym_loss, fair_feat=None)
-            team2.train_mental_aversion_model('perfect')
+            #team2.train_mental_aversion_model('perfect')
             team2.train_confidence_model(setting_type, 0.2)
             
             team2.train_mental_error_boundary_model()
             if setting_type=='learned':
                 team2.train_ADB_model(0.2)
                 team2.set_fA(team2.trained_ADB_model_wrapper)
-            team_info.loc[2, 'human true accepts'] = (team2.data_model_dict['test_conf'] < team1_2_start_threshold).sum()
-            team_info.loc[2, 'human true rejects'] = (team2.data_model_dict['test_conf'] >= team1_2_start_threshold).sum()
-            team_info.loc[2, 'human accept region test acc'] = metrics.accuracy_score(
-                team2.data_model_dict['Ybtest'][team2.data_model_dict['test_accept']],
-                team2.data_model_dict['Ytest'][team2.data_model_dict['test_accept']])
-            team_info.loc[2, 'human reject region test acc'] = metrics.accuracy_score(
-                team2.data_model_dict['Ybtest'][~team2.data_model_dict['test_accept']],
-                team2.data_model_dict['Ytest'][~team2.data_model_dict['test_accept']])
-            team_info.loc[2, 'aversion model test acc'] = metrics.accuracy_score(team2.data_model_dict['paccept_test'] > 0.5,
-                                                                                team2.data_model_dict['test_accept'])
+            #team_info.loc[2, 'human true accepts'] = (team2.data_model_dict['test_conf'] < team1_2_start_threshold).sum()
+            #team_info.loc[2, 'human true rejects'] = (team2.data_model_dict['test_conf'] >= team1_2_start_threshold).sum()
+            #team_info.loc[2, 'human accept region test acc'] = metrics.accuracy_score(
+            #    team2.data_model_dict['Ybtest'][team2.data_model_dict['test_accept']],
+            #    team2.data_model_dict['Ytest'][team2.data_model_dict['test_accept']])
+            #team_info.loc[2, 'human reject region test acc'] = metrics.accuracy_score(
+            #    team2.data_model_dict['Ybtest'][~team2.data_model_dict['test_accept']],
+            #    team2.data_model_dict['Ytest'][~team2.data_model_dict['test_accept']])
+            #team_info.loc[2, 'aversion model test acc'] = metrics.accuracy_score(team2.data_model_dict['paccept_test'] > 0.5,
+            #                                                                    team2.data_model_dict['test_accept'])
             
             with open('{}/team2.pkl'.format(folder), 'wb') as outp:
                 pickle.dump(team2, outp, pickle.HIGHEST_PROTOCOL)
@@ -238,16 +238,16 @@ def run(team1, team2, team3, folder, team_info):
             if setting_type=='learned':
                 team3.train_ADB_model(0.2)
                 team3.set_fA(team3.trained_ADB_model_wrapper)
-            team_info.loc[3, 'human true accepts'] = (team3.data_model_dict['test_conf'] < team3_4_start_threshold).sum()
-            team_info.loc[3, 'human true rejects'] = (team3.data_model_dict['test_conf'] >= team3_4_start_threshold).sum()
-            team_info.loc[3, 'human accept region test acc'] = metrics.accuracy_score(
-                team3.data_model_dict['Ybtest'][team3.data_model_dict['test_accept']],
-                team3.data_model_dict['Ytest'][team3.data_model_dict['test_accept']])
-            team_info.loc[3, 'human reject region test acc'] = metrics.accuracy_score(
-                team3.data_model_dict['Ybtest'][~team3.data_model_dict['test_accept']],
-                team3.data_model_dict['Ytest'][~team3.data_model_dict['test_accept']])
-            team_info.loc[3, 'aversion model test acc'] = metrics.accuracy_score(team3.data_model_dict['paccept_test'] > 0.5,
-                                                                                team3.data_model_dict['test_accept'])
+            #team_info.loc[3, 'human true accepts'] = (team3.data_model_dict['test_conf'] < team3_4_start_threshold).sum()
+            #team_info.loc[3, 'human true rejects'] = (team3.data_model_dict['test_conf'] >= team3_4_start_threshold).sum()
+            #team_info.loc[3, 'human accept region test acc'] = metrics.accuracy_score(
+            #    team3.data_model_dict['Ybtest'][team3.data_model_dict['test_accept']],
+            #    team3.data_model_dict['Ytest'][team3.data_model_dict['test_accept']])
+            #team_info.loc[3, 'human reject region test acc'] = metrics.accuracy_score(
+            #    team3.data_model_dict['Ybtest'][~team3.data_model_dict['test_accept']],
+            #    team3.data_model_dict['Ytest'][~team3.data_model_dict['test_accept']])
+            #team_info.loc[3, 'aversion model test acc'] = metrics.accuracy_score(team3.data_model_dict['paccept_test'] > 0.5,
+            #                                                                    team3.data_model_dict['test_accept'])
             
             with open('{}/team3.pkl'.format(folder), 'wb') as outp:
                 pickle.dump(team3, outp, pickle.HIGHEST_PROTOCOL)
