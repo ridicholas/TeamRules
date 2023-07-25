@@ -87,7 +87,7 @@ def run(team1, team2, team3, folder, team_info):
     asym_loss = [2,1]
 
     if asym_loss != [1,1]:
-        folder += '_asym' + str(asym_loss)
+        folder += f'_asym{asym_loss[0]}{asym_loss[1]}'
 
     folder = folder + f'_len{maxlen}' 
 
