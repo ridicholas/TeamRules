@@ -74,7 +74,7 @@ def run(team1, team2, team3, folder, team_info):
     Nlevel = 1
     Nrules = 10000
     supp = 5
-    maxlen = 2
+    maxlen = 4
     protected = 'NA'
     budget = 1
     sample_ratio = 1
@@ -84,7 +84,7 @@ def run(team1, team2, team3, folder, team_info):
     contradiction_reg = 0
     fairness_reg = 0
     numRuns = 10
-    asym_loss = [1,1]
+    asym_loss = [2,1]
 
     if asym_loss != [1,1]:
         folder += '_asym' + str(asym_loss)
