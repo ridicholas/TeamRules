@@ -172,7 +172,7 @@ team_info.loc[3, 'human reject region train acc'] = metrics.accuracy_score(team3
 
 print(team_info)
 
-folder = 'heart_contradiction_results'
+folder = 'heart_contradiction_results_temp2'
 
 
 team1_rule_lists = pd.DataFrame(index=range(0, 20), columns=['TR_prules', 'TR_nrules', 'HyRS_prules', 'HyRS_nrules'])

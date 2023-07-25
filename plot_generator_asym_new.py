@@ -9,21 +9,20 @@ import math
 
 types = ['TL', 'TDL']
 
-numRuns = 15 #adjust this depending on how many runs of results were produced
+numRuns = 10 #adjust this depending on how many runs of results were produced
 
 rule_len = 4
 setting_type = 'learned'
 dataset = 'heart'
-path = f'{dataset}_contradiction_results_{setting_type}_len{rule_len}/'
+asym_loss = [3,1]
+path = f'{dataset}_contradiction_results_{setting_type}_asym{asym_loss[0]}{asym_loss[1]}_len{rule_len}/'
 
-asym_loss = [1,1]
 data = path.split('_')[0]
-costs = [0, 0.01, 0.05, 0.1, 0.2,
-                     0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
+costs = [0, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1, 1.2, 1.5, 2, 2.5]
 
 for whichType in types:
     #costs = [0, 0.01, 0.05]
-    hyrs_reconcile = True
+    hyrs_reconcile = False
     tr_conf = 'opt'
     hyrs_conf = 0
     tr_optimizer = True
@@ -114,8 +113,7 @@ for whichType in types:
                 val_hyrs_results_filtered[team][cost].append(pd.read_pickle(path + 'val_cost_{}_'.format(hyrs_cost)+ team + '_hyrs_filtered_run{}.pkl'.format(i)).sort_values(by='val_error'))
                 val_hyrs_results_filtered[team][cost][-1] = val_hyrs_results_filtered[team][cost][-1][val_hyrs_results_filtered[team][cost][-1]['mental_conf'] == hyrs_conf].reset_index()
             
-                if cost == '0':
-                    brs_results[team].append(pd.read_pickle(path + team + '_brs_run{}.pkl'.format(i)).sort_values(by='test_error_brs'))
+
 
 
 
@@ -187,11 +185,12 @@ for whichType in types:
                     HyRS_Objectives.append(hyrs_results_filtered[team][cost][run].loc[0,'objective'] + (float(cost)*HyRSContradicts[-1])/(datasets[run].shape[0]))
                 else:
                     HyRS_Objectives.append(hyrs_results_filtered[team][cost][run].loc[0,'objective'])
-                BRSLoss.append(brs_results[team][run].loc[0,'test_objective'])
-                BRSContradicts.append(brs_results[team][run].loc[0,'test_contradicts'])
-                BRS_Objectives.append(brs_results[team][run].loc[0,'test_objective'] + (float(cost)*BRSContradicts[-1])/(datasets[run].shape[0]))
+                #BRSLoss.append(brs_results[team][run].loc[0,'test_objective'])
+                #BRSContradicts.append(brs_results[team][run].loc[0,'test_contradicts'])
+                #BRS_Objectives.append(brs_results[team][run].loc[0,'test_objective'] + (float(cost)*BRSContradicts[-1])/(datasets[run].shape[0]))
 
-                Human.append(1-metrics.accuracy_score(datasets[run][f'{team}_Ybtest'], datasets[run][f'{team}_Ytest']))
+                asymCosts = datasets[run][f'{team}_Ytest'].replace({0: asym_loss[1], 1: asym_loss[0]})
+                Human.append(((np.abs(datasets[run][f'{team}_Ybtest'] - datasets[run][f'{team}_Ytest']))*asymCosts.values).sum()/len(datasets[run][f'{team}_Ybtest']))
                 
 
             
@@ -207,12 +206,12 @@ for whichType in types:
             costFrame.loc[cost, 'HyRS_Objective'] = mean(HyRS_Objectives)
             costFrame.loc[cost, 'TR_Objective_SE'] = stdev(TR_Objectives)/math.sqrt(numRuns)
             costFrame.loc[cost, 'HyRS_Objective_SE'] = stdev(HyRS_Objectives)/math.sqrt(numRuns)
-            costFrame.loc[cost, 'BRSTeamLoss'] = mean(BRSLoss)
-            costFrame.loc[cost, 'BRSTeamLoss_std'] = stdev(BRSLoss)/math.sqrt(numRuns)
-            costFrame.loc[cost, 'BRS_Contradictions'] = mean(BRSContradicts)
-            costFrame.loc[cost, 'BRS_Contradictions_std'] = stdev(BRSContradicts)/math.sqrt(numRuns)
-            costFrame.loc[cost, 'BRS_Objective'] = mean(BRS_Objectives)
-            costFrame.loc[cost, 'BRS_Objective_SE'] = stdev(BRS_Objectives)/math.sqrt(numRuns)
+            #costFrame.loc[cost, 'BRSTeamLoss'] = mean(BRSLoss)
+            #costFrame.loc[cost, 'BRSTeamLoss_std'] = stdev(BRSLoss)/math.sqrt(numRuns)
+            #costFrame.loc[cost, 'BRS_Contradictions'] = mean(BRSContradicts)
+            #costFrame.loc[cost, 'BRS_Contradictions_std'] = stdev(BRSContradicts)/math.sqrt(numRuns)
+            #costFrame.loc[cost, 'BRS_Objective'] = mean(BRS_Objectives)
+            #costFrame.loc[cost, 'BRS_Objective_SE'] = stdev(BRS_Objectives)/math.sqrt(numRuns)
             costFrame.loc[cost, 'Human Only'] = mean(Human)
             costFrame.loc[cost, 'Human Only SE'] = stdev(Human)/math.sqrt(numRuns)
 
@@ -247,8 +246,8 @@ for whichType in types:
             TR_con += (TRContradicts)
             HyRS_loss += (HyRSLoss)
             HyRS_con += (HyRSContradicts)
-            BRS_loss += (BRSLoss)
-            BRS_con += (BRSContradicts)
+            #BRS_loss += (BRSLoss)
+            #BRS_con += (BRSContradicts)
 
         #dedup TRs for scatter
         l = list(zip(TR_loss, TR_con))
@@ -261,10 +260,10 @@ for whichType in types:
         HyRS_loss = np.array(z[0])
         HyRS_con = np.array(z[1])
 
-        l = list(zip(BRS_loss, BRS_con))
-        z = list(zip(*[i for n, i in enumerate(l) if i not in l[:n]]))
-        BRS_loss = np.array(z[0])
-        BRS_con = np.array(z[1])
+        #l = list(zip(BRS_loss, BRS_con))
+        #z = list(zip(*[i for n, i in enumerate(l) if i not in l[:n]]))
+        #BRS_loss = np.array(z[0])
+        #BRS_con = np.array(z[1])
         #fig.suptitle('{} {} Setting'.format(data, setting), fontsize=16)
         
         
@@ -275,7 +274,7 @@ for whichType in types:
             costFrame.sort_values(by=['Costs'], inplace=True)
             plt.plot(costFrame['Costs'], costFrame['HyRS_Objective'], marker = 'v', c=color_dict['HYRS'], label = 'HyRS', markersize=1.8, linewidth=0.9)
             plt.plot(costFrame['Costs'], costFrame['TR_Objective'], marker = '.', c=color_dict['TR'], label='TeamRules', markersize=1.8, linewidth=0.9)
-            plt.plot(costFrame['Costs'], costFrame['BRS_Objective'], marker = 's', c=color_dict['BRS'], label='BRS', markersize=1.8, linewidth=0.9)
+            #plt.plot(costFrame['Costs'], costFrame['BRS_Objective'], marker = 's', c=color_dict['BRS'], label='BRS', markersize=1.8, linewidth=0.9)
             plt.axhline(costFrame['Human Only'][0], c = color_dict['Human'], markersize=1, label='Human Alone', ls='--', alpha=0.5)
             plt.fill_between(costFrame['Costs'], 
                         costFrame['Human Only']-(costFrame['Human Only SE']),
@@ -285,10 +284,10 @@ for whichType in types:
                         costFrame['HyRS_Objective']-(costFrame['HyRS_Objective_SE']),
                         costFrame['HyRS_Objective']+(costFrame['HyRS_Objective_SE']) ,
                         color=color_dict['HYRS'], alpha=0.2)
-            plt.fill_between(costFrame['Costs'], 
-                        costFrame['BRS_Objective']-(costFrame['BRS_Objective_SE']),
-                        costFrame['BRS_Objective']+(costFrame['BRS_Objective_SE']) ,
-                        color=color_dict['BRS'], alpha=0.2)
+           # plt.fill_between(costFrame['Costs'], 
+           #             costFrame['BRS_Objective']-(costFrame['BRS_Objective_SE']),
+           #             costFrame['BRS_Objective']+(costFrame['BRS_Objective_SE']) ,
+           #             color=color_dict['BRS'], alpha=0.2)
             plt.fill_between(costFrame['Costs'], 
                         costFrame['TR_Objective']-(costFrame['TR_Objective_SE']),
                         costFrame['TR_Objective']+(costFrame['TR_Objective_SE']) ,
@@ -300,7 +299,7 @@ for whichType in types:
             plt.legend(prop={'size': 5})
             plt.grid('on', linestyle='dotted', linewidth=0.2, color='black')
 
-            fig.savefig(f'Plots/adb_ablationTL_{setting_type}_len{rule_len}_{data}_{setting}.png', bbox_inches='tight')
+            fig.savefig(f'Plots/TL_{setting_type}_len{rule_len}_{data}_{setting}_asym{asym_loss[0]}{asym_loss[1]}.png', bbox_inches='tight')
 
             plt.clf()
         else:
@@ -323,23 +322,16 @@ for whichType in types:
             costFrame.sort_values(by=['HyRS_Contradictions'], inplace=True)
             plt.plot(costFrame['HyRS_Contradictions'], costFrame['HyRSTeamLoss'], marker = 'v', markersize=2, c=color_dict['HYRS'], label = 'HyRS', linewidth=0.9)
             cost = '0'
-            if hyrs_reconcile:
-                for cost in costFrame.Costs:
-                    plt.fill_between(np.linspace(costFrame.loc[cost, 'HyRS_Contradictions']-costFrame.loc[cost, 'HyRS_Contradictions_std'], 
-                                            costFrame.loc[cost, 'HyRS_Contradictions']+costFrame.loc[cost, 'HyRS_Contradictions_std'], 
-                                            50), costFrame.loc[cost, 'HyRSTeamLoss'] - costFrame.loc[cost, 'HyRSTeamLoss_std'], costFrame.loc[cost, 'HyRSTeamLoss'] + costFrame.loc[cost, 'HyRSTeamLoss_std'], color=color_dict['HYRS'], alpha=0.2)
-            else:
-                plt.fill_between(np.linspace(costFrame.loc[cost, 'HyRS_Contradictions']-costFrame.loc[cost, 'HyRS_Contradictions_std'], 
+            plt.fill_between(np.linspace(costFrame.loc[cost, 'HyRS_Contradictions']-costFrame.loc[cost, 'HyRS_Contradictions_std'], 
                                         costFrame.loc[cost, 'HyRS_Contradictions']+costFrame.loc[cost, 'HyRS_Contradictions_std'], 
                                         50), costFrame.loc[cost, 'HyRSTeamLoss'] - costFrame.loc[cost, 'HyRSTeamLoss_std'], costFrame.loc[cost, 'HyRSTeamLoss'] + costFrame.loc[cost, 'HyRSTeamLoss_std'], color=color_dict['HYRS'], alpha=0.2)
-            costFrame.sort_values(by=['BRS_Contradictions'], inplace=True)
-            plt.plot(costFrame['BRS_Contradictions'], costFrame['BRSTeamLoss'], marker = 's', markersize=2, c=color_dict['BRS'], label = 'BRS', linewidth=0.9)
-            plt.fill_between(np.linspace(costFrame.loc[cost, 'BRS_Contradictions']-costFrame.loc[cost, 'BRS_Contradictions_std'], 
-                                        costFrame.loc[cost, 'BRS_Contradictions']+costFrame.loc[cost, 'BRS_Contradictions_std'], 
-                                        50), costFrame.loc[cost, 'BRSTeamLoss'] - costFrame.loc[cost, 'BRSTeamLoss_std'], costFrame.loc[cost, 'BRSTeamLoss'] + costFrame.loc[cost, 'BRSTeamLoss_std'], color=color_dict['BRS'], alpha=0.2)
+            #costFrame.sort_values(by=['BRS_Contradictions'], inplace=True)
+            #plt.plot(costFrame['BRS_Contradictions'], costFrame['BRSTeamLoss'], marker = 's', markersize=2, c=color_dict['BRS'], label = 'BRS', linewidth=0.9)
+            #plt.fill_between(np.linspace(costFrame.loc[cost, 'BRS_Contradictions']-costFrame.loc[cost, 'BRS_Contradictions_std'], 
+            #                            costFrame.loc[cost, 'BRS_Contradictions']+costFrame.loc[cost, 'BRS_Contradictions_std'], 
+            #                            50), costFrame.loc[cost, 'BRSTeamLoss'] - costFrame.loc[cost, 'BRSTeamLoss_std'], costFrame.loc[cost, 'BRSTeamLoss'] + costFrame.loc[cost, 'BRSTeamLoss_std'], color=color_dict['BRS'], alpha=0.2)
             costFrame.sort_values(by=['TR_Contradictions'], inplace=True)
             plt.plot(costFrame['TR_Contradictions'], costFrame['TeamRulesTeamLoss'], marker='.', markersize=2, c=color_dict['TR'], label='TeamRules', linewidth=0.9)
-            
             for cost in costFrame.Costs:
                 plt.fill_between(np.linspace(costFrame.loc[cost, 'TR_Contradictions']-costFrame.loc[cost, 'TR_Contradictions_std'], 
                                             costFrame.loc[cost, 'TR_Contradictions']+costFrame.loc[cost, 'TR_Contradictions_std'], 
@@ -350,7 +342,7 @@ for whichType in types:
             plt.legend(prop={'size': 5})
             #plt.set_title('{} Setting'.format(setting), fontsize=15)
 
-            fig.savefig(f'Plots/adb_ablation_TDL_{setting_type}_len{rule_len}_{data}_{setting}.png', bbox_inches='tight')
+            fig.savefig(f'Plots/TDL_{setting_type}_len{rule_len}_{data}_{setting}_asym{asym_loss[0]}{asym_loss[1]}.png', bbox_inches='tight')
                     
                 
                     

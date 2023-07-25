@@ -74,7 +74,7 @@ def run(team1, team2, team3, folder, team_info):
     Nlevel = 1
     Nrules = 10000
     supp = 5
-    maxlen = 4
+    maxlen = 2
     protected = 'NA'
     budget = 1
     sample_ratio = 1
@@ -84,7 +84,7 @@ def run(team1, team2, team3, folder, team_info):
     contradiction_reg = 0
     fairness_reg = 0
     numRuns = 10
-    asym_loss = [3,1]
+    asym_loss = [1,1]
 
     if asym_loss != [1,1]:
         folder += '_asym' + str(asym_loss)
@@ -275,7 +275,7 @@ def run(team1, team2, team3, folder, team_info):
                 
             
 
-                if (contradiction_reg == 0) and (asym_loss == [1,1]):
+                if (contradiction_reg == 0):
                     print('training team1 brs model...')
                     team1.setup_brs()
 
@@ -366,7 +366,7 @@ def run(team1, team2, team3, folder, team_info):
                 
             
 
-                if (contradiction_reg == 0) and (asym_loss == [1,1]):
+                if (contradiction_reg == 0):
                     print('training team2 brs model...')
                     team2.setup_brs()
 
@@ -448,7 +448,7 @@ def run(team1, team2, team3, folder, team_info):
                 
             
 
-                if (contradiction_reg == 0) and (asym_loss == [1,1]):
+                if (contradiction_reg == 0):
                     print('training team3 brs model...')
                     team3.setup_brs()
 
