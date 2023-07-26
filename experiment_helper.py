@@ -949,6 +949,8 @@ class HAI_team():
 
         print('AUC of ADB Model on val Data: ' + str(
             metrics.roc_auc_score(val_y, self.trained_ADB_model.predict_proba(val_X)[:, 1])))
+        
+        return metrics.roc_auc_score(val_y, self.trained_ADB_model.predict_proba(val_X)[:, 1])
 
 
         
