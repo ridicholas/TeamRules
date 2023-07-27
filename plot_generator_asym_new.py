@@ -14,7 +14,7 @@ numRuns = 10 #adjust this depending on how many runs of results were produced
 rule_len = 4
 setting_type = 'learned'
 dataset = 'heart'
-asym_loss = [3,1]
+asym_loss = [2,1]
 path = f'{dataset}_contradiction_results_{setting_type}_asym{asym_loss[0]}{asym_loss[1]}_len{rule_len}/'
 
 data = path.split('_')[0]
@@ -185,9 +185,9 @@ for whichType in types:
                     HyRS_Objectives.append(hyrs_results_filtered[team][cost][run].loc[0,'objective'] + (float(cost)*HyRSContradicts[-1])/(datasets[run].shape[0]))
                 else:
                     HyRS_Objectives.append(hyrs_results_filtered[team][cost][run].loc[0,'objective'])
-                #BRSLoss.append(brs_results[team][run].loc[0,'test_objective'])
-                #BRSContradicts.append(brs_results[team][run].loc[0,'test_contradicts'])
-                #BRS_Objectives.append(brs_results[team][run].loc[0,'test_objective'] + (float(cost)*BRSContradicts[-1])/(datasets[run].shape[0]))
+                BRSLoss.append(brs_results[team][run].loc[0,'test_objective'])
+                BRSContradicts.append(brs_results[team][run].loc[0,'test_contradicts'])
+                BRS_Objectives.append(brs_results[team][run].loc[0,'test_objective'] + (float(cost)*BRSContradicts[-1])/(datasets[run].shape[0]))
 
                 asymCosts = datasets[run][f'{team}_Ytest'].replace({0: asym_loss[1], 1: asym_loss[0]})
                 Human.append(((np.abs(datasets[run][f'{team}_Ybtest'] - datasets[run][f'{team}_Ytest']))*asymCosts.values).sum()/len(datasets[run][f'{team}_Ybtest']))
@@ -206,12 +206,12 @@ for whichType in types:
             costFrame.loc[cost, 'HyRS_Objective'] = mean(HyRS_Objectives)
             costFrame.loc[cost, 'TR_Objective_SE'] = stdev(TR_Objectives)/math.sqrt(numRuns)
             costFrame.loc[cost, 'HyRS_Objective_SE'] = stdev(HyRS_Objectives)/math.sqrt(numRuns)
-            #costFrame.loc[cost, 'BRSTeamLoss'] = mean(BRSLoss)
-            #costFrame.loc[cost, 'BRSTeamLoss_std'] = stdev(BRSLoss)/math.sqrt(numRuns)
-            #costFrame.loc[cost, 'BRS_Contradictions'] = mean(BRSContradicts)
-            #costFrame.loc[cost, 'BRS_Contradictions_std'] = stdev(BRSContradicts)/math.sqrt(numRuns)
-            #costFrame.loc[cost, 'BRS_Objective'] = mean(BRS_Objectives)
-            #costFrame.loc[cost, 'BRS_Objective_SE'] = stdev(BRS_Objectives)/math.sqrt(numRuns)
+            costFrame.loc[cost, 'BRSTeamLoss'] = mean(BRSLoss)
+            costFrame.loc[cost, 'BRSTeamLoss_std'] = stdev(BRSLoss)/math.sqrt(numRuns)
+            costFrame.loc[cost, 'BRS_Contradictions'] = mean(BRSContradicts)
+            costFrame.loc[cost, 'BRS_Contradictions_std'] = stdev(BRSContradicts)/math.sqrt(numRuns)
+            costFrame.loc[cost, 'BRS_Objective'] = mean(BRS_Objectives)
+            costFrame.loc[cost, 'BRS_Objective_SE'] = stdev(BRS_Objectives)/math.sqrt(numRuns)
             costFrame.loc[cost, 'Human Only'] = mean(Human)
             costFrame.loc[cost, 'Human Only SE'] = stdev(Human)/math.sqrt(numRuns)
 

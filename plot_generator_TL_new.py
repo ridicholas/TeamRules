@@ -269,7 +269,7 @@ for whichType in types:
         
         
             
-        color_dict = {'TR': '#348ABD', 'HYRS': '#E24A33', 'BRS':'#988ED5', 'Human': 'darkgray'}
+        color_dict = {'TR': '#348ABD', 'HYRS': '#E24A33', 'BRS':'#988ED5', 'Human': 'darkgray', 'HYRSRecon': '#8EBA42'}
         
         if whichType == 'TL':
             costFrame.sort_values(by=['Costs'], inplace=True)
@@ -291,7 +291,7 @@ for whichType in types:
                         color=color_dict['BRS'], alpha=0.2)
             plt.fill_between(costFrame['Costs'], 
                         costFrame['TR_Objective']-(costFrame['TR_Objective_SE']),
-                        costFrame['TR_Objective']+(costFrame['TR_Objective_SE']) ,
+                        costFrame['TR_Objective']+(costFrame['TR_Objective_SE']),
                         color=color_dict['TR'], alpha=0.2)
             plt.xlabel('Reconciliation Cost', fontsize=12)
             plt.ylabel('Total Team Loss', fontsize=12)
@@ -300,7 +300,7 @@ for whichType in types:
             plt.legend(prop={'size': 5})
             plt.grid('on', linestyle='dotted', linewidth=0.2, color='black')
 
-            fig.savefig(f'Plots/adb_ablationTL_{setting_type}_len{rule_len}_{data}_{setting}.png', bbox_inches='tight')
+            fig.savefig(f'Plots/TL_{setting_type}_len{rule_len}_{data}_{setting}.png', bbox_inches='tight')
 
             plt.clf()
         else:
@@ -350,7 +350,7 @@ for whichType in types:
             plt.legend(prop={'size': 5})
             #plt.set_title('{} Setting'.format(setting), fontsize=15)
 
-            fig.savefig(f'Plots/adb_ablation_TDL_{setting_type}_len{rule_len}_{data}_{setting}.png', bbox_inches='tight')
+            fig.savefig(f'Plots/TDL_{setting_type}_len{rule_len}_{data}_{setting}.png', bbox_inches='tight')
                     
                 
                     

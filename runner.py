@@ -84,7 +84,7 @@ def run(team1, team2, team3, folder, team_info):
     contradiction_reg = 0
     fairness_reg = 0
     numRuns = 10
-    asym_loss = [3,1]
+    asym_loss = [2,1]
 
     if asym_loss != [1,1]:
         folder += f'_asym{asym_loss[0]}{asym_loss[1]}'
@@ -123,7 +123,7 @@ def run(team1, team2, team3, folder, team_info):
         if asym_loss == [1,1]:
             alt_mods = ['hyrs', 'brs']
         else:
-            alt_mods = ['hyrs']
+            alt_mods = ['hyrs', 'brs']
         
         
         contradiction_reg = 0
