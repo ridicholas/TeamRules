@@ -6,20 +6,22 @@ from sklearn import metrics
 from scipy.stats import ttest_ind
 from statistics import mean, stdev
 import math
+import pickle
 
 types = ['TL', 'TDL']
 
-numRuns = 15 #adjust this depending on how many runs of results were produced
+numRuns = 10 #adjust this depending on how many runs of results were produced
 
 rule_len = 4
 setting_type = 'learned'
-dataset = 'fico'
-path = f'{dataset}_contradiction_results_{setting_type}_len{rule_len}/'
+dataset = 'heart'
+path = f'{dataset}_contradiction_results_{setting_type}_len{rule_len}_disc/'
 
 asym_loss = [1,1]
 data = path.split('_')[0]
-costs = [0, 0.01, 0.05, 0.1, 0.2,
-                     0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
+costs = [0.3]
+cost = 0.3
+data_sizes = ['perfect', 1, 0.75, 0.5, 0.25, 0.2, 0.15, 0.1]
 
 for whichType in types:
     #costs = [0, 0.01, 0.05]
@@ -46,26 +48,21 @@ for whichType in types:
         val_hyrs_results_filtered[team] = {}
 
     for team in teams:
-        for cost in costs:
-            tr_results_filtered[team][str(cost)] = []
-            hyrs_results_filtered[team][str(cost)] = []
-            val_tr_results_filtered[team][str(cost)] = []
-            val_hyrs_results_filtered[team][str(cost)] = []
+        for data in data_sizes:
+            tr_results_filtered[team][str(data)] = []
+            hyrs_results_filtered[team][str(data)] = []
+            val_tr_results_filtered[team][str(data)] = []
+            val_hyrs_results_filtered[team][str(data)] = []
             
-    replacement_tracker = {'team1': {}, 'team2' : {}, 'team3': {}, 'team4': {}}
+
     start_info = pd.read_pickle(path + 'start_info.pkl')
     for i in range(0, numRuns):
-
         datasets.append(pd.read_pickle(path + 'dataset_run{}.pkl'.format(i)))
         for team in teams:
-            opt_cost_dict = {}
-            tr_conf_dict = {}
-            for cost in costs:
-
+            for data in data_sizes:
                 
+                data = str(data)
                 cost = str(cost)
-                if cost not in replacement_tracker[team].keys():
-                    replacement_tracker[team][cost] = 0
                 if hyrs_reconcile:
                     hyrs_cost = cost
                 else:
@@ -74,72 +71,36 @@ for whichType in types:
 
                 if tr_optimizer:
                     #tr filtered validation
-                    val_tr_results_filtered[team][cost].append(pd.read_pickle(path + 'val_cost_{}_'.format(cost) + team + '_tr_filtered_run{}.pkl'.format(i)).sort_values(by=['objective', 'contradicts']))
-                    val_tr_obj = val_tr_results_filtered[team][cost][-1][val_tr_results_filtered[team][cost][-1]['mental_conf'] == 0].loc[0,'objective']
-                    val_tr_mopreds = val_tr_results_filtered[team][cost][-1][val_tr_results_filtered[team][cost][-1]['mental_conf'] == 0].loc[0,'modelonly_val_preds']
-                    tr_conf = val_tr_results_filtered[team][cost][-1].reset_index().loc[0, 'mental_conf']
+                    val_tr_results_filtered[team][data].append(pd.read_pickle(path + 'val_data_{}_'.format(data) + team + '_tr_filtered_run{}.pkl'.format(i)).sort_values(by=['objective', 'contradicts']))
+                    tr_conf = val_tr_results_filtered[team][data][-1].reset_index().loc[0, 'mental_conf']
 
                     
-                    best_val_obj = 1000000
-                    for temp_cost in costs:
-                        temp_cost = str(temp_cost)
-                        temp_data = pd.read_pickle(path + 'val_cost_{}_'.format(temp_cost) + team + '_tr_filtered_run{}.pkl'.format(i))
-                        temp_data['new_objective'] = temp_data.loc[:,'val_error'] + float(cost)*temp_data.loc[:,'contradicts']/len(temp_data.loc[0,'humanified_val_preds'])
-                        temp_data = temp_data.sort_values(by=['new_objective', 'contradicts']).reset_index(drop=True)
-                        temp_obj = temp_data.loc[0, 'new_objective']
-                        if temp_obj < best_val_obj:
-                            best_val_obj = temp_obj
-                            opt_cost_dict[cost] = temp_cost
-                            tr_conf_dict[cost] = temp_data.loc[0, 'mental_conf']
-                    
-                if whichType == 'TDL' and False:
-                    opt_cost_dict[cost] = cost
-                    tr_conf_dict[cost] = tr_conf
-                    
 
-
-
-
-
-
-                    
 
                 #tr filtered
-                tr_results_filtered[team][cost].append(pd.read_pickle(path + 'cost_{}_'.format(opt_cost_dict[cost]) + team + '_tr_filtered_run{}.pkl'.format(i)).sort_values(by='test_error'))
-                tr_results_filtered[team][cost][-1] = tr_results_filtered[team][cost][-1][tr_results_filtered[team][cost][-1]['mental_conf'] == tr_conf_dict[cost]].reset_index()
-                tr_results_filtered[team][cost][-1]['new_objective'] = tr_results_filtered[team][cost][-1]['test_error'] + float(cost)*tr_results_filtered[team][cost][-1]['contradicts']/datasets[i].shape[0]
-                tr_results_filtered[team][cost]
+                tr_results_filtered[team][data].append(pd.read_pickle(path + 'data_{}_'.format(data) + team + '_tr_filtered_run{}.pkl'.format(i)).sort_values(by='test_error'))
+                tr_results_filtered[team][data][-1] = tr_results_filtered[team][data][-1][tr_results_filtered[team][data][-1]['mental_conf'] == tr_conf].reset_index()
+                tr_results_filtered[team][data]
 
                 
 
                 #hyrs filtered
-                hyrs_results_filtered[team][cost].append(pd.read_pickle(path + 'cost_{}_'.format(hyrs_cost)+ team + '_hyrs_filtered_run{}.pkl'.format(i)).sort_values(by='test_error'))
-                hyrs_results_filtered[team][cost][-1] = hyrs_results_filtered[team][cost][-1][hyrs_results_filtered[team][cost][-1]['mental_conf'] == hyrs_conf].reset_index()
+                hyrs_results_filtered[team][data].append(pd.read_pickle(path + 'data_{}_'.format(data)+ team + '_hyrs_filtered_run{}.pkl'.format(i)).sort_values(by='test_error'))
+                hyrs_results_filtered[team][data][-1] = hyrs_results_filtered[team][data][-1][hyrs_results_filtered[team][data][-1]['mental_conf'] == hyrs_conf].reset_index()
 
                 #hyrs filtered validation
-                val_hyrs_results_filtered[team][cost].append(pd.read_pickle(path + 'val_cost_{}_'.format(hyrs_cost)+ team + '_hyrs_filtered_run{}.pkl'.format(i)).sort_values(by='val_error'))
-                val_hyrs_results_filtered[team][cost][-1] = val_hyrs_results_filtered[team][cost][-1][val_hyrs_results_filtered[team][cost][-1]['mental_conf'] == hyrs_conf].reset_index()
-                val_hyrs_obj = val_hyrs_results_filtered[team][cost][-1].loc[0,'objective']
-                val_hyrs_mopreds = val_hyrs_results_filtered[team][cost][-1].loc[0,'modelonly_val_preds']
-
-                
+                val_hyrs_results_filtered[team][data].append(pd.read_pickle(path + 'val_data_{}_'.format(data)+ team + '_hyrs_filtered_run{}.pkl'.format(i)).sort_values(by='val_error'))
+                val_hyrs_results_filtered[team][data][-1] = val_hyrs_results_filtered[team][data][-1][val_hyrs_results_filtered[team][data][-1]['mental_conf'] == hyrs_conf].reset_index()
             
-                if cost == '0':
+                if data == 'perfect':
                     brs_results[team].append(pd.read_pickle(path + team + '_brs_run{}.pkl'.format(i)).sort_values(by='test_error_brs'))
                     brs_val_obj = brs_results[team][-1].loc[0, 'val_objective']
                     brs_val_contradicts = brs_results[team][-1].loc[0, 'val_contradicts']
-                
-                brs_val_obj_w_cost = brs_val_obj + float(cost)*brs_val_contradicts/datasets[i].shape[0]
-                
-                if ((val_hyrs_obj == val_tr_obj) & ((val_hyrs_mopreds == val_tr_mopreds).sum() == len(val_hyrs_mopreds))) or val_tr_obj == brs_val_obj_w_cost:
-                    replacement_tracker[team][cost] += 1
 
 
-
-    for t in replacement_tracker.keys():
-        for c in replacement_tracker[t].keys():
-            replacement_tracker[t][c] = replacement_tracker[t][c]/numRuns
-
+    with open(f'{path}/auc_dict.pkl', 'rb') as inp:
+        auc_dict = pickle.load(inp)
+    inp.close()
     teams = []
     for t in start_info.sort_values(by='human accept region train acc').index:
         teams.append('team{}'.format(t))
@@ -152,16 +113,16 @@ for whichType in types:
         #fig.subplots_adjust(bottom=0.15, wspace=.4)
         team = teams[whichTeam]
         setting = settings[whichTeam]
-        costFrame = pd.DataFrame(index=[str(x) for x in costs], data={'Costs': [str(x) for x in costs], 
-                                    'TeamRulesTeamLoss': np.zeros(len(costs)), 
-                                    'HyRSTeamLoss': np.zeros(len(costs)),                      
-                                    'TR_Contradictions': np.zeros(len(costs)), 
-                                    'HyRS_Contradictions': np.zeros(len(costs)),
-                                    'TR_Objectives': np.zeros(len(costs)),
-                                    'HyRS_Objectives': np.zeros(len(costs)),
-                                    'BRSTeamLoss': np.zeros(len(costs)), 
-                                    'BRS_Contradictions': np.zeros(len(costs)),
-                                    'BRS_Objectives': np.zeros(len(costs))})
+        costFrame = pd.DataFrame(index=[str(x) for x in data_sizes], data={'Data Size': [str(x) for x in data_sizes], 
+                                    'TeamRulesTeamLoss': np.zeros(len(data_sizes)), 
+                                    'HyRSTeamLoss': np.zeros(len(data_sizes)),                      
+                                    'TR_Contradictions': np.zeros(len(data_sizes)), 
+                                    'HyRS_Contradictions': np.zeros(len(data_sizes)),
+                                    'TR_Objectives': np.zeros(len(data_sizes)),
+                                    'HyRS_Objectives': np.zeros(len(data_sizes)),
+                                    'BRSTeamLoss': np.zeros(len(data_sizes)), 
+                                    'BRS_Contradictions': np.zeros(len(data_sizes)),
+                                    'BRS_Objectives': np.zeros(len(data_sizes))})
 
         TR_loss = []
         TR_con = []
@@ -170,33 +131,36 @@ for whichType in types:
         BRS_loss = []
         BRS_con = []
 
-        for cost in costs:
+        TeamRulesLoss = []
+        HyRSLoss = []
+        TeamRules_modelonly_Loss = []
+        HyRS_modelonly_Loss = []
+        TeamRulesCov = []
+        HyRSCov = []
+        TeamRulesRejects = []
+        HyRSRejects = []
+        TRContradicts = []
+        HyRSContradicts = []
+        TR_Objectives = []
+        HyRS_Objectives = []
+        BRS_Objectives = []
+        BRSContradicts = []
+        BRSLoss = []
+        BRSCov = []
+        Human = []
+        AUC = []
+
+        for cost in data_sizes:
 
             cost = str(cost)
 
-            TeamRulesLoss = []
-            HyRSLoss = []
-            TeamRules_modelonly_Loss = []
-            HyRS_modelonly_Loss = []
-            TeamRulesCov = []
-            HyRSCov = []
-            TeamRulesRejects = []
-            HyRSRejects = []
-            TRContradicts = []
-            HyRSContradicts = []
-            TR_Objectives = []
-            HyRS_Objectives = []
-            BRS_Objectives = []
-            BRSContradicts = []
-            BRSLoss = []
-            BRSCov = []
-            Human = []
+
             for run in range(numRuns):
 
                 
                 TeamRulesLoss.append(tr_results_filtered[team][cost][run].loc[0,'test_error'])
                 TRContradicts.append(tr_results_filtered[team][cost][run].loc[0,'contradicts'])
-                TR_Objectives.append(TeamRulesLoss[-1] + float(cost)*TRContradicts[-1]/(datasets[run].shape[0]))
+                TR_Objectives.append(TeamRulesLoss[-1] + float(0.3)*TRContradicts[-1]/(datasets[run].shape[0]))
                 #TR_Objectives.append(tr_results_filtered[team][cost][run].loc[0,'objective'])
 
 
@@ -204,17 +168,40 @@ for whichType in types:
                 HyRSLoss.append(hyrs_results_filtered[team][cost][run].loc[0,'test_error'])
                 HyRSContradicts.append(hyrs_results_filtered[team][cost][run].loc[0,'contradicts'])
                 if hyrs_cost == '0':
-                    HyRS_Objectives.append(hyrs_results_filtered[team][cost][run].loc[0,'objective'] + (float(cost)*HyRSContradicts[-1])/(datasets[run].shape[0]))
+                    HyRS_Objectives.append(hyrs_results_filtered[team][cost][run].loc[0,'objective'] + (float(0.3)*HyRSContradicts[-1])/(datasets[run].shape[0]))
                 else:
                     HyRS_Objectives.append(hyrs_results_filtered[team][cost][run].loc[0,'objective'])
                 BRSLoss.append(brs_results[team][run].loc[0,'test_objective'])
                 BRSContradicts.append(brs_results[team][run].loc[0,'test_contradicts'])
-                BRS_Objectives.append(brs_results[team][run].loc[0,'test_objective'] + (float(cost)*BRSContradicts[-1])/(datasets[run].shape[0]))
+                BRS_Objectives.append(brs_results[team][run].loc[0,'test_objective'] + (float(0.3)*BRSContradicts[-1])/(datasets[run].shape[0]))
 
                 Human.append(1-metrics.accuracy_score(datasets[run][f'{team}_Ybtest'], datasets[run][f'{team}_Ytest']))
-                
 
+                if cost == 'perfect':
+                    AUC.append(auc_dict[team][run][cost])
+                else: 
+                    AUC.append(auc_dict[team][run][float(cost)])
+                
+        color_dict = {'TR': '#348ABD', 'HYRS': '#E24A33', 'BRS':'#988ED5', 'Human': 'darkgray', 'HYRSRecon': '#8EBA42'}
+        #plt.scatter(AUC, TR_Objectives, color=color_dict['TR'], s=10, alpha=0.5, label='TeamRules')
+        #plt.scatter(AUC, HyRS_Objectives, color=color_dict['HYRS'], s=10, alpha=0.5, label='HyRS')
+        #plt.scatter(AUC, BRS_Objectives, color=color_dict['BRS'], s=10, alpha=0.5, label='BRS')
+
+        plt.plot(np.unique(AUC), np.poly1d(np.polyfit(AUC, TR_Objectives, 1))(np.unique(AUC)), color=color_dict['TR'], linestyle='--', label='TeamRules')
+        plt.plot(np.unique(AUC), np.poly1d(np.polyfit(AUC, HyRS_Objectives, 1))(np.unique(AUC)), color=color_dict['HYRS'], linestyle='--', label='HyRS')
+        plt.plot(np.unique(AUC), np.poly1d(np.polyfit(AUC, BRS_Objectives, 1))(np.unique(AUC)), color=color_dict['BRS'], linestyle='--', label='BRS')
+
+        plt.title(f'Setting: {setting}')
+        plt.tight_layout()
+        plt.xlabel('AUC')
+        plt.ylabel('Total Team Loss')
+        plt.legend(fontsize=4)
+        
+
+        '''
             
+
+
             costFrame.loc[cost, 'TeamRulesTeamLoss'] = mean(TeamRulesLoss)
             costFrame.loc[cost, 'TeamRulesTeamLoss_std'] = stdev(TeamRulesLoss)/math.sqrt(numRuns)
             costFrame.loc[cost, 'HyRSTeamLoss'] = mean(HyRSLoss)
@@ -235,10 +222,12 @@ for whichType in types:
             costFrame.loc[cost, 'BRS_Objective_SE'] = stdev(BRS_Objectives)/math.sqrt(numRuns)
             costFrame.loc[cost, 'Human Only'] = mean(Human)
             costFrame.loc[cost, 'Human Only SE'] = stdev(Human)/math.sqrt(numRuns)
+            costFrame.loc[cost, 'AUC'] = mean(AUC)
+            costFrame.loc[cost, 'AUC_SE'] = stdev(AUC)/math.sqrt(numRuns)
 
         
 
-            '''
+            
         TR_loss = []
         TR_con = []
         HyRS_loss = []
@@ -261,7 +250,7 @@ for whichType in types:
                 HyRS_con.append(hyrs_results_filtered[team][cost][run].loc[0,'contradictions'])
                 BRS_loss.append((datasets[run][team+'_Ytest'] != brs_results[team][run].loc[0, 'team_test_preds']).sum()/len(datasets[run][team+'_Ytest']))
                 BRS_con.append(brs_results[team][run].loc[0,'contradictions'])
-            '''
+            
         
             TR_loss += (TeamRulesLoss)
             TR_con += (TRContradicts)
@@ -320,7 +309,7 @@ for whichType in types:
             plt.legend(prop={'size': 5})
             plt.grid('on', linestyle='dotted', linewidth=0.2, color='black')
 
-            fig.savefig(f'Plots/TL_{setting_type}_len{rule_len}_{data}_{setting}.png', bbox_inches='tight')
+            fig.savefig(f'Plots/disc_TL_{setting_type}_len{rule_len}_{data}_{setting}.png', bbox_inches='tight')
 
             plt.clf()
         else:
@@ -370,7 +359,7 @@ for whichType in types:
             plt.legend(prop={'size': 5})
             #plt.set_title('{} Setting'.format(setting), fontsize=15)
 
-            fig.savefig(f'Plots/TDL_{setting_type}_len{rule_len}_{data}_{setting}.png', bbox_inches='tight')
+            fig.savefig(f'Plots/disc_TDL_{setting_type}_len{rule_len}_{data}_{setting}.png', bbox_inches='tight')
                     
                 
                     
@@ -378,6 +367,7 @@ for whichType in types:
                 
             #fig.savefig('Plots/asym_2_1_{}_{}.png'.format(data,setting), bbox_inches='tight')
     
+            
+        print('pause')
 
-
-    
+    '''

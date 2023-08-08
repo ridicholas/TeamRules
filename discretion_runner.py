@@ -83,7 +83,7 @@ def run(team1, team2, team3, folder, team_info):
     iters = Niteration
     contradiction_reg = 0
     fairness_reg = 0
-    numRuns = 10
+    numRuns = 15
     asym_loss = [1,1]
 
     if asym_loss != [1,1]:
@@ -122,7 +122,7 @@ def run(team1, team2, team3, folder, team_info):
             contradiction_regs = [0, 0.2,
                         0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1, 1.2, 1.5, 2, 2.5]
         
-        data_size_list = ['perfect', 1, 0.75, 0.5, 0.25, 0.2, 0.15, 0.1]
+        data_size_list = ['perfect', 1, 0.75, 0.5, 0.25, 0.2, 0.175, 0.15, 0.125, 0.1]
 
         
         if asym_loss == [1,1]:

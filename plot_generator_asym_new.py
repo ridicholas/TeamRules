@@ -9,12 +9,12 @@ import math
 
 types = ['TL', 'TDL']
 
-numRuns = 10 #adjust this depending on how many runs of results were produced
+numRuns = 3 #adjust this depending on how many runs of results were produced
 
 rule_len = 4
 setting_type = 'learned'
 dataset = 'heart'
-asym_loss = [2,1]
+asym_loss = [3,1]
 path = f'{dataset}_contradiction_results_{setting_type}_asym{asym_loss[0]}{asym_loss[1]}_len{rule_len}/'
 
 data = path.split('_')[0]
@@ -112,7 +112,9 @@ for whichType in types:
                 #hyrs filtered validation
                 val_hyrs_results_filtered[team][cost].append(pd.read_pickle(path + 'val_cost_{}_'.format(hyrs_cost)+ team + '_hyrs_filtered_run{}.pkl'.format(i)).sort_values(by='val_error'))
                 val_hyrs_results_filtered[team][cost][-1] = val_hyrs_results_filtered[team][cost][-1][val_hyrs_results_filtered[team][cost][-1]['mental_conf'] == hyrs_conf].reset_index()
-            
+                
+                if cost == '0':
+                    brs_results[team].append(pd.read_pickle(path + team + '_brs_run{}.pkl'.format(i)).sort_values(by='test_error_brs'))            
 
 
 
@@ -170,27 +172,36 @@ for whichType in types:
             BRSCov = []
             Human = []
             for run in range(numRuns):
-
                 
-                TeamRulesLoss.append(tr_results_filtered[team][cost][run].loc[0,'test_error'])
-                TRContradicts.append(tr_results_filtered[team][cost][run].loc[0,'contradicts'])
-                TR_Objectives.append(TeamRulesLoss[-1] + float(cost)*TRContradicts[-1]/(datasets[run].shape[0]))
+                whicher = 0
+                error = (tr_results_filtered[team][cost][run].loc[0,'humanified_test_preds'][datasets[run]['team1_Ytest'] == whicher] != datasets[run][f'{team}_Ytest'][datasets[run]['team1_Ytest'] == whicher]).sum() * asym_loss[np.abs(whicher-1)]
+                #error += (tr_results_filtered[team][cost][run].loc[0,'humanified_test_preds'][datasets[run]['team1_Ytest'] == 0] != datasets[run][f'{team}_Ytest'][datasets[run]['team1_Ytest'] == 0]).sum() * asym_loss[1]
+                #TeamRulesLoss.append(error/len(datasets[run][f'{team}_Ytest']))
+                TeamRulesLoss.append(error/np.array([datasets[run]['team1_Ytest'] == whicher]).sum())
+                TRContradicts.append((tr_results_filtered[team][cost][run].loc[0,'modelonly_test_preds'][datasets[run]['team1_Ytest'] == whicher] != datasets[run][f'{team}_Ybtest'][datasets[run]['team1_Ytest'] == whicher]).sum())
+                TR_Objectives.append(TeamRulesLoss[-1] + float(cost)*TRContradicts[-1]/np.array([datasets[run]['team1_Ytest'] == whicher]).sum())
                 #TR_Objectives.append(tr_results_filtered[team][cost][run].loc[0,'objective'])
 
 
-                
-                HyRSLoss.append(hyrs_results_filtered[team][cost][run].loc[0,'test_error'])
-                HyRSContradicts.append(hyrs_results_filtered[team][cost][run].loc[0,'contradicts'])
+                error = (hyrs_results_filtered[team][cost][run].loc[0,'humanified_test_preds'][datasets[run]['team1_Ytest'] == whicher] != datasets[run][f'{team}_Ytest'][datasets[run]['team1_Ytest'] == whicher]).sum() * asym_loss[np.abs(whicher-1)]
+                #error += (hyrs_results_filtered[team][cost][run].loc[0,'humanified_test_preds'][datasets[run]['team1_Ytest'] == 0] != datasets[run][f'{team}_Ytest'][datasets[run]['team1_Ytest'] == 0]).sum() * asym_loss[1]
+                #HyRSLoss.append(error/len(datasets[run][f'{team}_Ytest']))
+                HyRSLoss.append(error/np.array([datasets[run]['team1_Ytest'] == whicher]).sum())
+                HyRSContradicts.append((hyrs_results_filtered[team][cost][run].loc[0,'modelonly_test_preds'][datasets[run]['team1_Ytest'] == whicher] != datasets[run][f'{team}_Ybtest'][datasets[run]['team1_Ytest'] == whicher]).sum())
                 if hyrs_cost == '0':
-                    HyRS_Objectives.append(hyrs_results_filtered[team][cost][run].loc[0,'objective'] + (float(cost)*HyRSContradicts[-1])/(datasets[run].shape[0]))
+                    HyRS_Objectives.append(HyRSLoss[-1] + float(cost)*HyRSContradicts[-1]/np.array([datasets[run]['team1_Ytest'] == whicher]).sum())
                 else:
                     HyRS_Objectives.append(hyrs_results_filtered[team][cost][run].loc[0,'objective'])
-                BRSLoss.append(brs_results[team][run].loc[0,'test_objective'])
-                BRSContradicts.append(brs_results[team][run].loc[0,'test_contradicts'])
-                BRS_Objectives.append(brs_results[team][run].loc[0,'test_objective'] + (float(cost)*BRSContradicts[-1])/(datasets[run].shape[0]))
+                
+                error = (brs_results[team][run].loc[0,'team_test_preds'][datasets[run]['team1_Ytest'] == whicher] != datasets[run][f'{team}_Ytest'][datasets[run]['team1_Ytest'] == whicher]).sum() * asym_loss[np.abs(whicher-1)]
+                #error += (brs_results[team][run].loc[0,'team_test_preds'][datasets[run]['team1_Ytest'] == 0] != datasets[run][f'{team}_Ytest'][datasets[run]['team1_Ytest'] == 0]).sum() * asym_loss[1]
+                #BRSLoss.append(error/len(datasets[run][f'{team}_Ytest']))
+                BRSLoss.append(error/np.array([datasets[run]['team1_Ytest'] == whicher]).sum())
+                BRSContradicts.append((brs_results[team][run].loc[0,'modelonly_test_preds'][datasets[run]['team1_Ytest'] == whicher] != datasets[run][f'{team}_Ybtest'][datasets[run]['team1_Ytest'] == whicher]).sum())
+                BRS_Objectives.append(BRSLoss[-1] + (float(cost)*BRSContradicts[-1])/np.array([datasets[run]['team1_Ytest'] == whicher]).sum())
 
                 asymCosts = datasets[run][f'{team}_Ytest'].replace({0: asym_loss[1], 1: asym_loss[0]})
-                Human.append(((np.abs(datasets[run][f'{team}_Ybtest'] - datasets[run][f'{team}_Ytest']))*asymCosts.values).sum()/len(datasets[run][f'{team}_Ybtest']))
+                Human.append(((np.abs(datasets[run][f'{team}_Ybtest'][datasets[run]['team1_Ytest'] == whicher] - datasets[run][f'{team}_Ytest'][datasets[run]['team1_Ytest'] == whicher]))*asymCosts[datasets[run]['team1_Ytest'] == whicher].values).sum()/np.array([datasets[run]['team1_Ytest'] == whicher]).sum())
                 
 
             
@@ -228,12 +239,12 @@ for whichType in types:
         for run in range(numRuns):
             for cost in costs:
                 cost = str(cost)
-                newTRLoss = asym_loss[0] * (datasets[run][team+'_Ytest'][datasets[run][team+'_Ytest'] == 0] != tr_results_filtered[team][cost][run].loc[0,'humanified_test_preds'][datasets[run][team+'_Ytest'] == 0]).sum()
+                newTRLoss = asym_loss[np.abs(whicher-1)] * (datasets[run][team+'_Ytest'][datasets[run][team+'_Ytest'] == 0] != tr_results_filtered[team][cost][run].loc[0,'humanified_test_preds'][datasets[run][team+'_Ytest'] == 0]).sum()
                 newTRLoss += asym_loss[1] * (datasets[run][team+'_Ytest'][datasets[run][team+'_Ytest'] != 0] != tr_results_filtered[team][cost][run].loc[0,'humanified_test_preds'][datasets[run][team+'_Ytest'] != 0]).sum()
                 newTRLoss = newTRLoss/len(datasets[run][team+'_Ytest'])
                 TR_loss.append(newTRLoss)
                 TR_con.append(tr_results_filtered[team][cost][run].loc[0,'contradictions'])
-                newHYRSLoss = asym_loss[0] * (datasets[run][team+'_Ytest'][datasets[run][team+'_Ytest'] == 0] != hyrs_results_filtered[team][cost][run].loc[0,'humanified_test_preds'][datasets[run][team+'_Ytest'] == 0]).sum()
+                newHYRSLoss = asym_loss[np.abs(whicher-1)] * (datasets[run][team+'_Ytest'][datasets[run][team+'_Ytest'] == 0] != hyrs_results_filtered[team][cost][run].loc[0,'humanified_test_preds'][datasets[run][team+'_Ytest'] == 0]).sum()
                 newHYRSLoss += asym_loss[1] * (datasets[run][team+'_Ytest'][datasets[run][team+'_Ytest'] != 0] != hyrs_results_filtered[team][cost][run].loc[0,'humanified_test_preds'][datasets[run][team+'_Ytest'] != 0]).sum()
                 newHYRSLoss = newHYRSLoss/len(datasets[run][team+'_Ytest'])
                 HyRS_loss.append(newHYRSLoss)
@@ -274,7 +285,7 @@ for whichType in types:
             costFrame.sort_values(by=['Costs'], inplace=True)
             plt.plot(costFrame['Costs'], costFrame['HyRS_Objective'], marker = 'v', c=color_dict['HYRS'], label = 'HyRS', markersize=1.8, linewidth=0.9)
             plt.plot(costFrame['Costs'], costFrame['TR_Objective'], marker = '.', c=color_dict['TR'], label='TeamRules', markersize=1.8, linewidth=0.9)
-            #plt.plot(costFrame['Costs'], costFrame['BRS_Objective'], marker = 's', c=color_dict['BRS'], label='BRS', markersize=1.8, linewidth=0.9)
+            plt.plot(costFrame['Costs'], costFrame['BRS_Objective'], marker = 's', c=color_dict['BRS'], label='BRS', markersize=1.8, linewidth=0.9)
             plt.axhline(costFrame['Human Only'][0], c = color_dict['Human'], markersize=1, label='Human Alone', ls='--', alpha=0.5)
             plt.fill_between(costFrame['Costs'], 
                         costFrame['Human Only']-(costFrame['Human Only SE']),
@@ -284,10 +295,10 @@ for whichType in types:
                         costFrame['HyRS_Objective']-(costFrame['HyRS_Objective_SE']),
                         costFrame['HyRS_Objective']+(costFrame['HyRS_Objective_SE']) ,
                         color=color_dict['HYRS'], alpha=0.2)
-           # plt.fill_between(costFrame['Costs'], 
-           #             costFrame['BRS_Objective']-(costFrame['BRS_Objective_SE']),
-           #             costFrame['BRS_Objective']+(costFrame['BRS_Objective_SE']) ,
-           #             color=color_dict['BRS'], alpha=0.2)
+            plt.fill_between(costFrame['Costs'], 
+                        costFrame['BRS_Objective']-(costFrame['BRS_Objective_SE']),
+                        costFrame['BRS_Objective']+(costFrame['BRS_Objective_SE']) ,
+                        color=color_dict['BRS'], alpha=0.2)
             plt.fill_between(costFrame['Costs'], 
                         costFrame['TR_Objective']-(costFrame['TR_Objective_SE']),
                         costFrame['TR_Objective']+(costFrame['TR_Objective_SE']) ,
@@ -299,7 +310,7 @@ for whichType in types:
             plt.legend(prop={'size': 5})
             plt.grid('on', linestyle='dotted', linewidth=0.2, color='black')
 
-            fig.savefig(f'Plots/TL_{setting_type}_len{rule_len}_{data}_{setting}_asym{asym_loss[0]}{asym_loss[1]}.png', bbox_inches='tight')
+            fig.savefig(f'Plots/loss{whicher}_TL_{setting_type}_len{rule_len}_{data}_{setting}_asym{asym_loss[0]}{asym_loss[1]}.png', bbox_inches='tight')
 
             plt.clf()
         else:
@@ -342,7 +353,7 @@ for whichType in types:
             plt.legend(prop={'size': 5})
             #plt.set_title('{} Setting'.format(setting), fontsize=15)
 
-            fig.savefig(f'Plots/TDL_{setting_type}_len{rule_len}_{data}_{setting}_asym{asym_loss[0]}{asym_loss[1]}.png', bbox_inches='tight')
+            fig.savefig(f'Plots/loss{whicher}_TDL_{setting_type}_len{rule_len}_{data}_{setting}_asym{asym_loss[0]}{asym_loss[1]}.png', bbox_inches='tight')
                     
                 
                     
