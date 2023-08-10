@@ -15,190 +15,215 @@ numRuns = 10 #adjust this depending on how many runs of results were produced
 rule_len = 4
 setting_type = 'learned'
 dataset = 'heart'
-path = f'{dataset}_contradiction_results_{setting_type}_len{rule_len}_disc/'
+paths = [f'{dataset}_contradiction_results_{setting_type}_len{rule_len}_discPart1/', f'{dataset}_contradiction_results_{setting_type}_len{rule_len}_disc/']
 
-asym_loss = [1,1]
-data = path.split('_')[0]
-costs = [0.3]
-cost = 0.3
-data_sizes = ['perfect', 1, 0.75, 0.5, 0.25, 0.2, 0.15, 0.1]
 
-for whichType in types:
-    #costs = [0, 0.01, 0.05]
-    hyrs_reconcile = True
-    tr_conf = 'opt'
-    hyrs_conf = 0
-    tr_optimizer = True
 
-    teams = ['team1', 'team2', 'team3']
-    #teams = ['team2']
-    team_infos = []
-    datasets = []
-    tr_results_filtered = {}
-    val_tr_results_filtered = {}
-    hyrs_results_filtered = {}
-    val_hyrs_results_filtered = {}
-    brs_results = {'team1': [], 'team2': [], 'team3': []}
+AUCS = {'Calibrated': [], 'SlightlyMiscalibrated': [], 'SignificantlyMiscalibrated': []}
+TR_objs = {'Calibrated': [], 'SlightlyMiscalibrated': [], 'SignificantlyMiscalibrated': []}
+HyRS_objs = {'Calibrated': [], 'SlightlyMiscalibrated': [], 'SignificantlyMiscalibrated': []}
+BRS_objs = {'Calibrated': [], 'SlightlyMiscalibrated': [], 'SignificantlyMiscalibrated': []}
 
-    for team in teams:
-        
-        tr_results_filtered[team] = {}
-        hyrs_results_filtered[team] = {}
-        val_tr_results_filtered[team] = {}
-        val_hyrs_results_filtered[team] = {}
+for path in paths: 
+    asym_loss = [1,1]
+    data = path.split('_')[0]
+    costs = [0.3]
+    cost = 0.3
+    if path == paths[0]:
+        data_sizes = ['perfect', 1, 0.75, 0.5, 0.25, 0.2, 0.15, 0.1]
+    else: 
+        data_sizes = ['perfect', 1, 0.75, 0.5, 0.25, 0.2, 0.15, 0.1]
 
-    for team in teams:
-        for data in data_sizes:
-            tr_results_filtered[team][str(data)] = []
-            hyrs_results_filtered[team][str(data)] = []
-            val_tr_results_filtered[team][str(data)] = []
-            val_hyrs_results_filtered[team][str(data)] = []
+
+    for whichType in types:
+        #costs = [0, 0.01, 0.05]
+        hyrs_reconcile = True
+        tr_conf = 'opt'
+        hyrs_conf = 0
+        tr_optimizer = True
+
+        teams = ['team1', 'team2', 'team3']
+        #teams = ['team2']
+        team_infos = []
+        datasets = []
+        tr_results_filtered = {}
+        val_tr_results_filtered = {}
+        hyrs_results_filtered = {}
+        val_hyrs_results_filtered = {}
+        brs_results = {'team1': [], 'team2': [], 'team3': []}
+
+        for team in teams:
             
+            tr_results_filtered[team] = {}
+            hyrs_results_filtered[team] = {}
+            val_tr_results_filtered[team] = {}
+            val_hyrs_results_filtered[team] = {}
 
-    start_info = pd.read_pickle(path + 'start_info.pkl')
-    for i in range(0, numRuns):
-        datasets.append(pd.read_pickle(path + 'dataset_run{}.pkl'.format(i)))
         for team in teams:
             for data in data_sizes:
+                tr_results_filtered[team][str(data)] = []
+                hyrs_results_filtered[team][str(data)] = []
+                val_tr_results_filtered[team][str(data)] = []
+                val_hyrs_results_filtered[team][str(data)] = []
                 
-                data = str(data)
-                cost = str(cost)
-                if hyrs_reconcile:
-                    hyrs_cost = cost
-                else:
-                    hyrs_cost = '0'
+
+        start_info = pd.read_pickle(path + 'start_info.pkl')
+        for i in range(0, numRuns):
+            datasets.append(pd.read_pickle(path + 'dataset_run{}.pkl'.format(i)))
+            for team in teams:
+                for data in data_sizes:
+                    
+                    data = str(data)
+                    cost = str(cost)
+                    if hyrs_reconcile:
+                        hyrs_cost = cost
+                    else:
+                        hyrs_cost = '0'
 
 
-                if tr_optimizer:
-                    #tr filtered validation
-                    val_tr_results_filtered[team][data].append(pd.read_pickle(path + 'val_data_{}_'.format(data) + team + '_tr_filtered_run{}.pkl'.format(i)).sort_values(by=['objective', 'contradicts']))
-                    tr_conf = val_tr_results_filtered[team][data][-1].reset_index().loc[0, 'mental_conf']
+                    if tr_optimizer:
+                        #tr filtered validation
+                        val_tr_results_filtered[team][data].append(pd.read_pickle(path + 'val_data_{}_'.format(data) + team + '_tr_filtered_run{}.pkl'.format(i)).sort_values(by=['objective', 'contradicts']))
+                        tr_conf = val_tr_results_filtered[team][data][-1].reset_index().loc[0, 'mental_conf']
+
+                        
+
+
+                    #tr filtered
+                    tr_results_filtered[team][data].append(pd.read_pickle(path + 'data_{}_'.format(data) + team + '_tr_filtered_run{}.pkl'.format(i)).sort_values(by='test_error'))
+                    tr_results_filtered[team][data][-1] = tr_results_filtered[team][data][-1][tr_results_filtered[team][data][-1]['mental_conf'] == tr_conf].reset_index()
+                    tr_results_filtered[team][data]
 
                     
 
+                    #hyrs filtered
+                    hyrs_results_filtered[team][data].append(pd.read_pickle(path + 'data_{}_'.format(data)+ team + '_hyrs_filtered_run{}.pkl'.format(i)).sort_values(by='test_error'))
+                    hyrs_results_filtered[team][data][-1] = hyrs_results_filtered[team][data][-1][hyrs_results_filtered[team][data][-1]['mental_conf'] == hyrs_conf].reset_index()
 
-                #tr filtered
-                tr_results_filtered[team][data].append(pd.read_pickle(path + 'data_{}_'.format(data) + team + '_tr_filtered_run{}.pkl'.format(i)).sort_values(by='test_error'))
-                tr_results_filtered[team][data][-1] = tr_results_filtered[team][data][-1][tr_results_filtered[team][data][-1]['mental_conf'] == tr_conf].reset_index()
-                tr_results_filtered[team][data]
-
+                    #hyrs filtered validation
+                    val_hyrs_results_filtered[team][data].append(pd.read_pickle(path + 'val_data_{}_'.format(data)+ team + '_hyrs_filtered_run{}.pkl'.format(i)).sort_values(by='val_error'))
+                    val_hyrs_results_filtered[team][data][-1] = val_hyrs_results_filtered[team][data][-1][val_hyrs_results_filtered[team][data][-1]['mental_conf'] == hyrs_conf].reset_index()
                 
+                    if data == 'perfect':
+                        brs_results[team].append(pd.read_pickle(path + team + '_brs_run{}.pkl'.format(i)).sort_values(by='test_error_brs'))
+                        brs_val_obj = brs_results[team][-1].loc[0, 'val_objective']
+                        brs_val_contradicts = brs_results[team][-1].loc[0, 'val_contradicts']
 
-                #hyrs filtered
-                hyrs_results_filtered[team][data].append(pd.read_pickle(path + 'data_{}_'.format(data)+ team + '_hyrs_filtered_run{}.pkl'.format(i)).sort_values(by='test_error'))
-                hyrs_results_filtered[team][data][-1] = hyrs_results_filtered[team][data][-1][hyrs_results_filtered[team][data][-1]['mental_conf'] == hyrs_conf].reset_index()
 
-                #hyrs filtered validation
-                val_hyrs_results_filtered[team][data].append(pd.read_pickle(path + 'val_data_{}_'.format(data)+ team + '_hyrs_filtered_run{}.pkl'.format(i)).sort_values(by='val_error'))
-                val_hyrs_results_filtered[team][data][-1] = val_hyrs_results_filtered[team][data][-1][val_hyrs_results_filtered[team][data][-1]['mental_conf'] == hyrs_conf].reset_index()
+        with open(f'{path}/auc_dict.pkl', 'rb') as inp:
+            auc_dict = pickle.load(inp)
+        inp.close()
+        teams = []
+        for t in start_info.sort_values(by='human accept region train acc').index:
+            teams.append('team{}'.format(t))
+
+        #teams = ['team2']
+        settings = ['Calibrated', 'SlightlyMiscalibrated', 'SignificantlyMiscalibrated']
+        #settings = ['Neutral']
+        for whichTeam in range(len(settings)):
             
-                if data == 'perfect':
-                    brs_results[team].append(pd.read_pickle(path + team + '_brs_run{}.pkl'.format(i)).sort_values(by='test_error_brs'))
-                    brs_val_obj = brs_results[team][-1].loc[0, 'val_objective']
-                    brs_val_contradicts = brs_results[team][-1].loc[0, 'val_contradicts']
+            #fig.subplots_adjust(bottom=0.15, wspace=.4)
+            team = teams[whichTeam]
+            setting = settings[whichTeam]
+            costFrame = pd.DataFrame(index=[str(x) for x in data_sizes], data={'Data Size': [str(x) for x in data_sizes], 
+                                        'TeamRulesTeamLoss': np.zeros(len(data_sizes)), 
+                                        'HyRSTeamLoss': np.zeros(len(data_sizes)),                      
+                                        'TR_Contradictions': np.zeros(len(data_sizes)), 
+                                        'HyRS_Contradictions': np.zeros(len(data_sizes)),
+                                        'TR_Objectives': np.zeros(len(data_sizes)),
+                                        'HyRS_Objectives': np.zeros(len(data_sizes)),
+                                        'BRSTeamLoss': np.zeros(len(data_sizes)), 
+                                        'BRS_Contradictions': np.zeros(len(data_sizes)),
+                                        'BRS_Objectives': np.zeros(len(data_sizes))})
+
+            TR_loss = []
+            TR_con = []
+            HyRS_loss = []
+            HyRS_con = []
+            BRS_loss = []
+            BRS_con = []
+
+            TeamRulesLoss = []
+            HyRSLoss = []
+            TeamRules_modelonly_Loss = []
+            HyRS_modelonly_Loss = []
+            TeamRulesCov = []
+            HyRSCov = []
+            TeamRulesRejects = []
+            HyRSRejects = []
+            TRContradicts = []
+            HyRSContradicts = []
+            TR_Objectives = []
+            HyRS_Objectives = []
+            BRS_Objectives = []
+            BRSContradicts = []
+            BRSLoss = []
+            BRSCov = []
+            Human = []
+            AUC = []
+
+            for cost in data_sizes:
+
+                cost = str(cost)
 
 
-    with open(f'{path}/auc_dict.pkl', 'rb') as inp:
-        auc_dict = pickle.load(inp)
-    inp.close()
-    teams = []
-    for t in start_info.sort_values(by='human accept region train acc').index:
-        teams.append('team{}'.format(t))
+                for run in range(numRuns):
 
-    #teams = ['team2']
-    settings = ['Calibrated', 'SlightlyMiscalibrated', 'SignificantlyMiscalibrated']
-    #settings = ['Neutral']
-    for whichTeam in range(len(settings)):
-        fig = plt.figure(figsize=(3, 2), dpi=200)
-        #fig.subplots_adjust(bottom=0.15, wspace=.4)
-        team = teams[whichTeam]
-        setting = settings[whichTeam]
-        costFrame = pd.DataFrame(index=[str(x) for x in data_sizes], data={'Data Size': [str(x) for x in data_sizes], 
-                                    'TeamRulesTeamLoss': np.zeros(len(data_sizes)), 
-                                    'HyRSTeamLoss': np.zeros(len(data_sizes)),                      
-                                    'TR_Contradictions': np.zeros(len(data_sizes)), 
-                                    'HyRS_Contradictions': np.zeros(len(data_sizes)),
-                                    'TR_Objectives': np.zeros(len(data_sizes)),
-                                    'HyRS_Objectives': np.zeros(len(data_sizes)),
-                                    'BRSTeamLoss': np.zeros(len(data_sizes)), 
-                                    'BRS_Contradictions': np.zeros(len(data_sizes)),
-                                    'BRS_Objectives': np.zeros(len(data_sizes))})
-
-        TR_loss = []
-        TR_con = []
-        HyRS_loss = []
-        HyRS_con = []
-        BRS_loss = []
-        BRS_con = []
-
-        TeamRulesLoss = []
-        HyRSLoss = []
-        TeamRules_modelonly_Loss = []
-        HyRS_modelonly_Loss = []
-        TeamRulesCov = []
-        HyRSCov = []
-        TeamRulesRejects = []
-        HyRSRejects = []
-        TRContradicts = []
-        HyRSContradicts = []
-        TR_Objectives = []
-        HyRS_Objectives = []
-        BRS_Objectives = []
-        BRSContradicts = []
-        BRSLoss = []
-        BRSCov = []
-        Human = []
-        AUC = []
-
-        for cost in data_sizes:
-
-            cost = str(cost)
+                    
+                    TeamRulesLoss.append(tr_results_filtered[team][cost][run].loc[0,'test_error'])
+                    TRContradicts.append(tr_results_filtered[team][cost][run].loc[0,'contradicts'])
+                    TR_Objectives.append(TeamRulesLoss[-1] + float(0.3)*TRContradicts[-1]/(datasets[run].shape[0]))
+                    #TR_Objectives.append(tr_results_filtered[team][cost][run].loc[0,'objective'])
 
 
-            for run in range(numRuns):
+                    
+                    HyRSLoss.append(hyrs_results_filtered[team][cost][run].loc[0,'test_error'])
+                    HyRSContradicts.append(hyrs_results_filtered[team][cost][run].loc[0,'contradicts'])
+                    if hyrs_cost == '0':
+                        HyRS_Objectives.append(hyrs_results_filtered[team][cost][run].loc[0,'objective'] + (float(0.3)*HyRSContradicts[-1])/(datasets[run].shape[0]))
+                    else:
+                        HyRS_Objectives.append(hyrs_results_filtered[team][cost][run].loc[0,'objective'])
+                    BRSLoss.append(brs_results[team][run].loc[0,'test_objective'])
+                    BRSContradicts.append(brs_results[team][run].loc[0,'test_contradicts'])
+                    BRS_Objectives.append(brs_results[team][run].loc[0,'test_objective'] + (float(0.3)*BRSContradicts[-1])/(datasets[run].shape[0]))
 
+                    Human.append(1-metrics.accuracy_score(datasets[run][f'{team}_Ybtest'], datasets[run][f'{team}_Ytest']))
+
+                    if cost == 'perfect':
+                        AUC.append(auc_dict[team][run][cost])
+                    else: 
+                        AUC.append(auc_dict[team][run][float(cost)])
                 
-                TeamRulesLoss.append(tr_results_filtered[team][cost][run].loc[0,'test_error'])
-                TRContradicts.append(tr_results_filtered[team][cost][run].loc[0,'contradicts'])
-                TR_Objectives.append(TeamRulesLoss[-1] + float(0.3)*TRContradicts[-1]/(datasets[run].shape[0]))
-                #TR_Objectives.append(tr_results_filtered[team][cost][run].loc[0,'objective'])
+            
+            AUCS[setting] += AUC
+            TR_objs[setting] += TR_Objectives
+            HyRS_objs[setting] += HyRS_Objectives
+            BRS_objs[setting] += BRS_Objectives
+
+for setting in settings:
+    fig = plt.figure(figsize=(3, 2), dpi=200)
+    color_dict = {'TR': '#348ABD', 'HYRS': '#E24A33', 'BRS':'#988ED5', 'Human': 'darkgray', 'HYRSRecon': '#8EBA42'}
+    #plt.scatter(AUCS[setting], TR_objs[setting], color=color_dict['TR'], s=10, alpha=0.5, label='TeamRules')
+    #plt.scatter(AUCS[setting], HyRS_objs[setting], color=color_dict['HYRS'], s=10, alpha=0.5, label='HyRS')
+    #plt.scatter(AUCS[setting], BRS_objs[setting], color=color_dict['BRS'], s=10, alpha=0.5, label='BRS')
 
 
-                
-                HyRSLoss.append(hyrs_results_filtered[team][cost][run].loc[0,'test_error'])
-                HyRSContradicts.append(hyrs_results_filtered[team][cost][run].loc[0,'contradicts'])
-                if hyrs_cost == '0':
-                    HyRS_Objectives.append(hyrs_results_filtered[team][cost][run].loc[0,'objective'] + (float(0.3)*HyRSContradicts[-1])/(datasets[run].shape[0]))
-                else:
-                    HyRS_Objectives.append(hyrs_results_filtered[team][cost][run].loc[0,'objective'])
-                BRSLoss.append(brs_results[team][run].loc[0,'test_objective'])
-                BRSContradicts.append(brs_results[team][run].loc[0,'test_contradicts'])
-                BRS_Objectives.append(brs_results[team][run].loc[0,'test_objective'] + (float(0.3)*BRSContradicts[-1])/(datasets[run].shape[0]))
+    plt.plot(np.unique(AUCS[setting]), np.poly1d(np.polyfit(AUCS[setting], TR_objs[setting], 1))(np.unique(AUCS[setting])), color=color_dict['TR'], linestyle='--', label='TeamRules')
+    plt.plot(np.unique(AUCS[setting]), np.poly1d(np.polyfit(AUCS[setting], HyRS_objs[setting], 1))(np.unique(AUCS[setting])), color=color_dict['HYRS'], linestyle='--', label='HyRS')
+    plt.plot(np.unique(AUCS[setting]), np.poly1d(np.polyfit(AUCS[setting], BRS_objs[setting], 1))(np.unique(AUCS[setting])), color=color_dict['BRS'], linestyle='--', label='BRS')
 
-                Human.append(1-metrics.accuracy_score(datasets[run][f'{team}_Ybtest'], datasets[run][f'{team}_Ytest']))
+    plt.title(f'Setting: {setting}')
+    plt.tight_layout()
+    plt.xlabel('AUC')
+    plt.ylabel('Total Team Loss')
+    plt.legend(fontsize=4)
 
-                if cost == 'perfect':
-                    AUC.append(auc_dict[team][run][cost])
-                else: 
-                    AUC.append(auc_dict[team][run][float(cost)])
-                
-        color_dict = {'TR': '#348ABD', 'HYRS': '#E24A33', 'BRS':'#988ED5', 'Human': 'darkgray', 'HYRSRecon': '#8EBA42'}
-        #plt.scatter(AUC, TR_Objectives, color=color_dict['TR'], s=10, alpha=0.5, label='TeamRules')
-        #plt.scatter(AUC, HyRS_Objectives, color=color_dict['HYRS'], s=10, alpha=0.5, label='HyRS')
-        #plt.scatter(AUC, BRS_Objectives, color=color_dict['BRS'], s=10, alpha=0.5, label='BRS')
 
-        plt.plot(np.unique(AUC), np.poly1d(np.polyfit(AUC, TR_Objectives, 1))(np.unique(AUC)), color=color_dict['TR'], linestyle='--', label='TeamRules')
-        plt.plot(np.unique(AUC), np.poly1d(np.polyfit(AUC, HyRS_Objectives, 1))(np.unique(AUC)), color=color_dict['HYRS'], linestyle='--', label='HyRS')
-        plt.plot(np.unique(AUC), np.poly1d(np.polyfit(AUC, BRS_Objectives, 1))(np.unique(AUC)), color=color_dict['BRS'], linestyle='--', label='BRS')
-
-        plt.title(f'Setting: {setting}')
-        plt.tight_layout()
-        plt.xlabel('AUC')
-        plt.ylabel('Total Team Loss')
-        plt.legend(fontsize=4)
+            
+        
         
 
-        '''
+    '''
             
 
 

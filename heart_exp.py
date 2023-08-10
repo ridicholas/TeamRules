@@ -12,7 +12,7 @@ import random
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import confusion_matrix
 import time
-from fairness_runner import run
+from discretion_runner import run
 from scipy.stats import bernoulli, uniform
 
 accept_criteria = 0.5

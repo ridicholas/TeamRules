@@ -83,7 +83,7 @@ def run(team1, team2, team3, folder, team_info):
     iters = Niteration
     contradiction_reg = 0
     fairness_reg = 0
-    numRuns = 15
+    numRuns = 30
     asym_loss = [1,1]
 
     if asym_loss != [1,1]:
