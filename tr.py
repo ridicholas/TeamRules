@@ -302,11 +302,11 @@ class tr(object):
 
 
         if self.fairness_reg > 0:
-            sensitive = self.data_model_dict['Xtrain'][self.fairness_feature] == 1
+            sensitive = self.df[self.fairness_feature] == 1
             _,TP,FP,TN,FN, _, _ = self.compute_obj(pcovered_curr,ncovered_curr, model_conf_curr, sensitive, use_paccept=use_paccept)
             accuracy_sensitive = TP + TN / TP + FP + TN + FN
 
-            not_sensitive = self.data_model_dict['Xtrain'][self.fairness_feature] == 0
+            not_sensitive = self.df[self.fairness_feature] == 0
             _,TP,FP,TN,FN, _, _ = self.compute_obj(pcovered_curr,ncovered_curr, model_conf_curr, not_sensitive, use_paccept=use_paccept)
             accuracy_not_sensitive = TP + TN / TP + FP + TN + FN
 
@@ -373,11 +373,11 @@ class tr(object):
             err_new = (np.abs(self.Y - Yhat_soft_new) * asymCosts).sum()
             
             if self.fairness_reg > 0:
-                sensitive = self.data_model_dict['Xtrain'][self.fairness_feature] == 1
+                sensitive = self.df[self.fairness_feature] == 1
                 _,TP,FP,TN,FN, _, _ = self.compute_obj(pcovered_new,ncovered_new, model_conf_new, sensitive, use_paccept=use_paccept)
                 accuracy_sensitive = TP + TN / TP + FP + TN + FN
 
-                not_sensitive = self.data_model_dict['Xtrain'][self.fairness_feature] == 0
+                not_sensitive = self.df[self.fairness_feature] == 0
                 _,TP,FP,TN,FN, _, _ = self.compute_obj(pcovered_new,ncovered_new, model_conf_new, not_sensitive, use_paccept=use_paccept)
                 accuracy_not_sensitive = TP + TN / TP + FP + TN + FN
         
@@ -478,7 +478,7 @@ class tr(object):
         Yhat[pcovered] = Yhat[pcovered].round()
         TP,FP,TN,FN = getConfusion(Yhat,self.Y)
 
-        if group != None:
+        if group is not None:
             TP,FP,TN,FN = getConfusion(Yhat[group],self.Y[group])
 
 

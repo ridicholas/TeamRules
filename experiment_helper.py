@@ -1129,6 +1129,17 @@ class HAI_team():
         asymCosts = self.data_model_dict[f'Y{on}'].replace({0: self.asym_loss[1], 1: self.asym_loss[0]})
 
         error_soft = (np.abs(self.data_model_dict[f'Y{on}'].values - soft_preds) * asymCosts.values).sum()/len(soft_preds)
+
+        if self.fairness_reg > 0:
+            sensitive = self.data_model_dict[f'X{on}'][self.fairness_feature ] == 1
+            accuracy_sensitive = 1-((np.abs(self.data_model_dict[f'Y{on}'][sensitive].values - soft_preds[sensitive]) * asymCosts[sensitive].values).sum()/len(soft_preds[sensitive]))
+
+            not_sensitive = self.data_model_dict[f'X{on}'][self.fairness_feature] == 0
+            
+            accuracy_not_sensitive = 1-((np.abs(self.data_model_dict[f'Y{on}'][not_sensitive].values - soft_preds[not_sensitive]) * asymCosts[not_sensitive].values).sum()/len(soft_preds[not_sensitive]))
+            fairness_score = np.abs(accuracy_sensitive-accuracy_not_sensitive)
+        else:
+            fairness_score = 0
         
         
 
@@ -1141,7 +1152,7 @@ class HAI_team():
         full_result['contradicts'] = contradicts
 
         #if on=='val':
-        full_result['objective'] = error_soft + (self.contradiction_reg*full_result['contradicts']/len(full_preds))
+        full_result['objective'] = error_soft + (self.contradiction_reg*full_result['contradicts']/len(full_preds)) + (self.fairness_reg*fairness_score)
         #else:
         #    full_result['objective'] = full_result[f'{on}_error'] + (self.contradiction_reg*full_result['contradicts']/len(full_preds))
         
@@ -1296,12 +1307,27 @@ class HAI_team():
         
         team_preds = paccept*modelonly_preds + (1-paccept)*self.data_model_dict[f'Yb{on}']
 
+
+
+
+
         contradictions = (self.data_model_dict[f'Yb{on}'] != modelonly_preds).sum()
         asym_costs = self.data_model_dict[f'Y{on}'].replace({0: self.asym_loss[1], 1: self.asym_loss[0]})
 
         error = (np.abs(self.data_model_dict[f'Y{on}'].values - team_preds) * asym_costs.values).sum()/len(team_preds)
 
-        return error + ((rejection_cost * contradictions)/len(paccept))
+        if self.fairness_reg > 0:
+            sensitive = self.data_model_dict[f'X{on}'][self.fairness_feature ] == 1
+            accuracy_sensitive = 1-((np.abs(self.data_model_dict[f'Y{on}'][sensitive].values - team_preds[sensitive]) * asym_costs[sensitive].values).sum()/len(team_preds[sensitive]))
+
+            not_sensitive = self.data_model_dict[f'X{on}'][self.fairness_feature] == 0
+            
+            accuracy_not_sensitive = 1-((np.abs(self.data_model_dict[f'Y{on}'][not_sensitive].values - team_preds[not_sensitive]) * asym_costs[not_sensitive].values).sum()/len(team_preds[not_sensitive]))
+            fairness_score = np.abs(accuracy_sensitive-accuracy_not_sensitive)
+        else:
+            fairness_score = 0
+
+        return error + ((rejection_cost * contradictions)/len(paccept)) + (self.fairness_reg * fairness_score)
 
         
 
@@ -1317,12 +1343,10 @@ class HAI_team():
 
         #get training accuracy of brs model
         acc = metrics.accuracy_score(self.data_model_dict['Ytrain'], brs_predict(self.brs_rules, self.data_model_dict['Xtrain']))
-        conf_model_val = np.zeros(len(self.data_model_dict['Yval']))
-        conf_model_test = np.zeros(len(self.data_model_dict['Ytest']))
-        conf_model_train = np.zeros(len(self.data_model_dict['Ytrain']))
-        conf_model_val[:] = acc
-        conf_model_test[:] = acc
-        conf_model_train[:] = acc
+        conf_model_val = brs_predict_conf(self.brs_rules, self.data_model_dict[f'Xval'], self.brs_model)
+        conf_model_test = brs_predict_conf(self.brs_rules, self.data_model_dict[f'Xtest'], self.brs_model)
+        conf_model_train = brs_predict_conf(self.brs_rules, self.data_model_dict[f'Xtrain'], self.brs_model)
+
 
         agreement_train = self.data_model_dict['Ybtrain'] == modelonly_train_preds
         agreement_val = self.data_model_dict['Ybval'] == modelonly_val_preds
@@ -1338,7 +1362,9 @@ class HAI_team():
         self.brs_val_accept = (pd.Series(bernoulli.rvs(p=self.brs_paccept_val, size=len(self.brs_paccept_val))).astype(bool))
         self.brs_test_accept = (pd.Series(bernoulli.rvs(p=self.brs_paccept_test, size=len(self.brs_paccept_test))).astype(bool))
 
-
+        self.brs_soft_train_preds = self.brs_paccept_train*modelonly_train_preds + (1-self.brs_paccept_train)*self.data_model_dict['Ybtrain']
+        self.brs_soft_val_preds = self.brs_paccept_val*modelonly_val_preds + (1-self.brs_paccept_val)*self.data_model_dict['Ybval']
+        self.brs_soft_test_preds = self.brs_paccept_test*modelonly_test_preds + (1-self.brs_paccept_test)*self.data_model_dict['Ybtest']
         
         team_test_preds[self.brs_test_accept == False] = self.data_model_dict['Ybtest'][self.brs_test_accept == False]
         team_val_preds[self.brs_val_accept == False] = self.data_model_dict['Ybval'][self.brs_val_accept == False]
@@ -1368,7 +1394,7 @@ class HAI_team():
                     self.data_model_dict['Ybtrain'],
                     self.data_model_dict['pred_conf_train'])
 
-        model.set_parameters(self.alpha, self.beta, self.fairness_reg, self.contradiction_reg, self.fA, self.force_complete_coverage, self.asym_loss)
+        model.set_parameters(self.alpha, self.beta, self.fairness_reg, self.contradiction_reg, self.fA, self.force_complete_coverage, self.asym_loss, self.fairness_feature)
 
         model.generate_rulespace(self.supp, self.maxlen, self.Nrules, need_negcode=True, method='randomforest',
                                  criteria='precision')
@@ -1394,8 +1420,23 @@ class HAI_team():
 
         asymCosts = self.data_model_dict['Yval'].replace({0: self.asym_loss[1], 1: self.asym_loss[0]})
         val_error = (np.abs(self.data_model_dict['Yval'].values - val_preds) * asymCosts.values).sum()/len(val_preds)
+
+
         
-        tr_val_obj = val_error + ((self.tr.contradiction_reg * tr_val_contradictions)/len(val_preds))
+        if self.fairness_reg > 0:
+            sensitive = self.data_model_dict['Xval'][self.fairness_feature ] == 1
+            accuracy_sensitive = 1-((np.abs(self.data_model_dict['Yval'][sensitive].values - val_preds[sensitive]) * asymCosts[sensitive].values).sum()/len(val_preds[sensitive]))
+
+            not_sensitive = self.data_model_dict['Xval'][self.fairness_feature] == 0
+            
+            accuracy_not_sensitive = 1-((np.abs(self.data_model_dict['Yval'][not_sensitive].values - val_preds[not_sensitive]) * asymCosts[not_sensitive].values).sum()/len(val_preds[not_sensitive]))
+            val_fairness_score = np.abs(accuracy_sensitive-accuracy_not_sensitive)
+        else:
+            val_fairness_score = 0
+            
+
+
+        tr_val_obj = val_error + ((self.tr.contradiction_reg * tr_val_contradictions)/len(val_preds)) + (self.fairness_reg * val_fairness_score)
         
 
 
@@ -1668,8 +1709,25 @@ class HAI_team():
         asymCosts = self.data_model_dict['Yval'].replace({0: self.asym_loss[1], 1: self.asym_loss[0]})
         
         val_error_soft = (np.abs(self.data_model_dict['Yval'].values - val_preds_soft) * asymCosts.values).sum()/len(val_preds_soft)
+
+        if self.fairness_reg > 0:
+            sensitive = self.data_model_dict['Xval'][self.fairness_feature ] == 1
+            accuracy_sensitive = 1-((np.abs(self.data_model_dict['Yval'][sensitive].values - val_preds_soft[sensitive]) * asymCosts[sensitive].values).sum()/len(val_preds_soft[sensitive]))
+
+            not_sensitive = self.data_model_dict['Xval'][self.fairness_feature] == 0
+            
+            accuracy_not_sensitive = 1-((np.abs(self.data_model_dict['Yval'][not_sensitive].values - val_preds_soft[not_sensitive]) * asymCosts[not_sensitive].values).sum()/len(val_preds_soft[not_sensitive]))
+            val_fairness_score = np.abs(accuracy_sensitive-accuracy_not_sensitive)
+        else:
+            val_fairness_score = 0
+            
+
+
         
-        self.hyrs.val_obj = val_error_soft + (self.contradiction_reg * val_contradictions)/len(val_preds)
+        
+
+
+        self.hyrs.val_obj = val_error_soft + (self.contradiction_reg * val_contradictions)/len(val_preds) + (self.fairness_reg * val_fairness_score)
 
         self.hyrs_results = {'train_error_hyrs': train_error_hyrs,
                                         'train_error_human': train_error_human,
