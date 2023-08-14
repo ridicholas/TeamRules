@@ -1503,9 +1503,9 @@ class HAI_team():
 
         if 'brs' in alt_mods:
             print(f'brs obj: {self.brs_objective(self.contradiction_reg, "val")}, tr obj: {tr_val_obj}')
-            if self.brs_objective(self.contradiction_reg, 'val') < tr_val_obj:
+            if self.brs_objective(self.contradiction_reg, 'val')[0] < tr_val_obj:
                 print('doing replacement')
-                tr_val_obj = self.brs_objective(self.contradiction_reg, 'val')
+                tr_val_obj = self.brs_objective(self.contradiction_reg, 'val')[0]
                 self.tr.prs_min = []
                 self.tr.nrs_min = []
 

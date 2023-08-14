@@ -286,9 +286,9 @@ def run(team1, team2, team3, folder, team_info):
                     tempTeam = deepcopy(team1)
                     for i in range(validations):
                         tempTeam.train_brs()
-                        if tempTeam.brs_objective(contradiction_reg, 'val') < tempval:
+                        if tempTeam.brs_objective(contradiction_reg, 'val')[0] < tempval:
                             team1 = tempTeam
-                            tempval = team1.brs_objective(contradiction_reg, 'val')
+                            tempval = team1.brs_objective(contradiction_reg, 'val')[0]
                     
                     team1.brs_results.to_pickle('{}/team1_brs_run{}.pkl'.format(folder, run))
                     
@@ -377,9 +377,9 @@ def run(team1, team2, team3, folder, team_info):
                     tempTeam = deepcopy(team2)
                     for i in range(validations):
                         tempTeam.train_brs()
-                        if tempTeam.brs_objective(contradiction_reg, 'val') < tempval:
+                        if tempTeam.brs_objective(contradiction_reg, 'val')[0] < tempval:
                             team2 = tempTeam
-                            tempval = team2.brs_objective(contradiction_reg, 'val')
+                            tempval = team2.brs_objective(contradiction_reg, 'val')[0]
                     
                     team2.brs_results.to_pickle('{}/team2_brs_run{}.pkl'.format(folder, run))
                     
@@ -459,9 +459,9 @@ def run(team1, team2, team3, folder, team_info):
                     tempTeam = deepcopy(team3)
                     for i in range(validations):
                         tempTeam.train_brs()
-                        if tempTeam.brs_objective(contradiction_reg, 'val') < tempval:
+                        if tempTeam.brs_objective(contradiction_reg, 'val')[0] < tempval:
                             team3 = tempTeam
-                            tempval = team3.brs_objective(contradiction_reg, 'val')
+                            tempval = team3.brs_objective(contradiction_reg, 'val')[0]
                     team3.brs_results.to_pickle('{}/team3_brs_run{}.pkl'.format(folder, run))
                     
 
