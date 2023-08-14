@@ -9,11 +9,11 @@ import math
 
 types = ['TL', 'TDL']
 
-numRuns = 15 #adjust this depending on how many runs of results were produced
+numRuns = 10 #adjust this depending on how many runs of results were produced
 
 rule_len = 4
 setting_type = 'learned'
-dataset = 'fico'
+dataset = 'heart'
 path = f'{dataset}_contradiction_results_{setting_type}_len{rule_len}/'
 
 asym_loss = [1,1]
@@ -191,6 +191,9 @@ for whichType in types:
             BRSLoss = []
             BRSCov = []
             Human = []
+            TR_disparity = []
+            BRS_disparity = []
+            HyRS_disparity = []
             for run in range(numRuns):
 
                 

@@ -15,7 +15,7 @@ numRuns = 10 #adjust this depending on how many runs of results were produced
 rule_len = 4
 setting_type = 'learned'
 dataset = 'heart'
-paths = [f'{dataset}_contradiction_results_{setting_type}_len{rule_len}_discPart1/', f'{dataset}_contradiction_results_{setting_type}_len{rule_len}_disc/']
+paths = [f'{dataset}_contradiction_results_{setting_type}_len{rule_len}_disc/', f'{dataset}_contradiction_results_{setting_type}_len{rule_len}_discPart1/', f'{dataset}_contradiction_results_{setting_type}_len{rule_len}_discPart2/']
 
 
 
@@ -30,9 +30,11 @@ for path in paths:
     costs = [0.3]
     cost = 0.3
     if path == paths[0]:
-        data_sizes = ['perfect', 1, 0.75, 0.5, 0.25, 0.2, 0.15, 0.1]
+        data_sizes = ['perfect', 1, 0.75, 0.5, 0.25, 0.2, 0.175, 0.15, 0.125, 0.1]
+        numRuns = 21
     else: 
         data_sizes = ['perfect', 1, 0.75, 0.5, 0.25, 0.2, 0.15, 0.1]
+        numRuns = 10
 
 
     for whichType in types:
@@ -110,7 +112,7 @@ for path in paths:
                         brs_val_contradicts = brs_results[team][-1].loc[0, 'val_contradicts']
 
 
-        with open(f'{path}/auc_dict.pkl', 'rb') as inp:
+        with open(f'{path}auc_dict.pkl', 'rb') as inp:
             auc_dict = pickle.load(inp)
         inp.close()
         teams = []

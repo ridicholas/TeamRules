@@ -1140,6 +1140,10 @@ class HAI_team():
             fairness_score = np.abs(accuracy_sensitive-accuracy_not_sensitive)
         else:
             fairness_score = 0
+            accuracy_sensitive = 0
+            accuracy_not_sensitive = 0
+
+
         
         
 
@@ -1150,6 +1154,9 @@ class HAI_team():
         full_result[f'humanified_{on}_preds'] = full_preds
 
         full_result['contradicts'] = contradicts
+        full_result['fairness_score'] = fairness_score
+        full_result['accuracy_sensitive'] = accuracy_sensitive
+        full_result['accuracy_not_sensitive'] = accuracy_not_sensitive
 
         #if on=='val':
         full_result['objective'] = error_soft + (self.contradiction_reg*full_result['contradicts']/len(full_preds)) + (self.fairness_reg*fairness_score)
@@ -1181,7 +1188,10 @@ class HAI_team():
                                                     'objective',
                                                     'test_covereds',
                                                     'modelonly_test_preds',
-                                                    'humanified_test_preds'])
+                                                    'humanified_test_preds',
+                                                    'fairness_score',
+                                                    'accuracy_senstive',
+                                                    'accuracy_not_sensitive'])
         
         full_hyrs_results_val = pd.DataFrame(index=range(len(mental_confs) * len(error_confs)),
                                            columns=['mental_conf',
@@ -1193,7 +1203,10 @@ class HAI_team():
                                                     'contradicts',
                                                     'objective',
                                                     'modelonly_val_preds',
-                                                    'humanified_val_preds'])
+                                                    'humanified_val_preds',
+                                                    'fairness_score',
+                                                    'accuracy_senstive',
+                                                    'accuracy_not_sensitive'])
         full_hyrs_results_train = pd.DataFrame(index=range(len(mental_confs) * len(error_confs)),
                                            columns=['mental_conf',
                                                     'error_conf',
@@ -1204,7 +1217,10 @@ class HAI_team():
                                                     'contradicts',
                                                     'objective',
                                                     'modelonly_train_preds',
-                                                    'humanified_train_preds'])
+                                                    'humanified_train_preds',
+                                                    'fairness_score',
+                                                    'accuracy_senstive',
+                                                    'accuracy_not_sensitive'])
         index = 0
         for mental_conf in mental_confs:
             for error_conf in error_confs:
@@ -1326,8 +1342,10 @@ class HAI_team():
             fairness_score = np.abs(accuracy_sensitive-accuracy_not_sensitive)
         else:
             fairness_score = 0
+            accuracy_not_sensitive = 0
+            accuracy_sensitive = 0
 
-        return error + ((rejection_cost * contradictions)/len(paccept)) + (self.fairness_reg * fairness_score)
+        return error + ((rejection_cost * contradictions)/len(paccept)) + (self.fairness_reg * fairness_score), error, contradictions, fairness_score, accuracy_sensitive, accuracy_not_sensitive
 
         
 
@@ -1370,22 +1388,32 @@ class HAI_team():
         team_val_preds[self.brs_val_accept == False] = self.data_model_dict['Ybval'][self.brs_val_accept == False]
         team_train_preds[self.brs_train_accept == False] = self.data_model_dict['Ybtrain'][self.brs_train_accept == False]
 
+        test_objective, test_error, test_contradictions, test_fairness_score, test_accuracy_sensitive, test_accuracy_not_sensitive = self.brs_objective(self.contradiction_reg, 'test')
+        val_objective, val_error, val_contradictions, val_fairness_score, val_accuracy_sensitive, val_accuracy_not_sensitive = self.brs_objective(self.contradiction_reg, 'val')
+
         
 
-        self.brs_results = pd.DataFrame({'test_error_brs': 1 - metrics.accuracy_score(self.data_model_dict['Ytest'],team_test_preds),
-                                         'test_contradicts': len(modelonly_test_preds) - agreement_test.sum(),
+        self.brs_results = pd.DataFrame({'test_error_brs': test_error,
+                                         'test_contradicts': test_contradictions,
                                          'test_error_modelonly': 1 - metrics.accuracy_score(self.data_model_dict['Ytest'], modelonly_test_preds),
-                                         'val_error_brs': 1 - metrics.accuracy_score(self.data_model_dict['Yval'],team_val_preds),
+                                         'val_error_brs': val_error,
                                          'val_error_modelonly': 1 - metrics.accuracy_score(self.data_model_dict['Yval'], modelonly_val_preds),
                                          'modelonly_test_preds':[modelonly_test_preds],
                                          'team_test_preds':[team_test_preds],
                                          'team_val_preds':[team_val_preds],
+                                         
 
                                          'test_rejects':sum((modelonly_test_preds != self.data_model_dict['Ybtest']) &
                                                             (self.data_model_dict['test_accept']==False)),
-                                         'test_objective': self.brs_objective(self.contradiction_reg, 'test'),
-                                         'val_objective': self.brs_objective(self.contradiction_reg, 'val'),
-                                         'val_contradicts': len(modelonly_val_preds) - agreement_val.sum()})
+                                         'test_objective': test_objective,
+                                         'val_objective': val_objective,
+                                         'val_contradicts': val_contradictions,
+                                         'test_fairness': test_fairness_score,
+                                         'val_fairness': val_fairness_score,
+                                         'test_accuracy_sensitive': test_accuracy_sensitive,
+                                         'test_accuracy_not_sensitive': test_accuracy_not_sensitive,
+                                         'val_accuracy_sensitive': val_accuracy_sensitive,
+                                         'val_accuracy_not_sensitive': val_accuracy_not_sensitive})
 
 
 
