@@ -69,7 +69,7 @@ def run(team1, team2, team3, folder, team_info):
     team3_4_start_threshold = 0.5
 
     #initial hyperparams
-    Niteration = 1000
+    Niteration = 2000
     Nchain = 1
     Nlevel = 1
     Nrules = 10000
@@ -83,7 +83,7 @@ def run(team1, team2, team3, folder, team_info):
     iters = Niteration
     contradiction_reg = 0
     fairness_reg = 0
-    numRuns = 15
+    numRuns = 1
     asym_loss = [1,1]
 
     if asym_loss != [1,1]:
@@ -278,6 +278,7 @@ def run(team1, team2, team3, folder, team_info):
                         team1 = pickle.load(inp)
                     inp.close()
 
+                contradiction_reg = 0
                 team1.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                         alpha,
                                         beta, iters, fairness_reg, contradiction_reg, fA, force_complete_coverage=False, asym_loss = asym_loss, fair_feat=None)
@@ -300,8 +301,11 @@ def run(team1, team2, team3, folder, team_info):
                 team1.filter_hyrs_results(mental=True, error=False)
                 
             
-
-                if contradiction_reg == 0:
+                contradiction_reg = 0.2
+                team1.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
+                                        alpha,
+                                        beta, iters, fairness_reg, contradiction_reg, fA, force_complete_coverage=False, asym_loss = asym_loss, fair_feat=None)
+                if contradiction_reg == 0.2:
                     print('training team1 brs model...')
                     team1.setup_brs()
 
@@ -309,9 +313,9 @@ def run(team1, team2, team3, folder, team_info):
                     tempTeam = deepcopy(team1)
                     for i in range(validations):
                         tempTeam.train_brs()
-                        if tempTeam.brs_objective(contradiction_reg, 'val') < tempval:
+                        if tempTeam.brs_objective(contradiction_reg, 'val')[0] < tempval:
                             team1 = tempTeam
-                            tempval = team1.brs_objective(contradiction_reg, 'val')
+                            tempval = team1.brs_objective(contradiction_reg, 'val')[0]
                     
                     team1.brs_results.to_pickle('{}/team1_brs_run{}.pkl'.format(folder, run))
                     
@@ -375,7 +379,7 @@ def run(team1, team2, team3, folder, team_info):
                     with open(f'{folder}/team2.pkl', 'rb') as inp:
                         team2 = pickle.load(inp)
                     inp.close()
-
+                contradiction_reg = 0
                 team2.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
                                         alpha,
                                         beta, iters, fairness_reg, contradiction_reg, fA, force_complete_coverage=False, asym_loss = asym_loss, fair_feat=None)
@@ -394,8 +398,11 @@ def run(team1, team2, team3, folder, team_info):
                 team2.filter_hyrs_results(mental=True, error=False)
                 
             
-
-                if contradiction_reg == 0:
+                contradiction_reg = 0.2
+                team2.set_training_params(Niteration, Nchain, Nlevel, Nrules, supp, maxlen, protected, budget, sample_ratio,
+                                        alpha,
+                                        beta, iters, fairness_reg, contradiction_reg, fA, force_complete_coverage=False, asym_loss = asym_loss, fair_feat=None)
+                if contradiction_reg == 0.2:
                     print('training team2 brs model...')
                     team2.setup_brs()
 
@@ -403,9 +410,9 @@ def run(team1, team2, team3, folder, team_info):
                     tempTeam = deepcopy(team2)
                     for i in range(validations):
                         tempTeam.train_brs()
-                        if tempTeam.brs_objective(contradiction_reg, 'val') < tempval:
+                        if tempTeam.brs_objective(contradiction_reg, 'val')[0] < tempval:
                             team2 = tempTeam
-                            tempval = team2.brs_objective(contradiction_reg, 'val')
+                            tempval = team2.brs_objective(contradiction_reg, 'val')[0]
                     
                     team2.brs_results.to_pickle('{}/team2_brs_run{}.pkl'.format(folder, run))
                     

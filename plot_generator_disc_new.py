@@ -7,6 +7,8 @@ from scipy.stats import ttest_ind
 from statistics import mean, stdev
 import math
 import pickle
+import scipy.stats as stats
+import scipy
 
 types = ['TL', 'TDL']
 
@@ -31,7 +33,7 @@ for path in paths:
     cost = 0.3
     if path == paths[0]:
         data_sizes = ['perfect', 1, 0.75, 0.5, 0.25, 0.2, 0.175, 0.15, 0.125, 0.1]
-        numRuns = 21
+        numRuns = 30
     else: 
         data_sizes = ['perfect', 1, 0.75, 0.5, 0.25, 0.2, 0.15, 0.1]
         numRuns = 10
@@ -202,23 +204,141 @@ for path in paths:
             HyRS_objs[setting] += HyRS_Objectives
             BRS_objs[setting] += BRS_Objectives
 
+
+
+def plot_ci_manual(t, s_err, n, x, x2, y2, ax=None):
+    """Return an axes of confidence bands using a simple approach.
+    
+    Notes
+    -----
+    .. math:: \left| \: \hat{\mu}_{y|x0} - \mu_{y|x0} \: \right| \; \leq \; T_{n-2}^{.975} \; \hat{\sigma} \; \sqrt{\frac{1}{n}+\frac{(x_0-\bar{x})^2}{\sum_{i=1}^n{(x_i-\bar{x})^2}}}
+    .. math:: \hat{\sigma} = \sqrt{\sum_{i=1}^n{\frac{(y_i-\hat{y})^2}{n-2}}}
+    
+    References
+    ----------
+    .. [1] M. Duarte.  "Curve fitting," Jupyter Notebook.
+       http://nbviewer.ipython.org/github/demotu/BMC/blob/master/notebooks/CurveFitting.ipynb
+    
+    """
+    if ax is None:
+        ax = plt.gca()
+    
+    ci = t * s_err * np.sqrt(1/n + (x2 - np.mean(x))**2 / np.sum((x - np.mean(x))**2))
+    ax.fill_between(x2, y2 + ci, y2 - ci, color = color_dict['TR'], alpha=0.2)
+
+    return ax
+
+
+def plot_ci_bootstrap(xs, ys, resid, nboot=500, ax=None):
+    """Return an axes of confidence bands using a bootstrap approach.
+
+    Notes
+    -----
+    The bootstrap approach iteratively resampling residuals.
+    It plots `nboot` number of straight lines and outlines the shape of a band.
+    The density of overlapping lines indicates improved confidence.
+
+    Returns
+    -------
+    ax : axes
+        - Cluster of lines
+        - Upper and Lower bounds (high and low) (optional)  Note: sensitive to outliers
+
+    References
+    ----------
+    .. [1] J. Stults. "Visualizing Confidence Intervals", Various Consequences.
+       http://www.variousconsequences.com/2010/02/visualizing-confidence-intervals.html
+
+    """ 
+    if ax is None:
+        ax = plt.gca()
+
+    bootindex = sp.random.randint
+
+    for _ in range(nboot):
+        resamp_resid = resid[bootindex(0, len(resid) - 1, len(resid))]
+        # Make coeffs of for polys
+        pc = sp.polyfit(xs, ys + resamp_resid, 1)                   
+        # Plot bootstrap cluster
+        ax.plot(xs, sp.polyval(pc, xs), "b-", linewidth=2, alpha=3.0 / float(nboot))
+
+    return ax
+
+# Computations ----------------------------------------------------------------    
+# Modeling with Numpy
+def equation(a, b):
+    """Return a 1D polynomial."""
+    return np.polyval(a, b) 
+
+def mean_confidence_interval(data, confidence=0.95):
+    a = 1.0 * np.array(data)
+    n = len(a)
+    m, se = np.mean(a), scipy.stats.sem(a)
+    h = se * scipy.stats.t.ppf((1 + confidence) / 2., n-1)
+    return m, h
+
+
 for setting in settings:
-    fig = plt.figure(figsize=(3, 2), dpi=200)
+
+    x = AUCS[setting]
+    y = TR_objs[setting]
+    p, cov = np.polyfit(x, y, 1, cov=True)                     # parameters and covariance from of the fit of 1-D polynom.
+    y_model = equation(p, x)                                   # model using the fit parameters; NOTE: parameters here are coefficients
+
+    # Statistics
+    n = len(TR_objs[setting])                                        # number of observations
+    m = p.size                                                 # number of parameters
+    dof = n - m                                                # degrees of freedom
+    t = stats.t.ppf(0.975, n - m)                              # t-statistic; used for CI and PI bands
+
+    # Estimates of Error in Data/Model
+    resid = y - y_model                                        # residuals; diff. actual data from predicted values
+    chi2 = np.sum((resid / y_model)**2)                        # chi-squared; estimates error in data
+    chi2_red = chi2 / dof                                      # reduced chi-squared; measures goodness of fit
+    s_err = np.sqrt(np.sum(resid**2) / dof)                    # standard deviation of the error
+
+    hyrs_mean, hyrs_se = mean_confidence_interval(HyRS_objs[setting])
+    brs_mean, brs_se = mean_confidence_interval(BRS_objs[setting])
+    
+
+
+
+
+    fig, ax = plt.subplots(figsize=(3, 2), dpi=200)
     color_dict = {'TR': '#348ABD', 'HYRS': '#E24A33', 'BRS':'#988ED5', 'Human': 'darkgray', 'HYRSRecon': '#8EBA42'}
     #plt.scatter(AUCS[setting], TR_objs[setting], color=color_dict['TR'], s=10, alpha=0.5, label='TeamRules')
     #plt.scatter(AUCS[setting], HyRS_objs[setting], color=color_dict['HYRS'], s=10, alpha=0.5, label='HyRS')
     #plt.scatter(AUCS[setting], BRS_objs[setting], color=color_dict['BRS'], s=10, alpha=0.5, label='BRS')
 
+    ax.plot(x, y_model, color=color_dict['TR'], label='TeamRules', linewidth=1, ls='-')
+    #ax.plot(np.unique(AUCS[setting]), np.poly1d(np.polyfit(AUCS[setting], TR_objs[setting], 1))(np.unique(AUCS[setting])), color=color_dict['TR'], linestyle='--', label='TeamRules')
+    #plt.plot(np.unique(AUCS[setting]), np.poly1d(np.polyfit(AUCS[setting], HyRS_objs[setting], 1))(np.unique(AUCS[setting])), color=color_dict['HYRS'], linestyle='--', label='HyRS')
+    #plt.plot(np.unique(AUCS[setting]), np.poly1d(np.polyfit(AUCS[setting], BRS_objs[setting], 1))(np.unique(AUCS[setting])), color=color_dict['BRS'], linestyle='--', label='BRS')
 
-    plt.plot(np.unique(AUCS[setting]), np.poly1d(np.polyfit(AUCS[setting], TR_objs[setting], 1))(np.unique(AUCS[setting])), color=color_dict['TR'], linestyle='--', label='TeamRules')
-    plt.plot(np.unique(AUCS[setting]), np.poly1d(np.polyfit(AUCS[setting], HyRS_objs[setting], 1))(np.unique(AUCS[setting])), color=color_dict['HYRS'], linestyle='--', label='HyRS')
-    plt.plot(np.unique(AUCS[setting]), np.poly1d(np.polyfit(AUCS[setting], BRS_objs[setting], 1))(np.unique(AUCS[setting])), color=color_dict['BRS'], linestyle='--', label='BRS')
+    ax.hlines(hyrs_mean, np.min(x), np.max(x), color=color_dict['HYRS'], label='HyRS', linewidth=1, ls='-')
+    ax.hlines(brs_mean, np.min(x), np.max(x), color=color_dict['BRS'], label='BRS', linewidth=1, ls='-')
+    ax.fill_between([np.min(x), np.max(x)], [hyrs_mean-hyrs_se, hyrs_mean-hyrs_se], [hyrs_mean+hyrs_se, hyrs_mean+hyrs_se], color=color_dict['HYRS'], alpha=0.2)
+    ax.fill_between([np.min(x), np.max(x)], [brs_mean-brs_se, brs_mean-brs_se], [brs_mean+brs_se, brs_mean+brs_se], color=color_dict['BRS'], alpha=0.2)
 
-    plt.title(f'Setting: {setting}')
+    x2 = np.linspace(np.min(x), np.max(x), 100)
+    y2 = equation(p, x2)
+
+    # Confidence Interval (select one)
+    plot_ci_manual(t, s_err, n, x, x2, y2, ax=ax)
+    #plot_ci_bootstrap(x, y, resid, ax=ax)
+    
+    # Prediction Interval
+    #pi = t * s_err * np.sqrt(1 + 1/n + (x2 - np.mean(x))**2 / np.sum((x - np.mean(x))**2))   
+    #ax.fill_between(x2, y2 + pi, y2 - pi, color="None", linestyle="--")
+    #ax.plot(x2, y2 - pi, "--", color="0.5", label="95% Prediction Limits")
+    #ax.plot(x2, y2 + pi, "--", color="0.5")
+
+    #plt.title(f'Setting: {setting}')
     plt.tight_layout()
     plt.xlabel('AUC')
     plt.ylabel('Total Team Loss')
     plt.legend(fontsize=4)
+    plt.savefig(f'Plots/{dataset}_{setting}_AUC_vs_TotalTeamLoss.png')
 
 
             

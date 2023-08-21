@@ -404,6 +404,7 @@ def make_heart_data(numQs=5):
     
     
     
+    
     #make test
     startDict['Xtrain'], startDict['Xtest'], startDict['Ytrain'], \
                 startDict['Ytest'], startDict['Xtrain_non_binarized'], startDict['Xtest_non_binarized'] = split(startDict['Xtrain'],
@@ -1190,7 +1191,7 @@ class HAI_team():
                                                     'modelonly_test_preds',
                                                     'humanified_test_preds',
                                                     'fairness_score',
-                                                    'accuracy_senstive',
+                                                    'accuracy_sensitive',
                                                     'accuracy_not_sensitive'])
         
         full_hyrs_results_val = pd.DataFrame(index=range(len(mental_confs) * len(error_confs)),
@@ -1205,7 +1206,7 @@ class HAI_team():
                                                     'modelonly_val_preds',
                                                     'humanified_val_preds',
                                                     'fairness_score',
-                                                    'accuracy_senstive',
+                                                    'accuracy_sensitive',
                                                     'accuracy_not_sensitive'])
         full_hyrs_results_train = pd.DataFrame(index=range(len(mental_confs) * len(error_confs)),
                                            columns=['mental_conf',
@@ -1219,7 +1220,7 @@ class HAI_team():
                                                     'modelonly_train_preds',
                                                     'humanified_train_preds',
                                                     'fairness_score',
-                                                    'accuracy_senstive',
+                                                    'accuracy_sensitive',
                                                     'accuracy_not_sensitive'])
         index = 0
         for mental_conf in mental_confs:
@@ -1259,7 +1260,10 @@ class HAI_team():
                                                     'objective',
                                                     'test_covereds',
                                                     'modelonly_test_preds',
-                                                    'humanified_test_preds'])
+                                                    'humanified_test_preds',
+                                                    'fairness_score',
+                                                    'accuracy_sensitive',
+                                                    'accuracy_not_sensitive'])
         
         full_tr_results_val = pd.DataFrame(index=range(len(mental_confs) * len(error_confs)),
                                            columns=['mental_conf',
@@ -1273,7 +1277,10 @@ class HAI_team():
                                                     'objective',
                                                     'val_covereds',
                                                     'modelonly_val_preds',
-                                                    'humanified_val_preds'])
+                                                    'humanified_val_preds',
+                                                    'fairness_score',
+                                                    'accuracy_sensitive',
+                                                    'accuracy_not_sensitive'])
     
         full_tr_results_train = pd.DataFrame(index=range(len(mental_confs) * len(error_confs)),
                                            columns=['mental_conf',
@@ -1287,7 +1294,10 @@ class HAI_team():
                                                     'objective',
                                                     'train_covereds',
                                                     'modelonly_train_preds',
-                                                    'humanified_train_preds'])
+                                                    'humanified_train_preds',
+                                                    'fairness_score',
+                                                    'accuracy_sensitive',
+                                                    'accuracy_not_sensitive'])
         
         index = 0
 
