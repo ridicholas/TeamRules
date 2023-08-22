@@ -32,7 +32,7 @@ class hyrs(object):
         # input al and bl are lists
         self.alpha = alpha
         self.beta = beta
-        self.coverage_reg = coverage_reg
+        self.coverage_reg = 0
         self.contradiction_reg = contradiction_reg
         self.force_complete_coverage = force_complete_coverage
         self.asym_loss = [1,1]
