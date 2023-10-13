@@ -18,6 +18,7 @@ from scipy.sparse import csc_matrix
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn import metrics
 from random import choices
+import xgboost as xgb
 
 def intersection(lst1, lst2):
     lst3 = [value for value in lst1 if value in lst2]
@@ -30,6 +31,8 @@ class tr(object):
         self.N = float(len(Y))
         self.Yb = pd.Series(Yb)
         self.conf_human = pd.Series(conf_human)
+        self.human_model = xgb.XGBClassifier().fit(binary_data, Yb)
+        self.blackbox = xgb.XGBClassifier().fit(binary_data, Y)
 
     
     def set_parameters(self, alpha = 0, beta = 0, fairness_reg = 0, contradiction_reg = 0, fA=0.5, force_complete_coverage=False, asym_loss = [1,1], fair_feat=None):
@@ -244,7 +247,26 @@ class tr(object):
 
 
 
-    
+    def post_hoc_filtering_optimization(self, yhat_soft, asymCosts, contras, yhat, rulePreds, yb):
+        #post_hoc filtering optimization adjustment
+        yhat_soft = yhat_soft.copy()
+        yb = yb.copy()
+        err_advice = (np.abs(self.Y - yhat_soft) * asymCosts) + (contras*self.contradiction_reg)
+        err_human = np.abs(self.Y - yb) * asymCosts
+        new_err = np.min(np.array([err_advice, err_human]), axis=0)
+        replacements = (err_human <= err_advice).astype(bool)
+        yhat_soft[replacements] = yb[replacements]
+        contras = contras.copy()
+        yhat = yhat.copy()
+        rulePreds = rulePreds.copy()
+        contras[replacements] = 0
+        yhat[replacements] = yb[replacements]
+        rulePreds[replacements] = yb[replacements]
+
+
+        return new_err.sum(), yhat_soft, np.sum(contras), yhat, rulePreds
+
+
     def train(self, Niteration = 500, print_message=False, interpretability = 'size', T0 = 0.01, start_rules=None):
         self.maps = []
         fA = self.fA
@@ -269,6 +291,16 @@ class tr(object):
         self.maps.append([-1,obj_curr,prs_curr,nrs_curr,[]])
         p = np.sum(self.pRMatrix[:,prs_curr],axis = 1)>0
         n = np.sum(self.nRMatrix[:,nrs_curr],axis = 1)>0
+        rulePreds_curr = self.Yb.copy()
+        rulePreds_curr[n] = 0
+        rulePreds_curr[p] = 1
+
+        #reset responses using expection
+        reset = self.expected_loss_filter(self.df, rulePreds_curr, self.conf_human, prs_curr, nrs_curr)
+        p[reset] = False
+        n[reset] = False
+        rulePreds_curr[reset] = self.Yb[reset]
+
 
         fairness_curr = 0
         fairness_new = 0
@@ -277,28 +309,32 @@ class tr(object):
         overlap_curr = np.multiply(p,n)
         pcovered_curr = p
         ncovered_curr = n ^ overlap_curr
+
         covered_curr = np.logical_xor(p,n) + overlap_curr
-        #if len(prs_curr) > 0:
-        #    p_model_conf_curr = np.max(self.p_precision_matrix[:,prs_curr],axis = 1)
-        #else: 
-        #    p_model_conf_curr = np.zeros(len(pcovered_curr))
-        #if len(nrs_curr) > 0:
-        #    n_model_conf_curr = np.max(self.n_precision_matrix[:,nrs_curr],axis = 1)
-        #else:
-        #    n_model_conf_curr = np.zeros(len(ncovered_curr))
+
+    
+
         
         model_conf_curr, _ = self.get_model_conf_agreement(self.df, self.Yb, prs_min=prs_curr, nrs_min=nrs_curr)
+        
         Yhat_curr,TP,FP,TN,FN, numRejects_curr, Yhat_soft_curr  = self.compute_obj(pcovered_curr,ncovered_curr, model_conf_curr, use_paccept=use_paccept)
-        rulePreds_curr = self.Yb.copy()
-        rulePreds_curr[ncovered_curr] = 0
-        rulePreds_curr[pcovered_curr] = 1
+
         #print(Yhat_curr,TP,FP,TN,FN)
         nfeatures = len(np.unique([con.split('_')[0] for i in prs_curr for con in self.prules[i]])) + len(np.unique([con.split('_')[0] for i in nrs_curr for con in self.nrules[i]]))
-        asymCosts = self.Y.replace({0: self.asym_loss[1], 1: self.asym_loss[0]})
-        err_curr = (np.abs(self.Y - Yhat_soft_curr) * asymCosts).sum()
-        #err_curr = (np.abs(self.Y - Yhat_soft_curr)).sum()
+        asymCosts = self.Y.replace({0: self.asym_loss[1], 1: self.asym_loss[0]}) 
+        
+        
 
+        
+       
+
+        err_curr = (np.abs(self.Y - Yhat_soft_curr) * asymCosts).sum()
+        err_curr = (np.abs(self.Y - Yhat_soft_curr)).sum()
+
+        #post_hoc filtering optimization adjustment
         contras_curr = np.sum(self.Yb != rulePreds_curr)
+        contradictions_curr = (self.Yb != rulePreds_curr)
+        
 
 
         if self.fairness_reg > 0:
@@ -354,7 +390,15 @@ class tr(object):
                 covered_new = np.logical_xor(p,n) + overlap_new
             else:
                 prs_new,nrs_new , pcovered_new,ncovered_new,overlap_new,covered_new= self.propose_rs(prs_curr,nrs_curr,pcovered_curr,ncovered_curr,overlap_curr,covered_curr, Yhat_curr, Yhat_soft_curr, contras_curr, obj_min,print_message, use_paccept)
-
+                rulePreds_new = self.Yb.copy()
+                rulePreds_new[ncovered_new] = 0
+                rulePreds_new[pcovered_new] = 1
+                reset = self.expected_loss_filter(self.df, rulePreds_new, self.conf_human, prs_new, nrs_new)
+                rulePreds_new[reset] = self.Yb[reset]
+                pcovered_new[reset] = 0
+                ncovered_new[reset] = 0
+                overlap_new[reset] = 0
+                covered_new[reset] = 0
 
             if len(prs_new) > 0:
                 p_model_conf_new = np.max(self.p_precision_matrix[:,prs_new],axis = 1)
@@ -384,9 +428,6 @@ class tr(object):
                 fairness_new = np.abs(accuracy_sensitive-accuracy_not_sensitive)
 
             self.Yhat_new = Yhat_new
-            rulePreds_new = self.Yb.copy()
-            rulePreds_new[ncovered_new] = 0
-            rulePreds_new[pcovered_new] = 1
             contras_new = np.sum(rulePreds_new != self.Yb)
             nfeatures = len(np.unique([con.split('_')[0] for i in prs_new for con in self.prules[i]])) + len(np.unique([con.split('_')[0] for i in nrs_new for con in self.nrules[i]]))
             obj_new = (err_new)/self.N + (self.fairness_reg * (fairness_new)) + (self.contradiction_reg*(contras_new/self.N))+self.alpha*(int_flag *(len(prs_new) + len(nrs_new))+(1-int_flag)*nfeatures)+ self.beta * sum(~covered_new)/self.N
@@ -715,7 +756,7 @@ class tr(object):
         Yhat[pind] = 1
         return Yhat,covered,Yb
 
-    def predict(self, df, Yb):
+    def predict(self, df, Yb, with_reset=False, conf_human=None):
         prules = [self.prules[i] for i in self.prs_min]
         nrules = [self.nrules[i] for i in self.nrs_min]
         # if isinstance(self.df, scipy.sparse.csc.csc_matrix)==False:
@@ -742,9 +783,48 @@ class tr(object):
         Yhat = Yb.copy()
         Yhat[nind] = 0
         Yhat[pind] = 1
+
+        if with_reset:
+            reset = self.expected_loss_filter(df, Yhat, conf_human)
+
+
+            Yhat[reset] = Yb[reset]
+            covered = [i for i in covered if i not in np.where(reset==True)[0]]
+
+
         return Yhat,covered,Yb
 
-    def predictSoft(self, df, Yb, conf_human, fA):
+    def expected_loss_filter(self, x, y_rules, conf_human, prs=None, nrs=None):
+        if prs is None:
+            prs = self.prs_min
+        if nrs is None:
+            nrs = self.nrs_min
+        p_yb = self.human_model.predict_proba(x)
+        p_y = self.blackbox.predict_proba(x)
+        e_human_responses = self.human_model.predict(x)
+        conf_model, agreement = self.get_model_conf_agreement(x, e_human_responses, prs_min=prs, nrs_min=nrs)
+        agreement0 = (y_rules == 0)
+        agreement1 = (y_rules == 1)
+        p_a = (p_yb[:, 0]*self.fA(conf_human, conf_model, agreement0)) + (p_yb[:, 1]*self.fA(conf_human, conf_model, agreement1))
+
+        
+
+        e_loss_from_accept = p_a*((p_y[:, 0]*(y_rules == 1).astype(int)*self.asym_loss[1]) + p_y[:, 1]*(y_rules == 0).astype(int)*self.asym_loss[0])
+        e_loss_from_reject = (1-p_a)*((p_y[:,0]*p_yb[:,1]*self.asym_loss[1]) + p_y[:, 1]*p_yb[:,0]*self.asym_loss[0])
+        e_loss_from_contradict = self.contradiction_reg*((p_yb[:,0]*(y_rules==1).astype(int)) + p_yb[:,1]*(y_rules==0).astype(int))
+
+        e_loss_from_advising = e_loss_from_accept + e_loss_from_reject + e_loss_from_contradict
+
+        e_loss_from_withholding = p_y[:,0]*p_yb[:,1]*self.asym_loss[1] + p_y[:,1]*p_yb[:,0]*self.asym_loss[0]
+
+        reset = e_loss_from_withholding < e_loss_from_advising
+
+        return reset
+
+        
+
+
+    def predictSoft(self, df, Yb, conf_human, fA, with_reset=False):
         prules = [self.prules[i] for i in self.prs_min]
         nrules = [self.nrules[i] for i in self.nrs_min]
         # if isinstance(self.df, scipy.sparse.csc.csc_matrix)==False:
@@ -779,10 +859,22 @@ class tr(object):
         
         Yhat[nind] = Yhat[nind] * (1 - paccept[nind]) + (paccept[nind]) * 0  # covers cases where model predicts negative
         Yhat[pind] = (Yb.copy()[pind] * (1 - paccept[pind])) + ((paccept[pind]) * 1)  # covers cases where model predicts positive
-        # binarize the soft result
+
+        if with_reset:
+            reset = self.expected_loss_filter(df, Yhat, conf_human)
+
+            Yhat[reset] = Yb[reset]
+            covered = [i for i in covered if i not in np.where(reset==True)[0]]
+
+        
+
+        
+
+
+        
         return Yhat,covered,Yb
 
-    def predictHumanInLoop(self, df, Yb, conf_human, fA):
+    def predictHumanInLoop(self, df, Yb, conf_human, fA, with_reset=False):
         prules = [self.prules[i] for i in self.prs_min]
         nrules = [self.nrules[i] for i in self.nrs_min]
         dfn = 1-df #df has negative associations
@@ -822,6 +914,14 @@ class tr(object):
         Yhat = np.array([i for i in Yb])
         Yhat[nind] = 0
         Yhat[pind] = 1
+
+        if with_reset:
+            reset = self.expected_loss_filter(df, Yhat, conf_human)
+
+
+            Yhat[reset] = Yb[reset]
+            covered[reset] = 0
+
         return Yhat,covered,Yb
 
 def accumulate(iterable, func=operator.add):

@@ -102,6 +102,9 @@ def make_rates(dataset):
                                 'Human Accuracy': groupedSums['Human Correct']/groupedSums['Total'],
                                 'Model Accuracy' :groupedSums['Model Correct']/groupedSums['Total'],
                                 'Team Accuracy': groupedSums['Team Correct']/groupedSums['Total'], 
+                                'Team Decision Loss': (groupedSums['Team Incorrect'])/dataset['Total'].sum(),
+                                'Cost Incurred': (groupedSums['Contradicts'] * 0.2)/dataset['Total'].sum(),
+                                'Human Loss': (groupedSums['Human Incorrect'])/dataset['Total'].sum(),
                                 'Team Loss': ((groupedSums['Team Incorrect'] + (0.2*groupedSums['Contradicts']))/dataset['Total'].sum())})
 
     return rates

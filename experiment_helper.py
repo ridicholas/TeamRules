@@ -1450,7 +1450,7 @@ class HAI_team():
         
         
         modelonly_val_preds, _, _ = self.tr.predict(self.data_model_dict['Xval'],
-                                                         self.data_model_dict['Ybval'])
+                                                         self.data_model_dict['Ybval'], with_reset=True, conf_human = self.data_model_dict['pred_conf_val'])
         
         tr_val_contradictions = (modelonly_val_preds != self.data_model_dict['Ybval']).sum()
         paccept = self.data_model_dict['paccept_val']
@@ -1559,7 +1559,7 @@ class HAI_team():
             maps, accuracy_min, covered_min = self.tr.train(iters, T0=0.01, print_message=False)
         tr_prs_min, tr_nrs_min, tr_pcovered_opt, tr_ncovered_opt = self.tr_robust_replace(alt_mods)
 
-
+        
         conf_model_train, agreement_train = self.tr.get_model_conf_agreement(self.data_model_dict['Xtrain'], self.data_model_dict['Ybtrain'])
         conf_model_val, agreement_val = self.tr.get_model_conf_agreement(self.data_model_dict['Xval'], self.data_model_dict['Ybval'])
         conf_model_test, agreement_test = self.tr.get_model_conf_agreement(self.data_model_dict['Xtest'], self.data_model_dict['Ybtest'])
@@ -1578,10 +1578,12 @@ class HAI_team():
         train_preds, train_covered, train_Yb = self.tr.predictHumanInLoop(self.data_model_dict['Xtrain'],
                                                                               self.data_model_dict['Ybtrain'],
                                                                               self.data_model_dict['pred_conf_train'],
-                                                                              self.fA)
+                                                                              self.fA, 
+                                                                              with_reset=True)
 
         modelonly_train_preds, _, _ = self.tr.predict(self.data_model_dict['Xtrain'],
-                                                          self.data_model_dict['Ybtrain'])
+                                                          self.data_model_dict['Ybtrain'], 
+                                                                              with_reset=True, conf_human=self.data_model_dict['pred_conf_train'])
 
         train_error_tr = 1 - metrics.accuracy_score(self.data_model_dict['Ytrain'],
                                                         train_preds)
@@ -1590,25 +1592,30 @@ class HAI_team():
                                                        self.data_model_dict['Ybtrain'])
 
         modelonly_test_preds, _, _ = self.tr.predict(self.data_model_dict['Xtest'],
-                                                         self.data_model_dict['Ybtest'])
+                                                         self.data_model_dict['Ybtest'], 
+                                                                              with_reset=True, conf_human=self.data_model_dict['pred_conf_test'])
         
         modelonly_val_preds, _, _ = self.tr.predict(self.data_model_dict['Xval'],
-                                                         self.data_model_dict['Ybval'])
+                                                         self.data_model_dict['Ybval'], 
+                                                                              with_reset=True, conf_human=self.data_model_dict['pred_conf_val'])
 
         test_preds, test_covered, test_Yb = self.tr.predictHumanInLoop(self.data_model_dict['Xtest'],
                                                                            self.data_model_dict['Ybtest'],
                                                                            self.data_model_dict['test_conf'],
-                                                                           self.fA_true)
+                                                                           self.fA_true, 
+                                                                           with_reset=True)
         
         val_preds, val_covered, val_Yb = self.tr.predictHumanInLoop(self.data_model_dict['Xval'],
                                                                            self.data_model_dict['Ybval'],
                                                                            self.data_model_dict['val_conf'],
-                                                                           self.fA)
+                                                                           self.fA, 
+                                                                              with_reset=True)
 
         soft_train_preds, soft_train_covered, soft_train_Yb = self.tr.predictSoft(self.data_model_dict['Xtrain'],
                                                                                       self.data_model_dict['Ybtrain'],
                                                                                       self.data_model_dict['pred_conf_train'],
-                                                                                          self.fA)
+                                                                                          self.fA, 
+                                                                              with_reset=True)
 
         train_soft_error = np.abs(self.data_model_dict['Ytrain'] - soft_train_preds).sum()/len(train_preds)
 
@@ -1624,7 +1631,8 @@ class HAI_team():
         soft_test_preds, soft_test_covered, soft_test_Yb = self.tr.predictSoft(self.data_model_dict['Xtest'],
                                                                                    self.data_model_dict['Ybtest'],
                                                                                    self.data_model_dict['test_conf'],
-                                                                                   self.fA_true)
+                                                                                   self.fA_true, 
+                                                                              with_reset=True)
 
         test_soft_error = np.abs(self.data_model_dict['Ytest'] - soft_test_preds).sum()/len(self.data_model_dict['Ytest'])
 
