@@ -28,12 +28,11 @@ def complex_ADB(c_human, c_model, agreement, delta=5, beta=0.05, k=0.63, gamma=0
     c_human_new[c_human_new <= 0] = 0.0000001
     c_human_new[c_human_new >= 1] = 0.9999999
 
-    if c_model.min() >= 0.5:
-        scaler = MinMaxScaler((0,1))
-        scaler.fit(np.array(c_model).reshape(-1,1))
-        c_model_new = scaler.transform(np.array(c_model).reshape(-1,1)).flatten()
-    else:
-        c_model_new = c_model.copy()
+    
+    #transform human confidence back to probability of human's estimate of their choice being correct
+    c_human_new = (c_human_new/2)+0.5
+    
+    c_model_new = c_model.copy()
     c_model_new[c_model_new <= 0] = 0.0000001
     c_model_new[c_model_new >= 1] = 0.9999999
     
@@ -83,7 +82,7 @@ def run(team1, team2, team3, folder, team_info):
     iters = Niteration
     contradiction_reg = 0
     fairness_reg = 0
-    numRuns = 1
+    numRuns = 10
     asym_loss = [1,1]
 
     if asym_loss != [1,1]:
@@ -113,8 +112,7 @@ def run(team1, team2, team3, folder, team_info):
         team_info = pd.DataFrame(index=[1, 2, 3])
 
         if asym_loss == [1,1]:
-            contradiction_regs = [0, 0.01, 0.05, 0.1, 0.2,
-                        0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
+            contradiction_regs = [0, 0.2, 0.4, 0.6, 0.8, 1]
         else:
             contradiction_regs = [0, 0.2,
                         0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1, 1.2, 1.5, 2, 2.5]

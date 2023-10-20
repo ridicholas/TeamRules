@@ -41,7 +41,7 @@ team1.make_human_model(type='logistic',
                                     'badProb': 0.5,
                                     'badRange': [0.3, 1],
                                     'Rational': True,
-                                    'adder': 0.6})
+                                    'adder': 0})
 
 team3.make_human_model(type='logistic',
                        acceptThreshold=accept_criteria,
@@ -53,7 +53,7 @@ team3.make_human_model(type='logistic',
                                     'badProb': 0.5,
                                     'badRange': [0.3, 1],
                                     'Rational': False,
-                                    'adder': 0.6})
+                                    'adder': 0})
 
 
 #good at young population, bad at old population
@@ -108,13 +108,13 @@ test_conf2 = team2.data_model_dict['test_conf']
 #test_conf2[np.where( (team2.data_model_dict['Xtest']['sex_Male'] == 0))] = np.random.normal(30,10,len(test_conf2[np.where((team2.data_model_dict['Xtest']['sex_Male'] == 0))]))/100
 
 #confident at young, not confident at elderly
-train_conf2[np.where((team1.data_model_dict['Xtrain']['age54.0'] == 0))] = np.random.randint(97,105,len(train_conf2[np.where((team1.data_model_dict['Xtrain']['age54.0'] == 0) )]))/100
-train_conf2[np.where((team1.data_model_dict['Xtrain']['age54.0'] == 1))] = np.random.normal(30,10,len(train_conf2[np.where((team1.data_model_dict['Xtrain']['age54.0'] == 1) )]))/100
-val_conf2[np.where((team1.data_model_dict['Xval']['age54.0'] == 0) )] = np.random.randint(97,105,len(val_conf2[np.where((team1.data_model_dict['Xval']['age54.0'] == 0) )]))/100
-val_conf2[np.where((team1.data_model_dict['Xval']['age54.0'] == 1) )] = np.random.normal(30,10,len(val_conf2[np.where((team1.data_model_dict['Xval']['age54.0'] == 1) )]))/100
+train_conf2[np.where((team1.data_model_dict['Xtrain']['age54.0'] == 0))] = np.random.randint(97,100,len(train_conf2[np.where((team1.data_model_dict['Xtrain']['age54.0'] == 0) )]))/100
+train_conf2[np.where((team1.data_model_dict['Xtrain']['age54.0'] == 1))] = np.random.randint(0,20,len(train_conf2[np.where((team1.data_model_dict['Xtrain']['age54.0'] == 1) )]))/100
+val_conf2[np.where((team1.data_model_dict['Xval']['age54.0'] == 0) )] = np.random.randint(97,100,len(val_conf2[np.where((team1.data_model_dict['Xval']['age54.0'] == 0) )]))/100
+val_conf2[np.where((team1.data_model_dict['Xval']['age54.0'] == 1) )] = np.random.randint(0,20,len(val_conf2[np.where((team1.data_model_dict['Xval']['age54.0'] == 1) )]))/100
 
-test_conf2[np.where((team1.data_model_dict['Xtest']['age54.0'] == 0) )] = np.random.randint(97,105,len(test_conf2[np.where((team1.data_model_dict['Xtest']['age54.0'] == 0) )]))/100
-test_conf2[np.where((team1.data_model_dict['Xtest']['age54.0'] == 1) )] = np.random.normal(30,10,len(test_conf2[np.where((team1.data_model_dict['Xtest']['age54.0'] == 1) )]))/100
+test_conf2[np.where((team1.data_model_dict['Xtest']['age54.0'] == 0) )] = np.random.randint(97,100,len(test_conf2[np.where((team1.data_model_dict['Xtest']['age54.0'] == 0) )]))/100
+test_conf2[np.where((team1.data_model_dict['Xtest']['age54.0'] == 1) )] = np.random.randint(0,20,len(test_conf2[np.where((team1.data_model_dict['Xtest']['age54.0'] == 1) )]))/100
 
 
 
@@ -195,7 +195,7 @@ team_info.loc[3, 'human reject region train acc'] = metrics.accuracy_score(team3
 
 print(team_info)
 
-folder = '5_heart_contradiction_results'
+folder = 'heart_contradiction_results'
 
 
 team1_rule_lists = pd.DataFrame(index=range(0, 20), columns=['TR_prules', 'TR_nrules', 'HyRS_prules', 'HyRS_nrules'])

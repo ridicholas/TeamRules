@@ -268,6 +268,11 @@ class tr(object):
 
 
     def train(self, Niteration = 500, print_message=False, interpretability = 'size', T0 = 0.01, start_rules=None):
+
+        p_yb = self.human_model.predict_proba(self.df)
+        p_y = self.blackbox.predict_proba(self.df)
+        e_human_responses = self.human_model.predict(self.df)
+
         self.maps = []
         fA = self.fA
         use_paccept=True
@@ -294,9 +299,12 @@ class tr(object):
         rulePreds_curr = self.Yb.copy()
         rulePreds_curr[n] = 0
         rulePreds_curr[p] = 1
+        model_conf_curr, _ = self.get_model_conf_agreement(self.df, self.Yb, prs_min=prs_curr, nrs_min=nrs_curr)
 
         #reset responses using expection
-        reset = self.expected_loss_filter(self.df, rulePreds_curr, self.conf_human, prs_curr, nrs_curr)
+        reset = self.expected_loss_filter(self.df, rulePreds_curr, conf_human=self.conf_human, 
+                                          prs=prs_curr, nrs=nrs_curr, p_yb=p_yb, p_y=p_y, 
+                                          e_human_responses=e_human_responses, conf_model=model_conf_curr)
         p[reset] = False
         n[reset] = False
         rulePreds_curr[reset] = self.Yb[reset]
@@ -315,7 +323,7 @@ class tr(object):
     
 
         
-        model_conf_curr, _ = self.get_model_conf_agreement(self.df, self.Yb, prs_min=prs_curr, nrs_min=nrs_curr)
+        
         
         Yhat_curr,TP,FP,TN,FN, numRejects_curr, Yhat_soft_curr  = self.compute_obj(pcovered_curr,ncovered_curr, model_conf_curr, use_paccept=use_paccept)
 
@@ -393,7 +401,10 @@ class tr(object):
                 rulePreds_new = self.Yb.copy()
                 rulePreds_new[ncovered_new] = 0
                 rulePreds_new[pcovered_new] = 1
-                reset = self.expected_loss_filter(self.df, rulePreds_new, self.conf_human, prs_new, nrs_new)
+                model_conf_new, _ = self.get_model_conf_agreement(self.df, self.Yb, prs_min=prs_new, nrs_min=nrs_new)
+                reset = self.expected_loss_filter(self.df, rulePreds_new, conf_human=self.conf_human, 
+                                                  prs=prs_new, nrs=nrs_new, p_yb=p_yb, p_y=p_y, 
+                                                  e_human_responses=e_human_responses,conf_model=model_conf_new)
                 rulePreds_new[reset] = self.Yb[reset]
                 pcovered_new[reset] = 0
                 ncovered_new[reset] = 0
@@ -412,7 +423,7 @@ class tr(object):
 
             self.covered1 = covered_new[:]
             self.Yhat_curr = Yhat_curr
-            model_conf_new, _ = self.get_model_conf_agreement(self.df, self.Yb, prs_min=prs_new, nrs_min=nrs_new)
+            #model_conf_new, _ = self.get_model_conf_agreement(self.df, self.Yb, prs_min=prs_new, nrs_min=nrs_new)
             Yhat_new,TP,FP,TN,FN, numRejects_new, Yhat_soft_new = self.compute_obj(pcovered_new,ncovered_new, model_conf_new, use_paccept=use_paccept)
             err_new = (np.abs(self.Y - Yhat_soft_new) * asymCosts).sum()
             
@@ -794,18 +805,28 @@ class tr(object):
 
         return Yhat,covered,Yb
 
-    def expected_loss_filter(self, x, y_rules, conf_human, prs=None, nrs=None):
+    def expected_loss_filter(self, x, y_rules, conf_human, prs=None, nrs=None, p_yb=None, p_y=None, e_human_responses=None, conf_model=None):
         if prs is None:
             prs = self.prs_min
         if nrs is None:
             nrs = self.nrs_min
-        p_yb = self.human_model.predict_proba(x)
-        p_y = self.blackbox.predict_proba(x)
-        e_human_responses = self.human_model.predict(x)
-        conf_model, agreement = self.get_model_conf_agreement(x, e_human_responses, prs_min=prs, nrs_min=nrs)
-        agreement0 = (y_rules == 0)
-        agreement1 = (y_rules == 1)
-        p_a = (p_yb[:, 0]*self.fA(conf_human, conf_model, agreement0)) + (p_yb[:, 1]*self.fA(conf_human, conf_model, agreement1))
+
+        if p_yb is None:
+            p_yb = self.human_model.predict_proba(x)
+        if p_y is None:
+            p_y = self.blackbox.predict_proba(x)
+        if e_human_responses is None:
+            e_human_responses = self.human_model.predict(x)
+        if conf_model is None:
+            conf_model, agreement = self.get_model_conf_agreement(x, e_human_responses, prs_min=prs, nrs_min=nrs)
+        agreement0 = (y_rules == 0) #hypothetical if human chooses 0
+        agreement1 = (y_rules == 1) #hypothetical if human chooses 1
+        conf_human0 = conf_human.copy()
+        conf_human1 = conf_human.copy()
+        conf_human0[e_human_responses == 1] = -conf_human0[e_human_responses == 1] #confidence inverted if human expected to choose 1 because situation is hypothetical human chooses 0
+        conf_human1[e_human_responses == 0] = -conf_human1[e_human_responses == 0] #confidence inverted if human expected to choose 0 because situation is hypothetical human chooses 1
+
+        p_a = (p_yb[:, 0]*self.fA(conf_human0, conf_model, agreement0)) + (p_yb[:, 1]*self.fA(conf_human1, conf_model, agreement1))
 
         
 
