@@ -272,7 +272,8 @@ class tr(object):
         p_yb = self.human_model.predict_proba(self.df)
         p_y = self.blackbox.predict_proba(self.df)
         e_human_responses = self.human_model.predict(self.df)
-
+        t = time.time()
+        curr_max_iter = iter
         self.maps = []
         fA = self.fA
         use_paccept=True
@@ -454,6 +455,11 @@ class tr(object):
                 covered_min = covered_new
                 
                 print('\n**  max at iter = {} ** \n {}(obj) = {}(error) + {}(coverage) + {}(rejection)\n accuracy = {}, explainability = {}, nfeatures = {}\n perror = {}, nerror = {}, oerror = {}, berror = {}\n '.format(iter,round(obj_new,3), err_new/self.N, (self.fairness_reg * (covered_new.sum()/self.N)), (self.contradiction_reg*(contras_new/self.N)), (TP+TN+0.0)/self.N,sum(covered_new)/self.N,nfeatures,perror,nerror,oerror,berror ))
+                print(f'time from last max: {time.time() - t}, seconds per iteration: {(time.time() - t)/(iter+1-curr_max_iter)}')
+                t=time.time()
+                curr_max_iter = iter
+
+                
                 self.maps.append([iter,obj_new,prs_new,nrs_new])
             
             
