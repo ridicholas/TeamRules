@@ -68,12 +68,12 @@ def run(team1, team2, team3, folder, team_info):
     team3_4_start_threshold = 0.5
 
     #initial hyperparams
-    Niteration = 50
+    Niteration = 1000
     Nchain = 1
     Nlevel = 1
     Nrules = 10000
     supp = 5
-    maxlen = 2
+    maxlen = 4
     protected = 'NA'
     budget = 1
     sample_ratio = 1
