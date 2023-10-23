@@ -298,8 +298,8 @@ class tr(object):
         p = np.sum(self.pRMatrix[:,prs_curr],axis = 1)>0
         n = np.sum(self.nRMatrix[:,nrs_curr],axis = 1)>0
         rulePreds_curr = self.Yb.copy()
-        rulePreds_curr[n] = 0
-        rulePreds_curr[p] = 1
+        rulePreds_curr[n.astype(bool)] = 0
+        rulePreds_curr[p.astype(bool)] = 1
         model_conf_curr, _ = self.get_model_conf_agreement(self.df, self.Yb, prs_min=prs_curr, nrs_min=nrs_curr)
 
         #reset responses using expection
@@ -557,21 +557,28 @@ class tr(object):
             nconfs = np.max(self.n_precision_matrix[:,nrs_in],axis = 1)
         else:
             nconfs = np.zeros(len(ncovered))
+        
+        #overlapped_ind = np.where(overlapped)[0]
+        p = np.sum(self.pRMatrix[:,prs],axis = 1)>0
+        n = np.sum(self.nRMatrix[:,nrs],axis = 1)>0
+        covered = p | n
+        ex = -1
         conf_model = nconfs
-        conf_model[pcovered] = pconfs[pcovered]
-        incorr = np.where((Yhat!=self.Y) & covered)[0] # correct interpretable models
-        incorrb = np.where((Yhat!=self.Y) & ~covered)[0] 
+        conf_model[p] = pconfs[p]
+
         rulePreds = self.Yb.copy()
         rulePreds[ncovered] = 0
         rulePreds[pcovered] = 1
+        incorr = np.where((rulePreds!=self.Y) & covered)[0] # correct interpretable models
+        incorrb = np.where((rulePreds!=self.Y) & ~covered)[0] 
         asymCosts = self.Y.replace({0: self.asym_loss[1], 1: self.asym_loss[0]})
         agreement = (rulePreds == self.Yb)
         if use_paccept:
             self.Paccept = self.fA(self.conf_human, conf_model, agreement)
         else:
             self.Paccept = np.ones(len(self.Y))
-        err = np.abs(self.Y - Yhat) * self.Paccept * asymCosts
-        contras = np.where((rulePreds != self.Yb) & covered)[0]
+        err = (np.abs(self.Y - Yhat) * self.Paccept) + (np.abs(self.Y - self.Yb) * (1-self.Paccept)) * asymCosts
+        contras = np.where((rulePreds != self.Yb) & covered & (self.Paccept < self.contradiction_reg))[0] 
         err[contras] += self.contradiction_reg
 
         #if random() <= 0.5: #randomly allow for top 5% of errors or take max error only
@@ -583,10 +590,6 @@ class tr(object):
         
 
 
-        overlapped_ind = np.where(overlapped)[0]
-        p = np.sum(self.pRMatrix[:,prs],axis = 1)
-        n = np.sum(self.nRMatrix[:,nrs],axis = 1)
-        ex = -1
 
 
         if sum(covered) == self.N and not(self.force_complete_coverage): # covering all examples.
@@ -615,7 +618,7 @@ class tr(object):
             #ex = sample(to_draw, 1)[0]
 
             if (ex in incorr) or (ex in contras):  # incorrectly classified by interpretable model
-                rs_indicator = (pcovered[ex]).astype(int)  # covered by prules
+                rs_indicator = (p[ex]).astype(int)  # covered by prules
                 if self.force_complete_coverage:
                     if rs_indicator:
                         move = ['cut']
