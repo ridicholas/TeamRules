@@ -260,7 +260,7 @@ def run(team1, team2, team3, folder, team_info):
                 t = time.time()
                 team1.setup_hyrs()
                 print(time.time() - t)
-                '''
+       
                 tempval = 100
                 tempTeam = deepcopy(team1)
                 for i in range(validations):
@@ -288,7 +288,7 @@ def run(team1, team2, team3, folder, team_info):
                     team1.brs_results.to_pickle('{}/team1_brs_run{}.pkl'.format(folder, run))
                     
 
-                '''
+         
                 print('training team1 tr model...')
                 team1.setup_tr()
                 tempval = 100
