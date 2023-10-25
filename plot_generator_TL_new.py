@@ -9,24 +9,25 @@ import math
 
 types = ['TL', 'TDL']
 
-numRuns = 15 #adjust this depending on how many runs of results were produced
+numRuns = 8 #adjust this depending on how many runs of results were produced
 
 rule_len = 4
 setting_type = 'learned'
 dataset = 'heart'
-path = f'{dataset}_contradiction_results_{setting_type}_len{rule_len}/'
+path = f'{dataset}_contradiction_results_{setting_type}_len{rule_len}_CURRENT/'
 
 asym_loss = [1,1]
 data = path.split('_')[0]
-costs = [0, 0.01, 0.05, 0.1, 0.2,
-                     0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
+costs = [0, 0.2, 0.4, 0.6, 0.8]
+
+#costs = [0, 0.2, 0.4, 0.6, 0.8, 1]
 
 for whichType in types:
     #costs = [0, 0.01, 0.05]
     hyrs_reconcile = False
     tr_conf = 'opt'
     hyrs_conf = 0
-    tr_optimizer = True
+    tr_optimizer = False
 
     teams = ['team1', 'team2', 'team3']
     #teams = ['team2']

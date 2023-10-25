@@ -1557,7 +1557,7 @@ class HAI_team():
             maps, accuracy_min, covered_min = self.tr.train(iters, T0=0.01, print_message=False, start_rules=resume_with)
         else:
             maps, accuracy_min, covered_min = self.tr.train(iters, T0=0.01, print_message=False)
-        tr_prs_min, tr_nrs_min, tr_pcovered_opt, tr_ncovered_opt = self.tr_robust_replace(alt_mods)
+        #tr_prs_min, tr_nrs_min, tr_pcovered_opt, tr_ncovered_opt = self.tr_robust_replace(alt_mods)
 
         
         conf_model_train, agreement_train = self.tr.get_model_conf_agreement(self.data_model_dict['Xtrain'], self.data_model_dict['Ybtrain'])

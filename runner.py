@@ -294,7 +294,7 @@ def run(team1, team2, team3, folder, team_info):
                 tempval = 100
                 tempTeam = deepcopy(team1)
                 for i in range(validations):
-                    tempTeam.train_tr(alt_mods=alt_mods)
+                    tempTeam.train_tr()
                     tempTeam.filter_tr_results(mental=True, error=False)
                     if tempTeam.full_tr_results_val.iloc[2, :]['objective'] < tempval:
                         team1 = tempTeam
@@ -313,6 +313,8 @@ def run(team1, team2, team3, folder, team_info):
                 team1.full_hyrs_results.to_pickle('{}/cost_{}_team1_hyrs_filtered_run{}.pkl'.format(folder, reg, run))
             
                 team1.full_tr_results.to_pickle('{}/cost_{}_team1_tr_filtered_run{}.pkl'.format(folder, reg, run))
+                team1.hyrs_results.to_pickle('{}/cost_{}_team1_hyrs_run{}.pkl'.format(folder, reg, run))
+                team1.tr_results.to_pickle('{}/cost_{}_team1_tr_run{}.pkl'.format(folder, reg, run))
 
                 team1.full_hyrs_results_val.to_pickle('{}/val_cost_{}_team1_hyrs_filtered_run{}.pkl'.format(folder, reg, run))
             
@@ -389,7 +391,7 @@ def run(team1, team2, team3, folder, team_info):
                 tempval = 100
                 tempTeam = deepcopy(team2)
                 for i in range(validations):
-                    tempTeam.train_tr(alt_mods=alt_mods)
+                    tempTeam.train_tr()
                     tempTeam.filter_tr_results(mental=True, error=False)
                     if tempTeam.full_tr_results_val.iloc[2, :]['objective'] < tempval:
                         team2 = tempTeam
@@ -398,6 +400,8 @@ def run(team1, team2, team3, folder, team_info):
                 
                 team2.full_hyrs_results.to_pickle('{}/cost_{}_team2_hyrs_filtered_run{}.pkl'.format(folder, reg, run))
                 team2.full_tr_results.to_pickle('{}/cost_{}_team2_tr_filtered_run{}.pkl'.format(folder, reg, run))
+                team2.hyrs_results.to_pickle('{}/cost_{}_team2_hyrs_run{}.pkl'.format(folder, reg, run))
+                team2.tr_results.to_pickle('{}/cost_{}_team2_tr_run{}.pkl'.format(folder, reg, run))
                 team2.full_hyrs_results_val.to_pickle('{}/val_cost_{}_team2_hyrs_filtered_run{}.pkl'.format(folder, reg, run))
                 team2.full_tr_results_val.to_pickle('{}/val_cost_{}_team2_tr_filtered_run{}.pkl'.format(folder, reg, run))
 
@@ -470,7 +474,7 @@ def run(team1, team2, team3, folder, team_info):
                 tempval = 100
                 tempTeam = deepcopy(team3)
                 for i in range(validations):
-                    tempTeam.train_tr(alt_mods=alt_mods)
+                    tempTeam.train_tr()
                     tempTeam.filter_tr_results(mental=True, error=False)
                     if tempTeam.full_tr_results_val.iloc[2, :]['objective'] < tempval:
                         team3 = tempTeam
@@ -481,6 +485,9 @@ def run(team1, team2, team3, folder, team_info):
                 
                 team3.full_hyrs_results.to_pickle('{}/cost_{}_team3_hyrs_filtered_run{}.pkl'.format(folder, reg, run))
                 team3.full_tr_results.to_pickle('{}/cost_{}_team3_tr_filtered_run{}.pkl'.format(folder, reg, run))
+
+                team3.hyrs_results.to_pickle('{}/cost_{}_team3_hyrs_run{}.pkl'.format(folder, reg, run))
+                team3.tr_results.to_pickle('{}/cost_{}_team3_tr_run{}.pkl'.format(folder, reg, run))
 
                 team3.full_hyrs_results_val.to_pickle('{}/val_cost_{}_team3_hyrs_filtered_run{}.pkl'.format(folder, reg, run))
                 team3.full_tr_results_val.to_pickle('{}/val_cost_{}_team3_tr_filtered_run{}.pkl'.format(folder, reg, run))
