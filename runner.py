@@ -313,8 +313,8 @@ def run(team1, team2, team3, folder, team_info):
                 team1.full_hyrs_results.to_pickle('{}/cost_{}_team1_hyrs_filtered_run{}.pkl'.format(folder, reg, run))
             
                 team1.full_tr_results.to_pickle('{}/cost_{}_team1_tr_filtered_run{}.pkl'.format(folder, reg, run))
-                team1.hyrs_results.to_pickle('{}/cost_{}_team1_hyrs_run{}.pkl'.format(folder, reg, run))
-                team1.tr_results.to_pickle('{}/cost_{}_team1_tr_run{}.pkl'.format(folder, reg, run))
+                #team1.hyrs_results.to_pickle('{}/cost_{}_team1_hyrs_run{}.pkl'.format(folder, reg, run))
+                #team1.tr_results.to_pickle('{}/cost_{}_team1_tr_run{}.pkl'.format(folder, reg, run))
 
                 team1.full_hyrs_results_val.to_pickle('{}/val_cost_{}_team1_hyrs_filtered_run{}.pkl'.format(folder, reg, run))
             
@@ -400,8 +400,8 @@ def run(team1, team2, team3, folder, team_info):
                 
                 team2.full_hyrs_results.to_pickle('{}/cost_{}_team2_hyrs_filtered_run{}.pkl'.format(folder, reg, run))
                 team2.full_tr_results.to_pickle('{}/cost_{}_team2_tr_filtered_run{}.pkl'.format(folder, reg, run))
-                team2.hyrs_results.to_pickle('{}/cost_{}_team2_hyrs_run{}.pkl'.format(folder, reg, run))
-                team2.tr_results.to_pickle('{}/cost_{}_team2_tr_run{}.pkl'.format(folder, reg, run))
+                #team2.hyrs_results.to_pickle('{}/cost_{}_team2_hyrs_run{}.pkl'.format(folder, reg, run))
+                #team2.tr_results.to_pickle('{}/cost_{}_team2_tr_run{}.pkl'.format(folder, reg, run))
                 team2.full_hyrs_results_val.to_pickle('{}/val_cost_{}_team2_hyrs_filtered_run{}.pkl'.format(folder, reg, run))
                 team2.full_tr_results_val.to_pickle('{}/val_cost_{}_team2_tr_filtered_run{}.pkl'.format(folder, reg, run))
 
@@ -486,8 +486,8 @@ def run(team1, team2, team3, folder, team_info):
                 team3.full_hyrs_results.to_pickle('{}/cost_{}_team3_hyrs_filtered_run{}.pkl'.format(folder, reg, run))
                 team3.full_tr_results.to_pickle('{}/cost_{}_team3_tr_filtered_run{}.pkl'.format(folder, reg, run))
 
-                team3.hyrs_results.to_pickle('{}/cost_{}_team3_hyrs_run{}.pkl'.format(folder, reg, run))
-                team3.tr_results.to_pickle('{}/cost_{}_team3_tr_run{}.pkl'.format(folder, reg, run))
+                #team3.hyrs_results.to_pickle('{}/cost_{}_team3_hyrs_run{}.pkl'.format(folder, reg, run))
+                #team3.tr_results.to_pickle('{}/cost_{}_team3_tr_run{}.pkl'.format(folder, reg, run))
 
                 team3.full_hyrs_results_val.to_pickle('{}/val_cost_{}_team3_hyrs_filtered_run{}.pkl'.format(folder, reg, run))
                 team3.full_tr_results_val.to_pickle('{}/val_cost_{}_team3_tr_filtered_run{}.pkl'.format(folder, reg, run))
